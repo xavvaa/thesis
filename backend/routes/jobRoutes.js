@@ -153,6 +153,7 @@ router.get('/employer/my-jobs', verifyToken, requireRole('employer'), async (req
       applicants: job.applicationCount, // Add this for frontend compatibility
       viewCount: job.viewCount,
       postedDate: job.postedDate,
+      createdAt: job.createdAt,
       lastUpdated: job.lastUpdated,
       expiryDate: job.expiryDate,
       isAcceptingApplications: job.isAcceptingApplications()
@@ -304,9 +305,24 @@ router.post('/', verifyToken, requireRole('employer'), async (req, res) => {
       message: 'Job posted successfully',
       data: {
         id: job._id,
+        _id: job._id,
         title: job.title,
         status: job.status,
-        postedDate: job.postedDate
+        postedDate: job.postedDate,
+        createdAt: job.createdAt,
+        description: job.description,
+        location: job.location,
+        salary: job.salary,
+        salaryMin: job.salaryMin,
+        salaryMax: job.salaryMax,
+        type: job.type,
+        level: job.level,
+        department: job.department,
+        workplaceType: job.workplaceType,
+        remote: job.remote,
+        requirements: job.requirements,
+        responsibilities: job.responsibilities,
+        benefits: job.benefits
       }
     });
   } catch (error) {

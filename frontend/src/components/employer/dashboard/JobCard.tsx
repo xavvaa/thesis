@@ -24,32 +24,48 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onView, onEdit, onDelete,
   const formatPostedDate = () => {
     if (job.postedDate || job.posted) {
       let date;
-      if (typeof (job.postedDate || job.posted) === 'string') {
-        date = new Date(job.postedDate || job.posted);
+      const dateValue = job.postedDate || job.posted;
+      
+      // Handle different date formats more robustly
+      if (typeof dateValue === 'string') {
+        // If it's already a formatted date string like "September 22, 2024", parse it
+        if (dateValue.includes(',') && !dateValue.includes('T') && !dateValue.includes('Z')) {
+          date = new Date(dateValue);
+        } else {
+          // Handle ISO strings and other formats
+          date = new Date(dateValue);
+        }
       } else {
-        date = new Date(job.postedDate || job.posted);
+        date = new Date(dateValue);
       }
       
       if (isNaN(date.getTime())) {
         return 'Recently posted';
       }
       
+      // Use current time in the same timezone
       const now = new Date();
-      const diffTime = Math.abs(now.getTime() - date.getTime());
+      
+      // Calculate difference in milliseconds
+      const diffTime = now.getTime() - date.getTime();
       const diffMinutes = Math.floor(diffTime / (1000 * 60));
       const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
       
-      // Format full date
+      // Format full date in local timezone
       const fullDate = date.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
       });
       
-      // Format relative time
+      // Format relative time with more accurate calculations
       let timeAgo;
-      if (diffMinutes < 1) {
+      if (diffTime < 0) {
+        // Future date (shouldn't happen, but handle gracefully)
+        timeAgo = 'Just posted';
+      } else if (diffMinutes < 1) {
         timeAgo = 'Just now';
       } else if (diffMinutes < 60) {
         timeAgo = diffMinutes === 1 ? '1 minute ago' : `${diffMinutes} minutes ago`;
@@ -60,9 +76,11 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onView, onEdit, onDelete,
       } else if (diffDays < 7) {
         timeAgo = `${diffDays} days ago`;
       } else if (diffDays < 30) {
-        timeAgo = `${Math.ceil(diffDays / 7)} weeks ago`;
+        const weeks = Math.floor(diffDays / 7);
+        timeAgo = weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
       } else {
-        timeAgo = `${Math.ceil(diffDays / 30)} months ago`;
+        const months = Math.floor(diffDays / 30);
+        timeAgo = months === 1 ? '1 month ago' : `${months} months ago`;
       }
       
       return `${fullDate} — ${timeAgo}`;
