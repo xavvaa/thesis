@@ -337,7 +337,7 @@ const EmployerDashboard: React.FC = () => {
 
   // Load applications from backend when auth is ready and user is verified
   useEffect(() => {
-    if (!isAuthReady || !currentUser || isCheckingVerification || userVerificationStatus !== 'approved') {
+    if (!isAuthReady || !currentUser || isCheckingVerification || userVerificationStatus !== 'verified') {
       console.log('Auth not ready for applications or not verified:', { 
         isAuthReady, 
         hasUser: !!currentUser, 
