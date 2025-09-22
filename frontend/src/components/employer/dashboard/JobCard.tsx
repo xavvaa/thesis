@@ -10,9 +10,10 @@ interface JobCardProps {
   onEdit?: (job: Job) => void;
   onDelete?: (jobId: string | number) => void;
   onClick?: (job: Job) => void;
+  onViewApplicants?: (job: Job) => void;
 }
 
-export const JobCard: React.FC<JobCardProps> = ({ job, onView, onEdit, onDelete, onClick }) => {
+export const JobCard: React.FC<JobCardProps> = ({ job, onView, onEdit, onDelete, onClick, onViewApplicants }) => {
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't trigger card click if clicking on action buttons
     if ((e.target as HTMLElement).closest(`.${styles.jobActions}`)) {
@@ -200,13 +201,13 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onView, onEdit, onDelete,
             className={styles.applicantButton}
             onClick={(e) => {
               e.stopPropagation();
-              console.log('Job data for applicant count:', {
+              console.log('Viewing applicants for job:', {
                 id: job.id,
                 title: job.title,
                 applicants: job.applicants,
                 applicantCount: job.applicantCount
               });
-              onView?.(job);
+              onViewApplicants?.(job);
             }}
           >
             <span className={styles.buttonContent}>

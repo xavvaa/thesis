@@ -4,10 +4,11 @@ import { ApplicantCard } from './ApplicantCard';
 import StatsCard from './StatsCard';
 import Button from '../ui/Button';
 import { FiBriefcase, FiUsers, FiDollarSign, FiClock } from 'react-icons/fi';
-import { JobPosting, Applicant } from '@/types/dashboard';
+import { Job } from '@/types/Job';
+import { Applicant } from '@/types/dashboard';
 
 interface OverviewTabProps {
-  jobs: JobPosting[];
+  jobs: Job[];
   applicants: Applicant[];
   stats: {
     activeJobs: number;
@@ -20,9 +21,9 @@ interface OverviewTabProps {
     filledChange: string;
   };
   onTabChange: (tab: string) => void;
-  onViewJob: (job: JobPosting) => void;
-  onEditJob: (job: JobPosting) => void;
-  onDeleteJob: (jobId: number) => void;
+  onViewJob: (job: Job) => void;
+  onEditJob: (job: Job) => void;
+  onDeleteJob: (jobId: number | string) => void;
   onAcceptApplicant: (applicantId: number) => void;
   onRejectApplicant: (applicantId: number) => void;
   onViewResume: (resumeUrl: string) => void;
@@ -95,6 +96,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               onView={onViewJob}
               onEdit={onEditJob}
               onDelete={onDeleteJob}
+              onViewApplicants={onViewJob}
             />
           ))}
         </div>

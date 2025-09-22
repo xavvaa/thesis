@@ -170,6 +170,7 @@ export const JobsTab: React.FC<JobsTabProps> = ({
               onClick={handleJobCardClick}
               onView={handleJobCardClick}
               onEdit={handleEditJob}
+              onViewApplicants={onViewJob}
               onDelete={(jobId) => {
                 const job = jobs.find(j => j.id === jobId);
                 if (job) handleDeleteJob(job);
