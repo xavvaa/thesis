@@ -968,6 +968,122 @@ body {
 
 /* Responsive Breakpoints */
 
+/* Enhanced Mobile Responsive */
+@media (max-width: 1024px) {
+  .dashboard {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+  }
+  
+  .mainContent {
+    margin-left: 0;
+    padding: 1.5rem;
+  }
+  
+  .header {
+    padding: 1.5rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+  
+  .applicationsGrid {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .mainContent {
+    padding: 1rem;
+  }
+  
+  .header {
+    padding: 1rem;
+  }
+  
+  .statsGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .applicationsGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .searchContainer {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+  
+  .filterContainer {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .statCard {
+    padding: 1rem;
+  }
+  
+  .statValue {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .mainContent {
+    padding: 0.75rem;
+  }
+  
+  .header {
+    padding: 0.75rem;
+  }
+  
+  .statCard {
+    padding: 0.75rem;
+  }
+  
+  .statValue {
+    font-size: 1.25rem;
+  }
+  
+  .statLabel {
+    font-size: 0.75rem;
+  }
+  
+  .applicationCard {
+    padding: 1rem;
+  }
+  
+  .applicationTitle {
+    font-size: 1rem;
+  }
+  
+  .applicationCompany {
+    font-size: 0.875rem;
+  }
+  
+  .applicationDate {
+    font-size: 0.75rem;
+  }
+  
+  .filterContainer select {
+    font-size: 0.875rem;
+    padding: 0.5rem;
+  }
+}
+
 /* Mobile specific styles */
 @media (max-width: 767px) {
   .closeSidebar {

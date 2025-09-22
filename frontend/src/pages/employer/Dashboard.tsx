@@ -49,6 +49,7 @@ import { Job } from '../../types/Job';
 import { jobApiService } from '../../services/jobApiService';
 import { ApplicantDetailsModal } from '../../components/employer/dashboard/ApplicantDetailsModal';
 import { JobDetailsModal } from '../../components/employer/dashboard/JobDetailsModal';
+import { JobFormModal } from '../../components/employer/dashboard/JobFormModal';
 import { CompanyProfileModal } from '../../components/employer/dashboard/CompanyProfileModal';
 import { NotificationPreferencesModal } from '../../components/employer/dashboard/NotificationPreferencesModal';
 import { TeamManagementModal } from '../../components/employer/dashboard/TeamManagementModal';
@@ -126,6 +127,10 @@ const EmployerDashboard: React.FC = () => {
   const [isJobDetailsModalOpen, setIsJobDetailsModalOpen] = useState(false);
   const [applicantStatuses, setApplicantStatuses] = useState<Record<number, string>>({});
   const [companyProfileData, setCompanyProfileData] = useState<CompanyProfileData | null>(null);
+  
+  // Job form modal states
+  const [isJobFormModalOpen, setIsJobFormModalOpen] = useState(false);
+  const [jobToEdit, setJobToEdit] = useState<Job | null>(null);
 
   // Initialize Firebase auth state listener and check verification status
   useEffect(() => {
@@ -665,6 +670,23 @@ const EmployerDashboard: React.FC = () => {
   };
 
 
+  // Function to open the job form modal (for quick actions)
+  const handleOpenJobForm = () => {
+    setJobToEdit(null);
+    setIsJobFormModalOpen(true);
+  };
+
+  // Function to handle saving job from modal
+  const handleSaveJobFromModal = (jobData: Partial<Job>) => {
+    if (jobToEdit) {
+      handleUpdateJob(jobData);
+    } else {
+      handleCreateJob(jobData);
+    }
+    setIsJobFormModalOpen(false);
+    setJobToEdit(null);
+  };
+
   const handleCreateJob = async (jobData: Partial<Job>) => {
     try {
       setIsLoadingJobs(true);
@@ -697,8 +719,8 @@ const EmployerDashboard: React.FC = () => {
         type: jobData.type || 'Full-time',
         level: normalizedLevel,
         department: jobData.department || 'General',
-        workplaceType: jobData.remote ? 'Remote' : 'On-site',
-        remote: jobData.remote || false,
+        workplaceType: jobData.workplaceType || 'On-site',
+        remote: jobData.workplaceType === 'Remote' || jobData.remote || false,
         requirements: jobData.requirements || [],
         responsibilities: jobData.responsibilities || [],
         benefits: jobData.benefits || [],
@@ -728,10 +750,12 @@ const EmployerDashboard: React.FC = () => {
         matchQuality: 85,
         department: createdJob.department || jobData.department || 'General',
         postedDate: createdJob.createdAt || new Date().toISOString(),
-        remote: createdJob.remote || jobData.remote || false
+        remote: createdJob.remote || jobData.workplaceType === 'Remote' || jobData.remote || false,
+        workplaceType: createdJob.workplaceType || jobData.workplaceType || 'On-site'
       };
 
       setJobPostings(prev => [...prev, newJob]);
+      console.log('Job created successfully:', newJob);
     } catch (error) {
       console.error('Error creating job:', error);
       alert('Failed to create job. Please try again.');
@@ -999,7 +1023,7 @@ const EmployerDashboard: React.FC = () => {
 
               {/* Quick Actions Section */}
               <QuickActions 
-                onCreateJob={() => handleCreateJob({})}
+                onCreateJob={handleOpenJobForm}
                 onViewJobs={() => setActiveTab('jobs')}
                 onViewApplications={() => setActiveTab('applicants')}
                 onOpenSettings={() => setActiveTab('settings')}
@@ -1150,6 +1174,17 @@ const EmployerDashboard: React.FC = () => {
           console.log('Documents updated:', documentsData);
           // Handle save documents data
         }}
+      />
+
+      <JobFormModal
+        job={jobToEdit}
+        isOpen={isJobFormModalOpen}
+        onClose={() => {
+          setIsJobFormModalOpen(false);
+          setJobToEdit(null);
+        }}
+        onSave={handleSaveJobFromModal}
+        isEditing={!!jobToEdit}
       />
       {showEditConfirm && (
         <div style={{

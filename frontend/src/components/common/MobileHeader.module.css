@@ -1,0 +1,113 @@
+.mobileHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  min-height: 64px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .mobileHeader {
+    padding: 0.75rem 1rem;
+    min-height: 56px;
+  }
+}
+
+@media (max-width: 480px) {
+  .mobileHeader {
+    padding: 0.625rem 0.75rem;
+    min-height: 52px;
+  }
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+@media (max-width: 480px) {
+  .headerLeft {
+    gap: 0.75rem;
+  }
+}
+
+.menuButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .menuButton {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+.menuButton:hover {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.menuButton:active {
+  background: #e2e8f0;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 768px) {
+  .title {
+    font-size: 1.125rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .title {
+    font-size: 1rem;
+  }
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .headerRight {
+    gap: 0.5rem;
+  }
+}
+
+/* Hide on desktop when sidebar is always visible */
+@media (min-width: 1024px) {
+  .mobileHeader {
+    display: none;
+  }
+}

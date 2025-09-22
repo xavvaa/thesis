@@ -2,11 +2,39 @@
   padding: 2rem;
 }
 
+@media (max-width: 1024px) {
+  .container {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0.75rem;
+  }
+}
+
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 1.5rem;
+  }
 }
 
 .title {
@@ -16,15 +44,51 @@
   margin: 0;
 }
 
+@media (max-width: 768px) {
+  .title {
+    font-size: 1.5rem;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .title {
+    font-size: 1.25rem;
+  }
+}
+
 .controls {
   display: flex;
   gap: 1rem;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .controls {
+    gap: 0.5rem;
+  }
 }
 
 .searchContainer {
   position: relative;
   min-width: 200px;
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .searchContainer {
+    min-width: unset;
+    width: 100%;
+  }
 }
 
 .searchIcon {
@@ -61,6 +125,14 @@
   background-color: white;
   cursor: pointer;
   min-width: 150px;
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .select {
+    min-width: unset;
+    width: 100%;
+  }
 }
 
 .select:focus {
@@ -75,20 +147,23 @@
   gap: 1.5rem;
 }
 
+@media (max-width: 1200px) {
+  .applicantsGrid {
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.25rem;
+  }
+}
+
 @media (max-width: 768px) {
   .applicantsGrid {
     grid-template-columns: 1fr;
-  }
-  
-  .controls {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
     gap: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .applicantsGrid {
+    gap: 0.75rem;
   }
 }
 
@@ -99,6 +174,18 @@
   padding: 1.5rem;
   cursor: pointer;
   transition: all 0.2s;
+}
+
+@media (max-width: 768px) {
+  .applicantCard {
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .applicantCard {
+    padding: 1rem;
+  }
 }
 
 .applicantCard:hover {
@@ -112,6 +199,13 @@
   align-items: flex-start;
   gap: 1rem;
   margin-bottom: 1rem;
+}
+
+@media (max-width: 480px) {
+  .applicantHeader {
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
 }
 
 .avatar {
@@ -128,6 +222,14 @@
   flex-shrink: 0;
 }
 
+@media (max-width: 480px) {
+  .avatar {
+    width: 50px;
+    height: 50px;
+    font-size: 1.25rem;
+  }
+}
+
 .applicantInfo {
   flex: 1;
 }
@@ -139,10 +241,22 @@
   margin: 0 0 0.5rem 0;
 }
 
+@media (max-width: 480px) {
+  .applicantName {
+    font-size: 1.125rem;
+  }
+}
+
 .position {
   font-size: 0.875rem;
   color: #64748b;
   margin: 0 0 0.25rem 0;
+}
+
+@media (max-width: 480px) {
+  .position {
+    font-size: 0.8125rem;
+  }
 }
 
 .positionName {
@@ -156,8 +270,21 @@
   margin: 0;
 }
 
+@media (max-width: 480px) {
+  .appliedDate {
+    font-size: 0.6875rem;
+  }
+}
+
 .matchSection {
   text-align: right;
+}
+
+@media (max-width: 480px) {
+  .matchSection {
+    text-align: left;
+    margin-top: 0.5rem;
+  }
 }
 
 .matchScore {
@@ -167,10 +294,22 @@
   line-height: 1;
 }
 
+@media (max-width: 480px) {
+  .matchScore {
+    font-size: 1.25rem;
+  }
+}
+
 .matchLabel {
   font-size: 0.75rem;
   color: #64748b;
   margin-bottom: 0.5rem;
+}
+
+@media (max-width: 480px) {
+  .matchLabel {
+    font-size: 0.6875rem;
+  }
 }
 
 .statusBadge {
@@ -231,6 +370,14 @@
   gap: 0.5rem;
   padding-top: 1rem;
   border-top: 1px solid #f1f5f9;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+  .actions {
+    gap: 0.375rem;
+    padding-top: 0.75rem;
+  }
 }
 
 .actionButton {
@@ -247,6 +394,15 @@
   font-size: 0.875rem;
   transition: all 0.2s;
   min-width: 40px;
+  flex: 1;
+}
+
+@media (max-width: 480px) {
+  .actionButton {
+    padding: 0.375rem;
+    font-size: 0.8125rem;
+    min-width: 36px;
+  }
 }
 
 .actionButton:hover {
