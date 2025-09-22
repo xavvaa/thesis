@@ -1,0 +1,122 @@
+.recentActivity {
+  margin-bottom: 2.5rem;
+}
+
+.sectionTitle {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0 0 2rem;
+  letter-spacing: -0.025em;
+}
+
+.activityList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.activityItem {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.75rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.activityItem:hover {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  border-color: #cbd5e0;
+}
+
+.activityIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+  font-size: 1.25rem;
+}
+
+.activityContent {
+  flex: 1;
+}
+
+.activityTitle {
+  font-weight: 600;
+  color: var(--gray-800);
+  margin: 0 0 0.25rem;
+}
+
+.activityCompany {
+  color: var(--gray-600);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.activityDate {
+  font-size: 0.8125rem;
+  color: var(--gray-500);
+}
+
+.activityStatus {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  text-transform: capitalize;
+}
+
+.status-pending {
+  background-color: var(--warning-light);
+  color: var(--warning-dark);
+}
+
+.status-review {
+  background-color: var(--info-light);
+  color: var(--info-dark);
+}
+
+.status-interview {
+  background-color: var(--success-light);
+  color: var(--success-dark);
+}
+
+.emptyActivity {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+}
+
+.emptyIcon {
+  font-size: 2.5rem;
+  color: var(--gray-400);
+  margin-bottom: 1rem;
+}
+
+.emptyText {
+  font-weight: 500;
+  color: var(--gray-600);
+  margin: 0 0 1rem;
+}
+
+.emptyAction {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+}

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Firebase Test</title>
+</head>
+<body>
+    <h1>Firebase Configuration Test</h1>
+    <button id="testAuth">Test Firebase Auth</button>
+    <button id="testGoogle">Test Google Sign-In</button>
+    <div id="results"></div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js';
+        import { getAuth, signInWithPopup, GoogleAuthProvider } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js';
+
+        // Your Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyA6XWt2265t10GRCmea8NxIaoiaHNR3RRU",
+            authDomain: "final-thesis-njz.firebaseapp.com",
+            projectId: "final-thesis-njz",
+            storageBucket: "final-thesis-njz.firebasestorage.app",
+            messagingSenderId: "117958639369",
+            appId: "1:117958639369:web:8e358f46c2c3e47f941dd8"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const results = document.getElementById('results');
+
+        document.getElementById('testAuth').addEventListener('click', () => {
+            results.innerHTML = '<p>Testing Firebase Auth initialization...</p>';
+            try {
+                console.log('Firebase Auth:', auth);
+                results.innerHTML += '<p>✅ Firebase Auth initialized successfully</p>';
+                results.innerHTML += `<p>Current user: ${auth.currentUser ? auth.currentUser.email : 'None'}</p>`;
+            } catch (error) {
+                results.innerHTML += `<p>❌ Firebase Auth error: ${error.message}</p>`;
+            }
+        });
+
+        document.getElementById('testGoogle').addEventListener('click', async () => {
+            results.innerHTML = '<p>Testing Google Sign-In...</p>';
+            try {
+                const provider = new GoogleAuthProvider();
+                const result = await signInWithPopup(auth, provider);
+                results.innerHTML += '<p>✅ Google Sign-In successful!</p>';
+                results.innerHTML += `<p>User: ${result.user.email}</p>`;
+            } catch (error) {
+                results.innerHTML += `<p>❌ Google Sign-In error: ${error.code} - ${error.message}</p>`;
+                console.error('Detailed error:', error);
+            }
+        });
+    </script>
+</body>
+</html>

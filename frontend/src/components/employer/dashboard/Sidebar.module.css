@@ -1,0 +1,185 @@
+/* Sidebar Component Styles - Matching Jobseeker Dashboard */
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 240px;
+  background: white;
+  border-right: 1px solid var(--gray-200);
+  height: 100vh;
+  transform: translateX(0);
+  transition: all 0.3s ease;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.sidebarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px;
+  border-bottom: 1px solid var(--gray-200);
+  background: white;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0;
+}
+
+.sidebarLogo {
+  width: 2.5rem;
+  height: 2.5rem;
+  background: var(--primary-gradient);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+  transition: transform var(--transition-fast);
+  box-shadow: var(--shadow);
+}
+
+.sidebarLogo:hover {
+  transform: scale(1.05);
+}
+
+.sidebarBrand {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.sidebarNav {
+  flex: 1;
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 24px;
+  border: none;
+  background: transparent;
+  color: var(--gray-600);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  border-left: 3px solid transparent;
+  min-height: 40px;
+}
+
+.navItem::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 0;
+  background: var(--primary-500);
+  border-radius: 0 2px 2px 0;
+  transition: height var(--transition-fast);
+}
+
+.navItem:hover {
+  background: var(--gray-50);
+  color: var(--gray-900);
+}
+
+.navItem.active {
+  background: var(--info-light);
+  color: var(--primary);
+  border-left-color: var(--primary);
+  font-weight: 600;
+}
+
+.navIcon {
+  width: 20px;
+  height: 20px;
+}
+
+.navItem:hover .navIcon {
+  opacity: 1;
+}
+
+.navItem.active .navIcon {
+  opacity: 1;
+  filter: drop-shadow(0 2px 4px rgba(102, 126, 234, 0.3));
+}
+
+.sidebarFooter {
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+}
+
+.footerText {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  text-align: center;
+  line-height: var(--leading-relaxed);
+}
+
+/* Mobile sidebar */
+@media (max-width: 1024px) {
+  .sidebar {
+    transform: translateX(-100%);
+    z-index: var(--z-modal);
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+}
+
+/* Desktop sidebar always visible */
+@media (min-width: 1024px) {
+  .sidebar {
+    position: fixed;
+    transform: none;
+    height: 100vh;
+    flex-shrink: 0;
+    top: 0;
+    left: 0;
+  }
+}
+
+/* Sidebar overlay for mobile */
+.sidebarOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: var(--z-overlay);
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition-fast);
+}
+
+.sidebarOverlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+@media (min-width: 1024px) {
+  .sidebarOverlay {
+    display: none;
+  }
+}

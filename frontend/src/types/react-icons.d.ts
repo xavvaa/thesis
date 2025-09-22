@@ -1,0 +1,46 @@
+declare module 'react-icons/fi' {
+  import { IconType } from 'react-icons';
+  
+  export const FiX: IconType;
+  export const FiHome: IconType;
+  export const FiMail: IconType;
+  export const FiPhone: IconType;
+  export const FiMapPin: IconType;
+  export const FiGlobe: IconType;
+  export const FiBell: IconType;
+  export const FiSmartphone: IconType;
+  export const FiUsers: IconType;
+  export const FiPlus: IconType;
+  export const FiEdit2: IconType;
+  export const FiTrash2: IconType;
+  export const FiUser: IconType;
+  export const FiEye: IconType;
+  export const FiClock: IconType;
+  export const FiBriefcase: IconType;
+  export const FiCalendar: IconType;
+  export const FiDownload: IconType;
+  export const FiCheck: IconType;
+  export const FiStar: IconType;
+  export const FiFileText: IconType;
+  export const FiMessageCircle: IconType;
+  export const FiSearch: IconType;
+  export const FiFilter: IconType;
+  export const FiSliders: IconType;
+  export const FiMenu: IconType;
+  export const FiLogOut: IconType;
+  export const FiBookmark: IconType;
+  export const FiDollarSign: IconType;
+  export const FiTrendingUp: IconType;
+  export const FiUserCheck: IconType;
+  export const FiXCircle: IconType;
+  export const FiSettings: IconType;
+  export const FiEdit3: IconType;
+  export const FiSave: IconType;
+  export const FiTag: IconType;
+  export const FiMinus: IconType;
+  export const FiMoreHorizontal: IconType;
+  export const FiArrowLeft: IconType;
+  export const FiUpload: IconType;
+  export const FiFile: IconType;
+  export const FiAlertCircle: IconType;
+}

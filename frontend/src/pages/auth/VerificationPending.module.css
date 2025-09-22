@@ -1,0 +1,217 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 1rem;
+}
+
+.content {
+  background: white;
+  border-radius: 12px;
+  padding: 2.5rem;
+  max-width: 600px;
+  width: 100%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  text-align: center;
+}
+
+.loadingContainer {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.loadingSpinner {
+  width: 3rem;
+  height: 3rem;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top: 3px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.pendingIcon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.clockIcon {
+  width: 4rem;
+  height: 4rem;
+  color: #f59e0b;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1.5rem;
+}
+
+.messageContainer {
+  text-align: left;
+  margin-bottom: 2rem;
+}
+
+.message {
+  color: #4b5563;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+.statusInfo {
+  background-color: #f9fafb;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #f59e0b;
+}
+
+.statusItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.statusItem:last-child {
+  margin-bottom: 0;
+}
+
+.statusIcon {
+  margin-right: 0.75rem;
+  font-size: 1.2rem;
+}
+
+.waitingMessage {
+  margin-bottom: 1.5rem;
+}
+
+.waitingMessage h3 {
+  color: #1f2937;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.waitingMessage ul {
+  color: #4b5563;
+  padding-left: 1.25rem;
+  line-height: 1.6;
+}
+
+.waitingMessage li {
+  margin-bottom: 0.5rem;
+}
+
+.estimatedTime {
+  background-color: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  padding: 1rem;
+  text-align: center;
+  color: #92400e;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+}
+
+.actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.refreshButton {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  min-width: 120px;
+}
+
+.refreshButton:hover:not(:disabled) {
+  background-color: #2563eb;
+}
+
+.refreshButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.signOutButton {
+  background-color: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  min-width: 120px;
+}
+
+.signOutButton:hover {
+  background-color: #4b5563;
+}
+
+.refreshButton:focus,
+.signOutButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+@media (max-width: 640px) {
+  .content {
+    padding: 2rem;
+    margin: 1rem;
+  }
+  
+  .title {
+    font-size: 1.5rem;
+  }
+  
+  .clockIcon {
+    width: 3rem;
+    height: 3rem;
+  }
+  
+  .actions {
+    flex-direction: column;
+  }
+  
+  .refreshButton,
+  .signOutButton {
+    width: 100%;
+  }
+}

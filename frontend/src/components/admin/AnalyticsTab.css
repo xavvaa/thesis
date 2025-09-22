@@ -1,0 +1,346 @@
+.analytics-container {
+    padding: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+  }
+  
+  .analytics-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    padding: 24px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  }
+  
+  .analytics-title {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0;
+    color: #2c3e50;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .analytics-summary {
+    display: flex;
+    gap: 32px;
+  }
+  
+  .summary-item {
+    text-align: center;
+  }
+  
+  .summary-label {
+    display: block;
+    font-size: 14px;
+    color: #7f8c8d;
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+  
+  .summary-value {
+    display: block;
+    font-size: 24px;
+    font-weight: 700;
+    color: #2c3e50;
+  }
+  
+  .growth-positive {
+    color: #27ae60 !important;
+  }
+  
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+  
+  .metric-card {
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    position: relative;
+    overflow: hidden;
+    color: white;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .metric-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+  }
+  
+  .gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+  
+  .gradient-success {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  }
+  
+  .gradient-warning {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  }
+  
+  .gradient-info {
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  }
+  
+  .metric-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .metric-card h3 {
+    margin: 0;
+    color: white;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  
+  .growth-indicator {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    backdrop-filter: blur(10px);
+  }
+  
+  .metric-content {
+    text-align: center;
+  }
+  
+  .metric-main-number {
+    font-size: 36px;
+    font-weight: 800;
+    margin-bottom: 4px;
+    color: white;
+  }
+  
+  .metric-subtitle {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+  
+  .metric-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .stat-item {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.9);
+  }
+  
+  .stat-item strong {
+    color: white;
+    font-weight: 600;
+  }
+  
+  .chart-container {
+    width: 100%;
+    margin-bottom: 12px;
+  }
+  
+  .charts-section {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  
+  .chart-card {
+    background: white;
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .chart-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+  }
+  
+  .chart-header {
+    margin-bottom: 24px;
+  }
+  
+  .chart-header h3 {
+    margin: 0 0 8px 0;
+    color: #2c3e50;
+    font-size: 22px;
+    font-weight: 700;
+  }
+  
+  .chart-subtitle {
+    color: #7f8c8d;
+    font-size: 14px;
+    margin: 0;
+  }
+  
+  .gauge-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 16px 0;
+  }
+  
+  .circular-progress {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .progress-ring {
+    transform: rotate(-90deg);
+  }
+  
+  .progress-ring-circle {
+    transition: stroke-dashoffset 0.8s ease-in-out;
+    stroke-linecap: round;
+  }
+  
+  .progress-text {
+    position: absolute;
+    font-size: 20px;
+    font-weight: 700;
+    color: white;
+  }
+  
+  
+  .loading {
+    text-align: center;
+    padding: 60px;
+    color: #7f8c8d;
+    font-size: 18px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    margin: 40px;
+  }
+  
+  .metric-note {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.8);
+    text-align: center;
+    margin-top: 12px;
+    font-weight: 500;
+  }
+
+  /* Animation keyframes */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .metric-card {
+    animation: fadeInUp 0.6s ease-out;
+  }
+  
+  .chart-card {
+    animation: fadeInUp 0.8s ease-out;
+  }
+  
+  /* Scrollbar styling */
+  .analytics-container::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .analytics-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+  
+  .analytics-container::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 4px;
+  }
+  
+  .analytics-container::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 1200px) {
+    .charts-section {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .analytics-container {
+      padding: 16px;
+    }
+    
+    .analytics-header {
+      flex-direction: column;
+      gap: 16px;
+      text-align: center;
+      padding: 20px;
+    }
+    
+    .analytics-summary {
+      gap: 20px;
+    }
+    
+    .metrics-grid {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    
+    .metric-card {
+      padding: 20px;
+    }
+    
+    .chart-card {
+      padding: 20px;
+    }
+    
+    .analytics-title {
+      font-size: 24px;
+    }
+    
+    .summary-value {
+      font-size: 20px;
+    }
+    
+    .metric-main-number {
+      font-size: 28px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .analytics-summary {
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .metric-stats {
+      flex-direction: column;
+      gap: 8px;
+      text-align: center;
+    }
+  }

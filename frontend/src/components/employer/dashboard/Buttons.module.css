@@ -1,0 +1,376 @@
+/* Button Component Styles */
+
+/* Base Button Styles - Optimized space utilization */
+.baseButton {
+  padding: var(--space-4) var(--space-8);
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  min-height: 52px;
+  min-width: 120px;
+  box-shadow: var(--shadow-sm);
+  letter-spacing: 0.025em;
+  flex-shrink: 0;
+}
+
+/* Primary Button - Enhanced modern design */
+.primaryButton {
+  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #c084fc 100%);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+}
+
+.primaryButton:hover {
+  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 50%, #a855f7 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.35);
+}
+
+.primaryButton:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+}
+
+/* Secondary Button - Enhanced for settings cards */
+.secondaryButton {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  font-weight: 600;
+  padding: 0.875rem 1.75rem;
+  border-radius: 14px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.25);
+  position: relative;
+  overflow: hidden;
+  min-width: 140px;
+}
+
+.secondaryButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.secondaryButton:hover::before {
+  left: 100%;
+}
+
+.secondaryButton:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.35);
+}
+
+.secondaryButton:active {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.25);
+}
+
+.secondary:hover {
+  background: rgba(255, 255, 255, 1);
+  color: var(--gray-900);
+  border-color: var(--gray-300);
+  transform: translateY(-1px) scale(1.01);
+  box-shadow: var(--shadow-md);
+}
+
+.secondary:active {
+  transform: translateY(0) scale(0.99);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Success Button - Enhanced */
+.success {
+  background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-weight: var(--font-weight-semibold);
+}
+
+.success:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-1px) scale(1.01);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.success:active {
+  transform: translateY(0) scale(0.99);
+  box-shadow: var(--shadow-md);
+}
+
+/* Danger Button - Enhanced */
+.danger {
+  background: linear-gradient(135deg, var(--error) 0%, #b91c1c 100%);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-weight: var(--font-weight-semibold);
+}
+
+.danger:hover {
+  background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+  transform: translateY(-1px) scale(1.01);
+  box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
+}
+
+.danger:active {
+  transform: translateY(0) scale(0.99);
+  box-shadow: var(--shadow-md);
+}
+
+/* Warning Button */
+.warningButton {
+  background: var(--warning);
+  color: white;
+  border-color: var(--warning);
+  font-weight: var(--font-weight-medium);
+}
+
+.warningButton:hover:not(:disabled) {
+  background: var(--warning-600);
+  border-color: var(--warning-600);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+/* Ghost Button */
+.ghostButton {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+  box-shadow: none;
+}
+
+.ghostButton:hover:not(:disabled) {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-primary);
+}
+
+/* Icon Button */
+.iconButton {
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-primary);
+}
+
+.iconButton:hover:not(:disabled) {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-secondary);
+}
+
+/* Small Button */
+.smallButton {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-xs);
+  border-radius: var(--radius-md);
+}
+
+/* Large Button */
+.largeButton {
+  padding: var(--space-4) var(--space-8);
+  font-size: var(--text-base);
+  border-radius: var(--radius-xl);
+}
+
+/* Full Width Button */
+.fullWidthButton {
+  width: 100%;
+}
+
+/* Button Groups - Enhanced spacing */
+.buttonGroup {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.buttonGroup .button:not(:last-child) {
+  margin-right: 0;
+}
+
+.buttonGroup.centered {
+  justify-content: center;
+}
+
+.buttonGroup.spaceBetween {
+  justify-content: space-between;
+}
+
+.buttonGroup.end {
+  justify-content: flex-end;
+}
+
+/* Action Buttons - Better space usage */
+.viewAllButton {
+  padding: 8px 16px;
+  background: transparent;
+  color: var(--primary);
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+
+.viewAllButton:hover {
+  background: var(--gray-100);
+}
+
+.createButton {
+  padding: var(--space-4) var(--space-8);
+  background: var(--primary-gradient);
+  color: white;
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  text-decoration: none;
+  white-space: nowrap;
+  letter-spacing: 0.025em;
+  box-shadow: var(--shadow-button);
+  min-height: 52px;
+  min-width: 140px;
+  justify-content: center;
+}
+
+.createButton:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  background: linear-gradient(135deg, var(--primary-700) 0%, var(--primary-800) 100%);
+}
+
+.filterSelect {
+  padding: var(--space-3) var(--space-5);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  background: var(--bg-primary);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-decoration: none;
+  white-space: nowrap;
+  letter-spacing: var(--tracking-tight);
+  box-shadow: var(--shadow-xs);
+}
+
+.filterSelect:hover {
+  background: var(--bg-secondary);
+  border-color: var(--primary-300);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+  background: var(--bg-primary);
+}
+
+/* Responsive Design - Optimized mobile spacing */
+@media (max-width: 768px) {
+  .baseButton {
+    padding: var(--space-3) var(--space-6);
+    min-height: 48px;
+    min-width: 100px;
+  }
+  
+  .largeButton {
+    padding: var(--space-4) var(--space-6);
+    font-size: var(--font-size-sm);
+  }
+  
+  .buttonGroup {
+    gap: var(--space-3);
+    justify-content: stretch;
+  }
+  
+  .buttonGroup .button {
+    flex: 1;
+    justify-content: center;
+    min-width: 0;
+  }
+  
+  .viewAllButton,
+  .createButton {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .baseButton,
+  .primary,
+  .secondary,
+  .createButton,
+  .viewAllButton {
+    width: 100%;
+    justify-content: center;
+    padding: var(--space-4) var(--space-6);
+    margin-bottom: var(--space-2);
+  }
+  
+  .buttonGroup {
+    flex-direction: column;
+    gap: var(--space-3);
+    width: 100%;
+  }
+  
+  .buttonGroup .button {
+    width: 100%;
+    margin-bottom: 0;
+  }
+}

@@ -1,0 +1,204 @@
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modalContent {
+  background: white;
+  border-radius: 20px;
+  padding: 40px 32px;
+  max-width: 360px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: slideIn 0.3s ease-out;
+  position: relative;
+}
+
+.iconContainer {
+  margin-bottom: 32px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.verificationIcon {
+  width: 120px;
+  height: 120px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  animation: bounceIn 0.6s ease-out;
+  transform: rotate(-10deg);
+}
+
+.documentIcon {
+  width: 48px;
+  height: 48px;
+  color: white;
+}
+
+.decorativeElements {
+  position: absolute;
+  top: -20px;
+  left: -20px;
+  right: -20px;
+  bottom: -20px;
+  pointer-events: none;
+}
+
+.element1, .element2, .element3, .element4, .element5 {
+  position: absolute;
+  border-radius: 50%;
+  animation: float 3s ease-in-out infinite;
+}
+
+.element1 {
+  width: 8px;
+  height: 8px;
+  background: #fbbf24;
+  top: 10px;
+  left: 20px;
+  animation-delay: 0s;
+}
+
+.element2 {
+  width: 12px;
+  height: 12px;
+  background: #60a5fa;
+  top: 30px;
+  right: 15px;
+  animation-delay: 0.5s;
+}
+
+.element3 {
+  width: 6px;
+  height: 6px;
+  background: #f87171;
+  bottom: 25px;
+  left: 25px;
+  animation-delay: 1s;
+}
+
+.element4 {
+  width: 10px;
+  height: 10px;
+  background: #34d399;
+  bottom: 15px;
+  right: 30px;
+  animation-delay: 1.5s;
+}
+
+.element5 {
+  width: 4px;
+  height: 4px;
+  background: #a78bfa;
+  top: 50px;
+  left: 10px;
+  animation-delay: 2s;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 8px 0;
+  line-height: 1.2;
+}
+
+.subtitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #6b7280;
+  margin: 0 0 24px 0;
+}
+
+.description {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 32px 0;
+  line-height: 1.5;
+}
+
+.continueButton {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
+  width: 100%;
+}
+
+.continueButton:hover {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px 0 rgba(59, 130, 246, 0.5);
+}
+
+.continueButton:active {
+  transform: translateY(0);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: rotate(-10deg) scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: rotate(-10deg) scale(1.05);
+  }
+  70% {
+    transform: rotate(-10deg) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(-10deg) scale(1);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}

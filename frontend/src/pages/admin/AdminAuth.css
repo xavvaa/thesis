@@ -1,0 +1,534 @@
+/* Container and main layout */
+.admin-auth-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  padding: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  position: relative;
+  overflow-x: hidden;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.admin-auth-container::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23e2e8f0' fill-opacity='0.4'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  opacity: 0.3;
+  z-index: 0;
+}
+
+/* Auth card */
+.admin-auth-card {
+  width: 100%;
+  max-width: 1200px;
+  min-height: 600px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 
+    0 4px 6px rgba(0, 0, 0, 0.05),
+    0 10px 15px rgba(0, 0, 0, 0.1),
+    0 20px 40px rgba(0, 0, 0, 0.15);
+  display: flex;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+/* Left panel */
+.admin-left-panel {
+  flex: 0 0 40%;
+  background: linear-gradient(135deg, #1e40af 0%, #dc2626 50%, #fbbf24 100%);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-visual-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  z-index: 2;
+  text-align: center;
+}
+
+/* Logo */
+.admin-logo-container {
+  position: relative;
+  top: auto;
+  left: auto;
+  z-index: 10;
+  animation: fadeInDown 0.8s ease-out;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.admin-peso-logo {
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+  transition: transform 0.3s ease;
+}
+
+.admin-peso-logo:hover {
+  transform: scale(1.05);
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Journey text */
+.admin-journey-text {
+  color: white;
+  text-align: center;
+  z-index: 10;
+  position: relative;
+  animation: fadeInUp 1s ease-out 0.3s both;
+}
+
+.admin-journey-text h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0 0 16px 0;
+  line-height: 1.2;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.admin-journey-text p {
+  font-size: 1.125rem;
+  margin: 0;
+  opacity: 0.9;
+  line-height: 1.6;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Right panel */
+.admin-right-panel {
+  flex: 1;
+  padding: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+}
+
+.admin-form-container {
+  width: 100%;
+  max-width: 400px;
+}
+
+/* Role indicator */
+.admin-role-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+  border-radius: 12px;
+  margin-bottom: 32px;
+  border: 1px solid #e2e8f0;
+}
+
+.admin-role-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-role-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #1e40af, #3b82f6);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 18px;
+}
+
+.admin-role-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-role-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.admin-role-name {
+  font-size: 16px;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+/* Form styles */
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.admin-form-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.admin-form-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.025em;
+}
+
+.admin-form-subtitle {
+  color: #64748b;
+  font-size: 16px;
+  margin: 0;
+  font-weight: 400;
+}
+
+.admin-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-input-label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.admin-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.admin-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  background: white;
+  color: #111827;
+  font-weight: 500;
+}
+
+.admin-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.admin-input::placeholder {
+  color: #9ca3af;
+}
+
+.admin-input-icon {
+  position: absolute;
+  left: 16px;
+  font-size: 16px;
+  z-index: 1;
+  color: #6b7280;
+}
+
+.admin-has-eye-button {
+  padding-right: 48px;
+}
+
+.admin-eye-button {
+  position: absolute;
+  right: 16px;
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 18px;
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-eye-button:hover {
+  color: #3b82f6;
+}
+
+.admin-primary-button {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  border: none;
+  padding: 16px 24px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 8px;
+}
+
+.admin-primary-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.admin-primary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.admin-error-message {
+  background: #fef2f2;
+  color: #dc2626;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+  animation: shake 0.5s ease-in-out;
+}
+
+.admin-message-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Decorative elements */
+.admin-decorative-circle1,
+.admin-decorative-circle2,
+.admin-decorative-circle3 {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  animation: float 6s ease-in-out infinite;
+}
+
+.admin-decorative-circle1 {
+  width: 120px;
+  height: 120px;
+  top: 10%;
+  right: 10%;
+  animation-delay: 0s;
+}
+
+.admin-decorative-circle2 {
+  width: 80px;
+  height: 80px;
+  bottom: 20%;
+  left: 15%;
+  animation-delay: 2s;
+}
+
+.admin-decorative-circle3 {
+  width: 60px;
+  height: 60px;
+  top: 60%;
+  right: 20%;
+  animation-delay: 4s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(10deg);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .admin-auth-card {
+    flex-direction: column;
+    min-height: auto;
+  }
+  
+  .admin-left-panel {
+    flex: none;
+    min-height: 300px;
+  }
+  
+  .admin-visual-content {
+    padding: 30px 20px;
+  }
+  
+  .admin-peso-logo {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .admin-journey-text h2 {
+    font-size: 1.8rem;
+  }
+  
+  .admin-journey-text p {
+    font-size: 1rem;
+  }
+  
+  .admin-right-panel {
+    padding: 30px 20px;
+  }
+  
+  .admin-form-title {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-auth-container {
+    padding: 12px;
+  }
+  
+  .admin-auth-card {
+    border-radius: 16px;
+  }
+  
+  .admin-visual-content {
+    padding: 20px 16px;
+  }
+  
+  .admin-peso-logo {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .admin-journey-text h2 {
+    font-size: 1.5rem;
+  }
+  
+  .admin-right-panel {
+    padding: 20px 16px;
+  }
+  
+  .admin-role-indicator {
+    padding: 12px 16px;
+  }
+  
+  .admin-input {
+    padding: 12px 12px 12px 40px;
+    font-size: 15px;
+  }
+  
+  .admin-input-icon {
+    left: 12px;
+    font-size: 14px;
+  }
+  
+  .admin-eye-button {
+    right: 12px;
+    font-size: 16px;
+  }
+}
+
+.admin-auth-footer {
+  text-align: center;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.admin-auth-footer p {
+  color: #718096;
+  font-size: 14px;
+  margin: 0 0 16px 0;
+  font-weight: 500;
+}
+
+.back-link {
+  background: none;
+  border: none;
+  color: #667eea;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.back-link:hover {
+  color: #764ba2;
+}
+
+@media (max-width: 480px) {
+  .admin-auth-content {
+    padding: 16px;
+  }
+  
+  .admin-auth-card {
+    padding: 24px;
+  }
+  
+  .admin-auth-header h1 {
+    font-size: 24px;
+  }
+  
+  .admin-logo {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .shield-icon {
+    font-size: 30px;
+  }
+}

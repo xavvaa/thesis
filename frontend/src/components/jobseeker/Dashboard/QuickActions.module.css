@@ -1,0 +1,61 @@
+.quickActions {
+  margin-bottom: 2.5rem;
+}
+
+.sectionTitle {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0 0 2rem;
+  letter-spacing: -0.025em;
+}
+
+.actionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.actionCard {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  position: relative;
+  overflow: hidden;
+}
+
+.actionCard:hover {
+  border-color: #667eea;
+  box-shadow: 0 8px 28px rgba(102, 126, 234, 0.15);
+  transform: translateY(-4px);
+  background: linear-gradient(135deg, #ffffff 0%, #f8faff 100%);
+}
+
+.actionIcon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  width: 40px;
+  height: 40px;
+  color: #667eea;
+  transition: all 0.3s ease;
+}
+
+.actionLabel {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1a202c;
+  line-height: 1.4;
+}
+
+.actionCard:hover .actionLabel {
+  color: #667eea;
+}

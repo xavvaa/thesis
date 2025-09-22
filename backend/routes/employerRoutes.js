@@ -1,0 +1,505 @@
+const express = require('express');
+const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const Employer = require('../models/Employer');
+const { verifyToken } = require('../middleware/authMiddleware');
+const { requireRole } = require('../middleware/roleBasedAccess');
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = 'uploads/employer-documents';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  // Only allow PDF files
+  if (file.mimetype === 'application/pdf') {
+    cb(null, true);
+  } else {
+    cb(new Error('Only PDF files are allowed'), false);
+  }
+};
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+});
+
+// GET /api/employers/account-status - Get employer account verification status
+router.get('/account-status', verifyToken, requireRole('employer'), async (req, res) => {
+  try {
+    const employer = await Employer.findOne({ uid: req.user.uid });
+    
+    if (!employer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employer profile not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        accountStatus: employer.accountStatus,
+        isVerified: employer.accountStatus === 'verified',
+        profileComplete: employer.profileComplete,
+        verificationNotes: employer.verificationNotes,
+        verifiedAt: employer.verifiedAt,
+        canPostJobs: employer.canPerform('post_jobs')
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching employer account status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching account status',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/employers/profile - Get employer profile
+router.get('/profile', verifyToken, requireRole('employer'), async (req, res) => {
+  try {
+    const employer = await Employer.findOne({ uid: req.user.uid });
+    
+    if (!employer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employer profile not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: employer.getPublicProfile()
+    });
+  } catch (error) {
+    console.error('Error fetching employer profile:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching profile',
+      error: error.message
+    });
+  }
+});
+
+// PUT /api/employers/profile - Update employer profile
+router.put('/profile', verifyToken, requireRole('employer'), async (req, res) => {
+  try {
+    const employer = await Employer.findOne({ uid: req.user.uid });
+    
+    if (!employer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employer profile not found'
+      });
+    }
+
+    const {
+      companyName,
+      companyDescription,
+      industry,
+      companySize,
+      foundedYear,
+      website,
+      contactPerson,
+      address,
+      socialMedia,
+      benefits,
+      companyValues,
+      workEnvironment
+    } = req.body;
+
+    // Update fields if provided
+    if (companyName) employer.companyName = companyName;
+    if (companyDescription) employer.companyDescription = companyDescription;
+    if (industry) employer.industry = industry;
+    if (companySize) employer.companySize = companySize;
+    if (foundedYear) employer.foundedYear = foundedYear;
+    if (website) employer.website = website;
+    if (contactPerson) employer.contactPerson = { ...employer.contactPerson, ...contactPerson };
+    if (address) employer.address = { ...employer.address, ...address };
+    if (socialMedia) employer.socialMedia = { ...employer.socialMedia, ...socialMedia };
+    if (benefits) employer.benefits = benefits;
+    if (companyValues) employer.companyValues = companyValues;
+    if (workEnvironment) employer.workEnvironment = workEnvironment;
+
+    await employer.save();
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: employer.getPublicProfile()
+    });
+  } catch (error) {
+    console.error('Error updating employer profile:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating profile',
+      error: error.message
+    });
+  }
+});
+
+// POST /api/employers/upload-documents - Upload verification documents
+router.post('/upload-documents', verifyToken, requireRole('employer'), upload.fields([
+  { name: 'companyProfile', maxCount: 1 },
+  { name: 'businessPermit', maxCount: 1 },
+  { name: 'philjobnetRegistration', maxCount: 1 },
+  { name: 'doleNoPendingCase', maxCount: 1 }
+]), async (req, res) => {
+  const requestId = Math.random().toString(36).substr(2, 9);
+  console.log(`📄 [${requestId}] Document upload request received`);
+  console.log(`👤 [${requestId}] User:`, req.user?.uid);
+  console.log(`📁 [${requestId}] Files:`, Object.keys(req.files || {}));
+  
+  try {
+    const employer = await Employer.findOne({ uid: req.user.uid });
+    
+    if (!employer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employer profile not found'
+      });
+    }
+
+    // Check if all required documents are uploaded
+    const requiredDocuments = ['companyProfile', 'businessPermit', 'philjobnetRegistration', 'doleNoPendingCase'];
+    const uploadedFiles = req.files;
+    
+    if (!uploadedFiles || Object.keys(uploadedFiles).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No documents were uploaded'
+      });
+    }
+
+    // Validate all required documents are present
+    for (const docType of requiredDocuments) {
+      if (!uploadedFiles[docType] || uploadedFiles[docType].length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Missing required document: ${docType}`
+        });
+      }
+    }
+
+    // Extract company details from request body
+    const {
+      contactPersonFirstName,
+      contactPersonLastName,
+      contactNumber,
+      companyDescription,
+      companyAddress,
+      natureOfBusiness
+    } = req.body;
+
+    console.log(`📋 [${requestId}] Company details received:`, {
+      contactPersonFirstName,
+      contactPersonLastName,
+      contactNumber: contactNumber ? '***' : 'not provided',
+      companyDescription: companyDescription ? `${companyDescription.substring(0, 50)}...` : 'not provided',
+      companyAddress: companyAddress ? 'provided' : 'not provided',
+      natureOfBusiness
+    });
+
+    // Process documents into array format
+    const documentsArray = [];
+    console.log(`📁 [${requestId}] Processing uploaded files:`, Object.keys(uploadedFiles));
+    
+    for (const [docType, files] of Object.entries(uploadedFiles)) {
+      if (files && files.length > 0) {
+        const file = files[0];
+        console.log(`📄 [${requestId}] Processing ${docType}:`, file.originalname);
+        
+        documentsArray.push({
+          documentType: docType,
+          documentName: file.originalname,
+          documentUrl: file.path,
+          fileSize: file.size,
+          mimeType: file.mimetype,
+          uploadedAt: new Date(),
+          isRequired: true
+        });
+      }
+    }
+    
+    console.log(`📄 [${requestId}] Documents array to save:`, documentsArray.length, 'documents');
+    console.log(`📋 [${requestId}] Document details:`, documentsArray.map(d => ({ type: d.documentType, name: d.documentName })));
+    
+    // Update employer with company details
+    if (contactPersonFirstName || contactPersonLastName) {
+      const fullName = [contactPersonFirstName, contactPersonLastName]
+        .filter(name => name && name.trim())
+        .join(' ');
+      
+      employer.contactPerson = {
+        ...employer.contactPerson,
+        firstName: contactPersonFirstName || '',
+        lastName: contactPersonLastName || '',
+        fullName: fullName
+      };
+    }
+    
+    if (contactNumber) {
+      employer.contactPerson = {
+        ...employer.contactPerson,
+        phoneNumber: contactNumber
+      };
+    }
+    
+    if (companyDescription) {
+      employer.companyDescription = companyDescription;
+    }
+    
+    if (companyAddress) {
+      employer.address = {
+        ...employer.address,
+        street: companyAddress,
+        full: companyAddress
+      };
+    }
+    
+    if (natureOfBusiness) {
+      employer.industry = natureOfBusiness;
+    }
+
+    // Save documents directly to employer record
+    employer.documents = documentsArray;
+    employer.documentVerificationStatus = 'pending';
+    employer.documentVerifiedAt = undefined;
+    employer.documentRejectionReason = undefined;
+    employer.documentAdminNotes = undefined;
+    
+    console.log(`💾 [${requestId}] Saving documents and company details to employer record:`, employer._id);
+
+    // Update employer account status
+    employer.accountStatus = 'pending';
+    employer.verificationNotes = 'Documents and company information uploaded, pending review';
+    
+    await employer.save();
+    console.log(`✅ [${requestId}] Employer record updated with ${documentsArray.length} documents`);
+
+    res.json({
+      success: true,
+      message: 'Documents and company information uploaded successfully and are now under review',
+      data: {
+        documentsUploaded: documentsArray.length,
+        accountStatus: employer.accountStatus,
+        companyDetailsUpdated: {
+          contactPersonFirstName: !!contactPersonFirstName,
+          contactPersonLastName: !!contactPersonLastName,
+          contactNumber: !!contactNumber,
+          companyDescription: !!companyDescription,
+          companyAddress: !!companyAddress,
+          natureOfBusiness: !!natureOfBusiness
+        },
+        uploadedDocuments: documentsArray.map(doc => ({
+          type: doc.documentType,
+          uploadedAt: doc.uploadedAt
+        }))
+      }
+    });
+
+  } catch (error) {
+    console.error('Error uploading documents:', error);
+    
+    // Clean up uploaded files if there was an error
+    if (req.files) {
+      Object.values(req.files).flat().forEach(file => {
+        if (fs.existsSync(file.path)) {
+          fs.unlinkSync(file.path);
+        }
+      });
+    }
+
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        success: false,
+        message: 'File size too large. Maximum size is 10MB per file.'
+      });
+    }
+
+    if (error.message === 'Only PDF files are allowed') {
+      return res.status(400).json({
+        success: false,
+        message: 'Only PDF files are allowed'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Error uploading documents',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/employers/documents/pending - Get all pending documents for admin review
+router.get('/documents/pending', verifyToken, requireRole('admin'), async (req, res) => {
+  try {
+    const pendingDocuments = await EmployerDocument.find({ 
+      verificationStatus: 'pending' 
+    })
+    .populate('employerId', 'companyName email accountStatus')
+    .sort({ uploadedAt: -1 });
+
+    res.json({
+      success: true,
+      data: pendingDocuments.map(doc => ({
+        _id: doc._id,
+        documentType: doc.documentType,
+        documentName: doc.documentName,
+        documentUrl: `${req.protocol}://${req.get('host')}/${doc.documentUrl}`,
+        fileSize: doc.fileSize,
+        uploadedAt: doc.uploadedAt,
+        verificationStatus: doc.verificationStatus,
+        employer: {
+          _id: doc.employerId._id,
+          companyName: doc.employerId.companyName,
+          email: doc.employerId.email,
+          accountStatus: doc.employerId.accountStatus
+        }
+      }))
+    });
+
+  } catch (error) {
+    console.error('Error fetching pending documents:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching pending documents',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/employers/:employerId/documents - Get employer verification documents
+router.get('/:employerId/documents', verifyToken, requireRole('admin'), async (req, res) => {
+  try {
+    const { employerId } = req.params;
+    
+    const employer = await Employer.findById(employerId);
+    
+    if (!employer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employer not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        employer: {
+          _id: employer._id,
+          companyName: employer.companyName,
+          email: employer.email,
+          accountStatus: employer.accountStatus
+        },
+        documents: employer.documents || []
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching employer documents:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching documents',
+      error: error.message
+    });
+  }
+});
+
+// PUT /api/employers/documents/:documentId/verify - Approve or reject a document
+router.put('/documents/:documentId/verify', verifyToken, requireRole('admin'), async (req, res) => {
+  try {
+    const { documentId } = req.params;
+    const { action, rejectionReason, adminNotes } = req.body;
+
+    if (!['approve', 'reject'].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid action. Must be "approve" or "reject"'
+      });
+    }
+
+    if (action === 'reject' && !rejectionReason) {
+      return res.status(400).json({
+        success: false,
+        message: 'Rejection reason is required when rejecting a document'
+      });
+    }
+
+    const document = await EmployerDocument.findById(documentId);
+    
+    if (!document) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document not found'
+      });
+    }
+
+    // Update document status
+    document.verificationStatus = action === 'approve' ? 'approved' : 'rejected';
+    document.verifiedAt = new Date();
+    document.verifiedBy = req.user.uid;
+    
+    if (rejectionReason) {
+      document.rejectionReason = rejectionReason;
+    }
+    
+    if (adminNotes) {
+      document.adminNotes = adminNotes;
+    }
+
+    await document.save();
+
+    // Check if all required documents are approved for this employer
+    const allApproved = await EmployerDocument.areAllRequiredDocumentsApproved(document.employerId);
+    
+    // Update employer status if all documents are approved
+    if (allApproved) {
+      await Employer.findByIdAndUpdate(document.employerId, {
+        accountStatus: 'verified',
+        verificationNotes: 'All documents approved',
+        verifiedAt: new Date(),
+        verifiedBy: req.user.uid
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Document ${action}d successfully`,
+      data: {
+        documentId: document._id,
+        verificationStatus: document.verificationStatus,
+        employerVerified: allApproved
+      }
+    });
+
+  } catch (error) {
+    console.error('Error verifying document:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error verifying document',
+      error: error.message
+    });
+  }
+});
+
+module.exports = router;

@@ -1,0 +1,102 @@
+.card {
+  background: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.paddingSm {
+  padding: 1rem;
+}
+
+.paddingMd {
+  padding: 1.5rem;
+}
+
+.paddingLg {
+  padding: 2rem;
+}
+
+.hoverEffect {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hoverEffect:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  border-color: #cbd5e0;
+}
+
+/* Card Header */
+.cardHeader {
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.cardTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1a202c;
+  margin: 0 0 0.25rem 0;
+}
+
+.cardSubtitle {
+  font-size: 0.875rem;
+  color: #718096;
+  margin: 0;
+}
+
+/* Card Body */
+.cardBody {
+  flex: 1;
+}
+
+/* Card Footer */
+.cardFooter {
+  padding-top: 1rem;
+  margin-top: auto;
+  border-top: 1px solid #edf2f7;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+/* Card with accent border */
+.accentPrimary {
+  border-left: 4px solid #4299e1;
+}
+
+.accentSuccess {
+  border-left: 4px solid #48bb78;
+}
+
+.accentWarning {
+  border-left: 4px solid #ed8936;
+}
+
+.accentDanger {
+  border-left: 4px solid #f56565;
+}
+
+/* Card hover states */
+.card.hoverEffect:hover.accentPrimary {
+  border-color: #3182ce;
+}
+
+.card.hoverEffect:hover.accentSuccess {
+  border-color: #38a169;
+}
+
+.card.hoverEffect:hover.accentWarning {
+  border-color: #dd6b20;
+}
+
+.card.hoverEffect:hover.accentDanger {
+  border-color: #e53e3e;
+}
