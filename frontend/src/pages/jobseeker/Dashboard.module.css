@@ -212,7 +212,7 @@ body {
   width: var(--sidebar-width);
   height: 100vh;
   background: white;
-  border-right: 1px solid var(--gray-200);
+  border-right: none;
   transform: translateX(0);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 50;
@@ -1775,7 +1775,7 @@ body {
     position: relative;
     transform: translateX(0);
     box-shadow: none;
-    border-right: 1px solid var(--gray-200);
+    border-right: none;
   }
   
   .sidebarOverlay {
