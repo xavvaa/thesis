@@ -159,7 +159,7 @@
   /* Layout constants */
   --header-height: 64px;
   --sidebar-width: 200px;
-  --sidebar-collapsed-width: 120px;
+  --sidebar-collapsed-width: 112px;
 }
 
 * {
@@ -251,10 +251,15 @@ body {
 /* Center collapse toggle when sidebar is collapsed */
 .sidebar.sidebarCollapsed .sidebarHeader {
   justify-content: center;
+  padding: 8px 8px;
 }
 
 .sidebar.sidebarCollapsed .collapseToggle {
   margin: 0 auto;
+}
+
+.sidebar.sidebarCollapsed .sidebarNav {
+  padding: 8px 0;
 }
 
 .logo {
@@ -377,7 +382,7 @@ body {
   min-height: 76px;
   border-radius: 8px;
   border-left: none;
-  margin: 3px 6px;
+  margin: 2px 4px;
   box-sizing: border-box;
 }
 
@@ -404,15 +409,15 @@ body {
 
 .navItemCollapsed .navIcon {
   width: 100%;
-  height: 22px;
+  height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .navItemCollapsed .navIcon svg {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   display: block;
   margin: 0 auto;
   flex-shrink: 0;
@@ -428,9 +433,9 @@ body {
 }
 
 .navLabelCollapsed {
-  font-size: 0.8rem;
+  font-size: 8px;
   font-weight: 500;
-  line-height: 1.15;
+  line-height: 1;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -540,7 +545,7 @@ body {
 }
 
 .mainContent.sidebarCollapsed {
-  margin-left: var(--sidebar-collapsed-width);
+  margin-left: calc(var(--sidebar-collapsed-width) + (var(--sidebar-width) - var(--sidebar-collapsed-width)) / 4);
 }
 
 /* Desktop Header */
@@ -1670,7 +1675,7 @@ body {
   
   /* Keep labels visible but smaller in collapsed state */
 .sidebar.sidebarCollapsed .navLabel {
-  font-size: 0.85rem;
+  font-size: 12px;
   max-width: calc(var(--sidebar-collapsed-width) - 48px);
   overflow: hidden;
   white-space: nowrap;
@@ -1787,7 +1792,7 @@ body {
   }
   
   .mainContent.sidebarCollapsed {
-    margin-left: var(--sidebar-collapsed-width);
+    margin-left: calc(var(--sidebar-collapsed-width) + (var(--sidebar-width) - var(--sidebar-collapsed-width)) / 4);
   }
   
   .closeSidebar {
@@ -2510,8 +2515,8 @@ body {
 }
 
 .dashboard.sidebarCollapsed .mainContent {
-  margin-left: var(--sidebar-collapsed-width);
-  width: calc(100% - var(--sidebar-collapsed-width));
+  margin-left: calc(var(--sidebar-collapsed-width) + (var(--sidebar-width) - var(--sidebar-collapsed-width)) / 4);
+  width: calc(100% - calc(var(--sidebar-collapsed-width) + (var(--sidebar-width) - var(--sidebar-collapsed-width)) / 4));
 }
 
 /* Sidebar - Matching Auth Card Style */
@@ -3495,7 +3500,7 @@ body {
 }
 
 .mainContent.sidebarCollapsed {
-  margin-left: 80px;
+  margin-left: calc(80px + (200px - 80px) / 4);
 }
 
 /* Header */
@@ -4098,7 +4103,7 @@ body {
   }
   
   .mainContent.sidebarCollapsed {
-    margin-left: 0;
+    margin-left: calc(80px + (200px - 80px) / 4);
   }
 }
 

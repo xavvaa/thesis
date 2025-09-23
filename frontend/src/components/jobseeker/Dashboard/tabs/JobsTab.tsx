@@ -15,14 +15,6 @@ const JobsTab: React.FC<any> = ({
 }) => {
   return (
     <div className={styles.pageContent}>
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>Find Jobs</h1>
-        <p className={styles.pageSubtitle}>
-          {resume && !hasSkippedResume
-            ? 'Jobs matched to your skills and experience'
-            : 'Discover opportunities that match your interests'}
-        </p>
-      </div>
       <JobsList
         jobs={getJobsToDisplay()}
         title=""

@@ -15,10 +15,6 @@ const SavedJobsTab: React.FC<any> = ({
 
   return (
     <div className={styles.pageContent}>
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>Saved Jobs</h1>
-        <p className={styles.pageSubtitle}>Jobs you've bookmarked for later</p>
-      </div>
       {savedJobsList.length > 0 ? (
         <JobsList
           jobs={savedJobsList}
