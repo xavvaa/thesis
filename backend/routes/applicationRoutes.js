@@ -239,22 +239,34 @@ router.get('/jobseeker', verifyToken, async (req, res) => {
   try {
     const { uid } = req.user;
 
+    if (!uid) {
+      return res.status(401).json({
+        success: false,
+        error: 'User authentication failed'
+      });
+    }
+
     const applications = await Application.find({ jobSeekerUid: uid })
       .populate('jobId', 'title companyName location type salary')
       .sort({ appliedDate: -1 });
 
-    const formattedApplications = applications.map(app => ({
-      id: app._id,
-      jobId: app.jobId._id,
-      jobTitle: app.jobId.title,
-      company: app.jobId.companyName,
-      location: app.jobId.location,
-      type: app.jobId.type,
-      salary: app.jobId.salary,
-      status: app.status,
-      appliedDate: app.appliedDate,
-      updatedAt: app.updatedAt
-    }));
+    // Filter out applications where the job was deleted and format the rest
+    const formattedApplications = applications
+      .filter(app => app.jobId) // Only include applications where job still exists
+      .map(app => ({
+        id: app._id,
+        jobId: app.jobId._id,
+        jobTitle: app.jobId.title,
+        company: app.jobId.companyName || 'Company Name Not Available',
+        location: app.jobId.location || 'Location Not Available',
+        type: app.jobId.type || 'Type Not Available',
+        salary: app.jobId.salary || 'Salary Not Available',
+        status: app.status,
+        appliedDate: app.appliedDate,
+        updatedAt: app.updatedAt
+      }));
+
+    console.log(`Found ${applications.length} applications for user ${uid}, ${formattedApplications.length} with valid jobs`);
 
     res.json({
       success: true,
@@ -263,6 +275,11 @@ router.get('/jobseeker', verifyToken, async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching job seeker applications:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      uid: req.user?.uid
+    });
     res.status(500).json({
       success: false,
       error: 'Failed to fetch applications'

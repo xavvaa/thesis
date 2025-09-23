@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import styles from './Dashboard.module.css'
-import { FiHome, FiBriefcase, FiFileText, FiUser, FiBookmark, FiMapPin, FiDollarSign, FiClock, FiBell, FiMenu, FiX, FiFilter, FiSliders, FiLogOut } from 'react-icons/fi'
+import { FiHome, FiBriefcase, FiFileText, FiUser, FiBookmark, FiMapPin, FiDollarSign, FiClock, FiBell, FiMenu, FiX, FiFilter, FiSliders, FiLogOut, FiEdit3 } from 'react-icons/fi'
 import FilterModal from '../../components/jobseeker/FilterModal/FilterModal'
 import SearchBar from '../../components/jobseeker/SearchBar/SearchBar'
 import ResumeUploadPrompt from '../../components/ResumeUploadPrompt';
@@ -11,6 +11,7 @@ import DashboardTab from '../../components/jobseeker/Dashboard/tabs/DashboardTab
 import JobsTab from '../../components/jobseeker/Dashboard/tabs/JobsTab';
 import SavedJobsTab from '../../components/jobseeker/Dashboard/tabs/SavedJobsTab';
 import ApplicationsTab from '../../components/jobseeker/Dashboard/tabs/ApplicationsTab';
+import CreateResumeTab from '../../components/jobseeker/Dashboard/tabs/CreateResumeTab';
 import SettingsTab from '../../components/jobseeker/Settings/SettingsTab';
 import { parseResume } from '../../utils/resumeParser'
 import { Job } from '../../types/Job'
@@ -81,6 +82,7 @@ const Dashboard: React.FC = () => {
   const [showFilterModal, setShowFilterModal] = useState(false)
   const [userProfile, setUserProfile] = useState<any>(null)
   const [currentResume, setCurrentResume] = useState<any>(null)
+  const [resumeFormData, setResumeFormData] = useState<any>(null)
   
   interface ActiveFilters {
     lastUpdate: string;
@@ -638,6 +640,14 @@ const Dashboard: React.FC = () => {
           <FiHome />
           <span>Dashboard</span>
         </button>
+
+        <button
+          className={`${styles.navItem} ${activeTab === 'create-resume' ? styles.active : ''}`}
+          onClick={() => setActiveTab('create-resume')}
+        >
+          <FiEdit3 />
+          <span>Create Resume</span>
+        </button>
         <button
           className={`${styles.navItem} ${activeTab === 'jobs' ? styles.active : ''}`}
           onClick={() => setActiveTab('jobs')}
@@ -652,6 +662,7 @@ const Dashboard: React.FC = () => {
           <FiFileText />
           <span>Applications</span>
         </button>
+        
         <button
           className={`${styles.navItem} ${activeTab === 'saved' ? styles.active : ''}`}
           onClick={() => setActiveTab('saved')}
@@ -696,6 +707,11 @@ const Dashboard: React.FC = () => {
         return <SavedJobsTab {...tabProps} />;
       case 'applications':
         return <ApplicationsTab />;
+      case 'create-resume':
+        return <CreateResumeTab 
+          resumeFormData={resumeFormData}
+          onResumeFormDataChange={setResumeFormData}
+        />;
       case 'profile':
         return <SettingsTab />;
       default:
