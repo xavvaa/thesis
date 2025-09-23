@@ -1,113 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { verifyToken } = require('../middleware/authMiddleware');
 const Resume = require('../models/Resume');
 const JobSeeker = require('../models/JobSeeker');
-
-// Configure multer for file upload
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = 'uploads/resumes';
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'resume-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const fileFilter = (req, file, cb) => {
-  // Accept PDF files only
-  if (file.mimetype === 'application/pdf') {
-    cb(null, true);
-  } else {
-    cb(new Error('Only PDF files are allowed'), false);
-  }
-};
-
-const upload = multer({ 
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  }
-});
-
-// @route   POST /api/resumes/upload
-// @desc    Upload a new resume
-// @access  Private (Job Seeker)
-router.post('/upload', verifyToken, upload.single('resume'), async (req, res) => {
-  try {
-    const { uid } = req.user;
-
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        error: 'No file uploaded'
-      });
-    }
-
-    // Find the job seeker
-    const jobSeeker = await JobSeeker.findOne({ uid });
-    if (!jobSeeker) {
-      return res.status(404).json({
-        success: false,
-        error: 'Job seeker profile not found'
-      });
-    }
-
-    // Deactivate previous resumes
-    await Resume.updateMany(
-      { jobSeekerUid: uid, isActive: true },
-      { isActive: false }
-    );
-
-    // Create new resume record
-    const resumeData = {
-      jobSeekerUid: uid,
-      jobSeekerId: jobSeeker._id,
-      filename: req.file.filename,
-      originalName: req.file.originalname,
-      fileUrl: `/uploads/resumes/${req.file.filename}`,
-      fileSize: req.file.size,
-      mimeType: req.file.mimetype,
-      processingStatus: 'pending'
-    };
-
-    const resume = new Resume(resumeData);
-    await resume.save();
-
-    // Update job seeker's current resume reference
-    jobSeeker.currentResumeId = resume._id;
-    await jobSeeker.save();
-
-    res.status(201).json({
-      success: true,
-      message: 'Resume uploaded successfully',
-      data: {
-        resumeId: resume._id,
-        filename: resume.originalName,
-        fileUrl: resume.fileUrl,
-        uploadedAt: resume.uploadedAt,
-        processingStatus: resume.processingStatus
-      }
-    });
-
-  } catch (error) {
-    console.error('Error uploading resume:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to upload resume',
-      details: error.message
-    });
-  }
-});
 
 // @route   GET /api/resumes
 // @desc    Get job seeker's resumes
@@ -128,7 +25,11 @@ router.get('/', verifyToken, async (req, res) => {
       isActive: resume.isActive,
       uploadedAt: resume.uploadedAt,
       processedAt: resume.processedAt,
-      parsedData: resume.parsedData
+      personalInfo: resume.personalInfo,
+      summary: resume.summary,
+      skills: resume.skills,
+      workExperience: resume.workExperience,
+      education: resume.education
     }));
 
     res.json({
@@ -170,7 +71,11 @@ router.get('/current', verifyToken, async (req, res) => {
         processingStatus: resume.processingStatus,
         uploadedAt: resume.uploadedAt,
         processedAt: resume.processedAt,
-        parsedData: resume.parsedData
+        personalInfo: resume.personalInfo,
+        summary: resume.summary,
+        skills: resume.skills,
+        workExperience: resume.workExperience,
+        education: resume.education
       }
     });
 
@@ -183,103 +88,148 @@ router.get('/current', verifyToken, async (req, res) => {
   }
 });
 
-// @route   PUT /api/resumes/:id/activate
-// @desc    Set a resume as active
+// @route   POST /api/resumes/create
+// @desc    Create a new resume with form data and PDF
 // @access  Private (Job Seeker)
-router.put('/:id/activate', verifyToken, async (req, res) => {
+router.post('/create', verifyToken, async (req, res) => {
   try {
     const { uid } = req.user;
-    const { id } = req.params;
+    const { resumeData, pdfData } = req.body;
 
-    // Find the resume
-    const resume = await Resume.findOne({ _id: id, jobSeekerUid: uid });
-    if (!resume) {
-      return res.status(404).json({
+    if (!resumeData || !pdfData) {
+      return res.status(400).json({
         success: false,
-        error: 'Resume not found'
+        error: 'Resume data and PDF data are required'
       });
     }
 
-    // Deactivate all other resumes
-    await Resume.updateMany(
-      { jobSeekerUid: uid, isActive: true },
-      { isActive: false }
-    );
-
-    // Activate this resume
-    resume.isActive = true;
-    await resume.save();
-
-    // Update job seeker's current resume reference
+    // Find the job seeker
     const jobSeeker = await JobSeeker.findOne({ uid });
-    if (jobSeeker) {
-      jobSeeker.currentResumeId = resume._id;
-      await jobSeeker.save();
+    if (!jobSeeker) {
+      return res.status(404).json({
+        success: false,
+        error: 'Job seeker profile not found'
+      });
     }
 
-    res.json({
+    // Check if user already has an active resume
+    let existingResume = await Resume.findOne({ jobSeekerUid: uid, isActive: true });
+
+    // Convert base64 PDF data to buffer
+    const pdfBuffer = Buffer.from(pdfData, 'base64');
+    
+    let filename, filePath;
+    
+    if (existingResume) {
+      // Update existing resume - reuse the same filename
+      filename = existingResume.filename;
+      filePath = path.join(__dirname, '..', 'uploads', 'resumes', filename);
+    } else {
+      // Create new resume - generate new filename
+      filename = `resume-${Date.now()}-${Math.round(Math.random() * 1E9)}.pdf`;
+      filePath = path.join(__dirname, '..', 'uploads', 'resumes', filename);
+    }
+    
+    // Ensure upload directory exists
+    const uploadDir = path.join(__dirname, '..', 'uploads', 'resumes');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    // Save PDF file (overwrite if updating)
+    fs.writeFileSync(filePath, pdfBuffer);
+
+    if (existingResume) {
+      // Update existing resume
+      existingResume.originalName = `${resumeData.personalInfo.name || 'Resume'}_Resume.pdf`;
+      existingResume.fileSize = pdfBuffer.length;
+      existingResume.processingStatus = 'completed';
+      existingResume.personalInfo = resumeData.personalInfo;
+      existingResume.summary = resumeData.summary;
+      existingResume.skills = resumeData.skills;
+      existingResume.workExperience = resumeData.experience;
+      existingResume.education = {
+        tertiary: {
+          institution: resumeData.education?.tertiary?.school || '',
+          degree: resumeData.education?.tertiary?.major || '',
+          year: resumeData.education?.tertiary?.ay || ''
+        },
+        secondary: {
+          institution: resumeData.education?.secondary?.school || '',
+          degree: resumeData.education?.secondary?.major || '',
+          year: resumeData.education?.secondary?.ay || ''
+        },
+        primary: {
+          institution: resumeData.education?.primary?.school || '',
+          degree: resumeData.education?.primary?.major || '',
+          year: resumeData.education?.primary?.ay || ''
+        }
+      };
+      existingResume.updatedAt = new Date();
+      
+      await existingResume.save();
+      var resume = existingResume;
+    } else {
+      // Create new resume record
+      const newResume = new Resume({
+        jobSeekerUid: uid,
+        jobSeekerId: jobSeeker._id,
+        filename: filename,
+        originalName: `${resumeData.personalInfo.name || 'Resume'}_Resume.pdf`,
+        fileUrl: `/uploads/resumes/${filename}`,
+        fileSize: pdfBuffer.length,
+        mimeType: 'application/pdf',
+        processingStatus: 'completed',
+        personalInfo: resumeData.personalInfo,
+        summary: resumeData.summary,
+        skills: resumeData.skills,
+        workExperience: resumeData.experience,
+        education: {
+          tertiary: {
+            institution: resumeData.education?.tertiary?.school || '',
+            degree: resumeData.education?.tertiary?.major || '',
+            year: resumeData.education?.tertiary?.ay || ''
+          },
+          secondary: {
+            institution: resumeData.education?.secondary?.school || '',
+            degree: resumeData.education?.secondary?.major || '',
+            year: resumeData.education?.secondary?.ay || ''
+          },
+          primary: {
+            institution: resumeData.education?.primary?.school || '',
+            degree: resumeData.education?.primary?.major || '',
+            year: resumeData.education?.primary?.ay || ''
+          }
+        },
+        isActive: true
+      });
+
+      await newResume.save();
+      var resume = newResume;
+    }
+
+    // Update job seeker's current resume reference
+    jobSeeker.currentResumeId = resume._id;
+    await jobSeeker.save();
+
+    res.status(201).json({
       success: true,
-      message: 'Resume activated successfully',
+      message: existingResume ? 'Resume updated successfully' : 'Resume created successfully',
       data: {
         resumeId: resume._id,
-        isActive: resume.isActive
+        filename: resume.originalName,
+        fileUrl: resume.fileUrl,
+        uploadedAt: resume.uploadedAt,
+        processingStatus: resume.processingStatus
       }
     });
 
   } catch (error) {
-    console.error('Error activating resume:', error);
+    console.error('Error creating resume:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to activate resume'
-    });
-  }
-});
-
-// @route   DELETE /api/resumes/:id
-// @desc    Delete a resume
-// @access  Private (Job Seeker)
-router.delete('/:id', verifyToken, async (req, res) => {
-  try {
-    const { uid } = req.user;
-    const { id } = req.params;
-
-    // Find the resume
-    const resume = await Resume.findOne({ _id: id, jobSeekerUid: uid });
-    if (!resume) {
-      return res.status(404).json({
-        success: false,
-        error: 'Resume not found'
-      });
-    }
-
-    // Delete the file from filesystem
-    const filePath = path.join(__dirname, '..', resume.fileUrl);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
-
-    // Delete the resume record
-    await Resume.findByIdAndDelete(id);
-
-    // If this was the current resume, update job seeker
-    const jobSeeker = await JobSeeker.findOne({ uid });
-    if (jobSeeker && jobSeeker.currentResumeId?.toString() === id) {
-      // Find the most recent active resume
-      const latestResume = await Resume.getActiveResumeForJobSeeker(uid);
-      jobSeeker.currentResumeId = latestResume?._id || null;
-      await jobSeeker.save();
-    }
-
-    res.json({
-      success: true,
-      message: 'Resume deleted successfully'
-    });
-
-  } catch (error) {
-    console.error('Error deleting resume:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to delete resume'
+      error: 'Failed to create resume',
+      details: error.message
     });
   }
 });

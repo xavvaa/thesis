@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { FiUser, FiMail, FiPhone, FiMapPin, FiBriefcase, FiStar, FiPlus, FiTrash2, FiDownload, FiClock, FiCalendar, FiEdit3, FiSave, FiX, FiFileText } from 'react-icons/fi';
+import React, { useState, useEffect, useRef } from 'react';
+import { FiDownload, FiSave, FiUser, FiBriefcase, FiFileText, FiPlus, FiMinus, FiEdit3, FiSave as FiSaveIcon, FiX, FiMail, FiPhone, FiMapPin, FiClock, FiCalendar, FiTrash2, FiStar } from 'react-icons/fi';
 import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import { auth } from '../../../../config/firebase';
 import styles from './CreateResumeTab.module.css';
 
 interface PersonalInfo {
@@ -540,9 +542,11 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
       // Generate PDF blob for database storage (without downloading)
       const pdfBlob = generatePDF(undefined, true);
       
-      // Here you can save the pdfBlob to your database
-      // Example: await savePDFToDatabase(pdfBlob, cleanedData);
-      console.log('PDF blob created for database storage:', pdfBlob);
+      // Convert blob to base64 for API transmission
+      const pdfBase64 = await blobToBase64(pdfBlob);
+      
+      // Save to database via API
+      await saveResumeToDatabase(cleanedData, pdfBase64);
       
       // Set PDF ready state immediately after success
       setIsPDFReady(true);
@@ -598,6 +602,67 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
     setTimeout(() => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 100);
+  };
+
+  // Helper function to convert blob to base64
+  const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove the data URL prefix to get just the base64 data
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  // Function to save resume to database
+  const saveResumeToDatabase = async (resumeData: ResumeData, pdfBase64: string) => {
+    try {
+      // Get Firebase ID token instead of localStorage
+      console.log('=== DEBUGGING FIREBASE AUTHENTICATION ===');
+      console.log('Current Firebase user:', auth.currentUser);
+      
+      if (!auth.currentUser) {
+        throw new Error('You must be logged in to save a resume. Please sign in first.');
+      }
+      
+      const token = await auth.currentUser.getIdToken();
+      console.log('Firebase token obtained:', !!token);
+      console.log('Token length:', token?.length);
+      
+      if (!token) {
+        throw new Error('No authentication token found. Please log in again.');
+      }
+
+      const response = await fetch('http://localhost:3001/api/resumes/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          resumeData,
+          pdfData: pdfBase64
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API Error Response:', errorData);
+        throw new Error(errorData.error || 'Failed to save resume');
+      }
+
+      const result = await response.json();
+      console.log('Resume saved successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('Error saving resume to database:', error);
+      throw error;
+    }
   };
 
   const clearResumeData = () => {
