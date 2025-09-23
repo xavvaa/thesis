@@ -1,8 +1,7 @@
 import React from 'react';
-import { IconType } from 'react-icons';
 
 interface StatsCardProps {
-  icon: IconType;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement> & { size?: string | number }>;
   value: number;
   label: string;
   className?: string;

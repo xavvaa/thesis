@@ -65,7 +65,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
       <nav className="admin-nav">
         {navItems.map((item) => {
-          const IconComponent = item.icon;
+          const IconComponent = item.icon as React.ComponentType<{ className?: string }>;
           return (
             <button
               key={item.id}

@@ -204,7 +204,7 @@ const ResumeEditModal: React.FC<ResumeEditModalProps> = ({
           <div className={styles.sidebar}>
             <nav className={styles.sectionNav}>
               {sections.map(section => {
-                const Icon = section.icon;
+                const Icon = section.icon as React.ComponentType<{ className?: string }>;
                 return (
                   <button
                     key={section.id}
