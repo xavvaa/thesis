@@ -151,10 +151,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {/* Mobile overlay */}
-      {isMobile && isSidebarOpen && (
-        <div className={styles.sidebarOverlay} onClick={onToggleSidebar} />
-      )}
+      {/* Removed dimming overlay on mobile to preserve background styling */}
       
       <div 
         ref={sidebarRef}
