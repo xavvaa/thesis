@@ -710,7 +710,7 @@ const Dashboard: React.FC = () => {
       case 'create-resume':
         return <CreateResumeTab 
           resumeFormData={resumeFormData}
-          onResumeFormDataChange={setResumeFormData}
+          onResumeDataChange={setResumeFormData}
         />;
       case 'profile':
         return <SettingsTab />;
