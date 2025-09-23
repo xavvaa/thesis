@@ -623,6 +623,19 @@ const Dashboard: React.FC = () => {
     setShowFilters(false)
   }
 
+  // Function to get the display title based on active tab
+  const getPageTitle = (tabId: string): string => {
+    const tabTitles: { [key: string]: string } = {
+      'dashboard': 'Dashboard',
+      'create-resume': 'Create Resume',
+      'jobs': 'Find Jobs',
+      'applications': 'Applications',
+      'saved': 'Saved Jobs',
+      'profile': 'Settings'
+    }
+    return tabTitles[tabId] || 'Dashboard'
+  }
+
   const renderDesktopSidebar = () => (
     <Sidebar
       activeTab={activeTab}
@@ -707,7 +720,7 @@ const Dashboard: React.FC = () => {
             >
               <FiMenu />
             </button>
-            <h1 className={styles.pageTitle}>Dashboard</h1>
+            <h1 className={styles.pageTitle}>{getPageTitle(activeTab)}</h1>
           </div>
           
           {activeTab === 'jobs' && (
