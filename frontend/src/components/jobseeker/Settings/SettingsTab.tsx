@@ -414,11 +414,6 @@ const SettingsTab: React.FC = () => {
 
   return (
     <div className={styles.settingsTab}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Settings</h1>
-        <p className={styles.subtitle}>Manage your profile and account preferences</p>
-      </div>
-
       {error && (
         <div className={styles.errorMessage}>
           <FiX className={styles.messageIcon} />
@@ -472,6 +467,16 @@ const SettingsTab: React.FC = () => {
           >
             <FiSettings />
             Account Management
+          </button>
+          
+          <div className={styles.navDivider}></div>
+          
+          <button
+            className={`${styles.navButton} ${styles.signOutNavButton}`}
+            onClick={handleLogout}
+          >
+            <FiLogOut />
+            Sign Out
           </button>
         </div>
 
@@ -1384,23 +1389,6 @@ const SettingsTab: React.FC = () => {
                       </div>
                     </form>
                   )}
-                </div>
-
-                <div className={styles.sessionManagement}>
-                  <h3>Session Management</h3>
-                  <div className={styles.sessionCard}>
-                    <div className={styles.sessionInfo}>
-                      <FiLogOut className={styles.sessionIcon} />
-                      <div>
-                        <h4>Sign Out</h4>
-                        <p>Sign out of your current session and return to the login page</p>
-                      </div>
-                    </div>
-                    <button className={styles.signOutButton} onClick={handleLogout}>
-                      <FiLogOut />
-                      Sign Out
-                    </button>
-                  </div>
                 </div>
 
                 <div className={styles.dangerZone}>

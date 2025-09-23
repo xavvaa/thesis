@@ -71,11 +71,12 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ resumeUrl, className }) => {
         )}
 
         <iframe
-          src={`${fullUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+          src={`${fullUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH&zoom=page-width`}
           className={styles.pdfFrame}
           onLoad={handleLoad}
           onError={handleError}
           title="Resume Preview"
+          scrolling="no"
         />
       </div>
     </div>
