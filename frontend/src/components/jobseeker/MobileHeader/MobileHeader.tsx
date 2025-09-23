@@ -1,33 +1,81 @@
 import React from 'react'
-import { FiSliders } from 'react-icons/fi'
+import { FiSliders, FiMenu, FiBell } from 'react-icons/fi'
 import styles from './MobileHeader.module.css'
 
 interface MobileHeaderProps {
+  pageTitle: string
   userName?: string
   userInitial?: string
-  onFilterClick: () => void
+  onFilterClick?: () => void
+  onMenuClick?: () => void
+  notifications?: number
+  showSearch?: boolean
+  searchComponent?: React.ReactNode
 }
 
 const MobileHeader: React.FC<MobileHeaderProps> = ({
-  userName = 'Juan De La Cruz',
+  pageTitle,
+  userName = 'User',
   userInitial = 'U',
-  onFilterClick
+  onFilterClick,
+  onMenuClick,
+  notifications = 0,
+  showSearch = false,
+  searchComponent
 }) => {
   return (
-    <header className={styles.appHeader}>
-      <div className={styles.userGreeting}>
-        <div className={styles.userAvatar}>
-          {userInitial}
+    <>
+      <header className={styles.appHeader}>
+        <div className={styles.headerLeft}>
+          {onMenuClick && (
+            <button 
+              className={styles.menuButton}
+              onClick={onMenuClick}
+              aria-label="Toggle menu"
+            >
+              <FiMenu />
+            </button>
+          )}
+          <div className={styles.titleSection}>
+            <h1 className={styles.pageTitle}>{pageTitle}</h1>
+          </div>
         </div>
-        <div className={styles.greetingText}>
-          <h1>Hello</h1>
-          <h2>{userName}</h2>
+        
+        <div className={styles.headerRight}>
+          {onFilterClick && (
+            <button 
+              className={styles.filterButton} 
+              onClick={onFilterClick}
+              aria-label="Open filters"
+            >
+              <FiSliders />
+            </button>
+          )}
+          
+          <button 
+            className={styles.notificationButton}
+            aria-label="Notifications"
+          >
+            <FiBell />
+            {notifications > 0 && (
+              <span className={styles.notificationBadge}>
+                {notifications > 9 ? '9+' : notifications}
+              </span>
+            )}
+          </button>
+          
+          <div className={styles.userAvatar} aria-label="User profile">
+            {userInitial}
+          </div>
         </div>
-      </div>
-      <button className={styles.filterButton} onClick={onFilterClick}>
-        <FiSliders />
-      </button>
-    </header>
+      </header>
+      
+      {showSearch && searchComponent && (
+        <div className={styles.mobileSearchContainer}>
+          {searchComponent}
+        </div>
+      )}
+    </>
   )
 }
 

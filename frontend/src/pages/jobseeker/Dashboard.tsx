@@ -14,6 +14,7 @@ import ApplicationsTab from '../../components/jobseeker/Dashboard/tabs/Applicati
 import CreateResumeTab from '../../components/jobseeker/Dashboard/tabs/CreateResumeTab';
 import SettingsTab from '../../components/jobseeker/Settings/SettingsTab';
 import Sidebar from './components/Sidebar';
+import MobileHeader from '../../components/jobseeker/MobileHeader/MobileHeader';
 import { parseResume } from '../../utils/resumeParser'
 import { Job } from '../../types/Job'
 import { JobService } from '../../services/jobService'
@@ -699,13 +700,32 @@ const Dashboard: React.FC = () => {
       {/* Enhanced Sidebar */}
       {renderDesktopSidebar()}
       
-      {/* Mobile Header - Removed for now */}
+      {/* Mobile Header */}
+      <div className={styles.mobileHeaderContainer}>
+        <MobileHeader
+          pageTitle={getPageTitle(activeTab)}
+          userInitial={resume?.personalInfo?.name?.charAt(0) || 'U'}
+          onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          onFilterClick={activeTab === 'jobs' ? () => setShowFilterModal(true) : undefined}
+          notifications={notifications}
+          showSearch={activeTab === 'jobs'}
+          searchComponent={activeTab === 'jobs' ? (
+            <SearchBar 
+              value={searchQuery}
+              onChange={(value) => setSearchQuery(value)}
+              placeholder="Search for jobs, companies, or keywords"
+            />
+          ) : undefined}
+        />
+      </div>
 
       {/* Main Content */}
       <main className={`${styles.mainContent} ${
         isSidebarOpen ? styles.sidebarOpen : ''
       } ${
         isSidebarCollapsed ? styles.sidebarCollapsed : ''
+      } ${
+        activeTab === 'jobs' ? styles.withMobileSearch : ''
       }`}>
         {/* Desktop Header */}
         <header className={styles.desktopHeader}>

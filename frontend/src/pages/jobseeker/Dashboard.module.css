@@ -8,6 +8,39 @@
   overflow: hidden;
 }
 
+/* Mobile Header Container */
+.mobileHeaderContainer {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+@media (max-width: 768px) {
+  .mobileHeaderContainer {
+    display: block;
+  }
+  
+  .mainContent {
+    padding-top: 80px !important; /* Space for mobile header */
+  }
+  
+  /* Additional space when search is shown */
+  .mainContent.withMobileSearch {
+    padding-top: 140px !important; /* Space for mobile header + search */
+  }
+  
+  .desktopHeader {
+    display: none !important; /* Hide desktop header on mobile */
+  }
+  
+  .dashboard {
+    flex-direction: column;
+  }
+}
+
 .mainContent {
   flex: 1;
   display: flex;
@@ -1363,8 +1396,8 @@ body {
     width: 100vw;
     max-width: 320px;
     transform: translateX(-100%);
-    z-index: 60;
-    box-shadow: var(--shadow-lg);
+    z-index: 1001;
+    box-shadow: none;
   }
   
   .sidebarOpen {
@@ -1700,8 +1733,8 @@ body {
     position: fixed;
     width: 280px;
     transform: translateX(-100%);
-    z-index: 60;
-    box-shadow: var(--shadow-lg);
+    z-index: 1001;
+    box-shadow: none;
   }
   
   .sidebarOpen {
@@ -2537,8 +2570,9 @@ body {
   .sidebar {
     transform: translateX(-100%);
     position: fixed;
-    z-index: 1000;
+    z-index: 1001;
     height: 100%;
+    box-shadow: none;
   }
 
   .sidebar.sidebarOpen {
@@ -3340,8 +3374,9 @@ body {
   
   .sidebar {
     transform: translateX(-100%);
-    z-index: 60;
+    z-index: 1001;
     width: 280px;
+    box-shadow: none;
   }
   
   .sidebar.sidebarOpen {
