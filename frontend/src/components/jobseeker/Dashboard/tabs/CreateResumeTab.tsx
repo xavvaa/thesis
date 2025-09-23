@@ -290,7 +290,7 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
     }
   };
 
-  const generatePDF = (filename?: string) => {
+  const generatePDF = (filename?: string, returnBlob = false) => {
     const doc = new jsPDF();
     const { personalInfo, summary, experience, education, skills } = resumeData;
     
@@ -499,10 +499,15 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
       console.log('No valid skills found for PDF generation');
     }
     
-    // Use provided filename or generate a consistent one
-    const defaultFileName = `${personalInfo.name?.replace(/\s+/g, '_') || 'Resume'}_Resume.pdf`;
-    const fileName = filename || defaultFileName;
-    doc.save(fileName);
+    // Return blob for database storage or save file for download
+    if (returnBlob) {
+      return doc.output('blob');
+    } else {
+      // Use provided filename or generate a consistent one
+      const defaultFileName = `${personalInfo.name?.replace(/\s+/g, '_') || 'Resume'}_Resume.pdf`;
+      const fileName = filename || defaultFileName;
+      doc.save(fileName);
+    }
   };
 
   const handleSaveResume = async () => {
@@ -531,6 +536,13 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
       
       // Show success message
       setGenerationStep('success');
+      
+      // Generate PDF blob for database storage (without downloading)
+      const pdfBlob = generatePDF(undefined, true);
+      
+      // Here you can save the pdfBlob to your database
+      // Example: await savePDFToDatabase(pdfBlob, cleanedData);
+      console.log('PDF blob created for database storage:', pdfBlob);
       
       // Set PDF ready state immediately after success
       setIsPDFReady(true);
