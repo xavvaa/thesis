@@ -926,11 +926,18 @@ const EmployerDashboard: React.FC = () => {
 
   // This has been consolidated into the filteredApplicants definition above
 
-  // Filter jobs based on status
-  const filteredJobs = enhancedJobPostings.filter(job => {
-    if (filterStatus === 'all') return true;
-    return job.status === filterStatus;
-  });
+  // Filter and sort jobs based on status and date (latest first)
+  const filteredJobs = enhancedJobPostings
+    .filter(job => {
+      if (filterStatus === 'all') return true;
+      return job.status === filterStatus;
+    })
+    .sort((a, b) => {
+      // Sort by posted date, latest first
+      const dateA = new Date(a.postedDate || a.posted || 0).getTime();
+      const dateB = new Date(b.postedDate || b.posted || 0).getTime();
+      return dateB - dateA; // Latest first
+    });
 
   // Get status badge style
   const getStatusBadgeStyle = (status: string) => {

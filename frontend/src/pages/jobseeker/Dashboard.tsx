@@ -13,6 +13,7 @@ import SavedJobsTab from '../../components/jobseeker/Dashboard/tabs/SavedJobsTab
 import ApplicationsTab from '../../components/jobseeker/Dashboard/tabs/ApplicationsTab';
 import CreateResumeTab from '../../components/jobseeker/Dashboard/tabs/CreateResumeTab';
 import SettingsTab from '../../components/jobseeker/Settings/SettingsTab';
+import Sidebar from './components/Sidebar';
 import { parseResume } from '../../utils/resumeParser'
 import { Job } from '../../types/Job'
 import { JobService } from '../../services/jobService'
@@ -75,6 +76,7 @@ const Dashboard: React.FC = () => {
   const [notifications, setNotifications] = useState<number>(3)
   const [error, setError] = useState<string | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isFirstVisit, setIsFirstVisit] = useState(true)
   const [hasSkippedResume, setHasSkippedResume] = useState(false)
   const [showInitialResumePrompt, setShowInitialResumePrompt] = useState(false)
@@ -622,63 +624,15 @@ const Dashboard: React.FC = () => {
   }
 
   const renderDesktopSidebar = () => (
-    <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.open : ''}`}>
-      <div className={styles.sidebarHeader}>
-        <h2 className={styles.logo}>JobPortal</h2>
-        <button 
-          className={styles.closeSidebar}
-          onClick={() => setIsSidebarOpen(false)}
-        >
-          <FiX />
-        </button>
-      </div>
-      <nav className={styles.sidebarNav}>
-        <button
-          className={`${styles.navItem} ${activeTab === 'dashboard' ? styles.active : ''}`}
-          onClick={() => setActiveTab('dashboard')}
-        >
-          <FiHome />
-          <span>Dashboard</span>
-        </button>
-
-        <button
-          className={`${styles.navItem} ${activeTab === 'create-resume' ? styles.active : ''}`}
-          onClick={() => setActiveTab('create-resume')}
-        >
-          <FiEdit3 />
-          <span>Create Resume</span>
-        </button>
-        <button
-          className={`${styles.navItem} ${activeTab === 'jobs' ? styles.active : ''}`}
-          onClick={() => setActiveTab('jobs')}
-        >
-          <FiBriefcase />
-          <span>Find Jobs</span>
-        </button>
-        <button
-          className={`${styles.navItem} ${activeTab === 'applications' ? styles.active : ''}`}
-          onClick={() => setActiveTab('applications')}
-        >
-          <FiFileText />
-          <span>Applications</span>
-        </button>
-        
-        <button
-          className={`${styles.navItem} ${activeTab === 'saved' ? styles.active : ''}`}
-          onClick={() => setActiveTab('saved')}
-        >
-          <FiBookmark />
-          <span>Saved Jobs</span>
-        </button>
-        <button
-          className={`${styles.navItem} ${activeTab === 'profile' ? styles.active : ''}`}
-          onClick={() => setActiveTab('profile')}
-        >
-          <FiUser />
-          <span>Settings</span>
-        </button>
-      </nav>
-    </aside>
+    <Sidebar
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      isSidebarOpen={isSidebarOpen}
+      onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+      notifications={notifications}
+      isCollapsed={isSidebarCollapsed}
+      onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+    />
   )
 
   const renderContent = () => {
@@ -729,19 +683,26 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className={styles.dashboard}>
-      {/* Desktop Sidebar */}
+      {/* Enhanced Sidebar */}
       {renderDesktopSidebar()}
       
       {/* Mobile Header - Removed for now */}
 
       {/* Main Content */}
-      <main className={`${styles.mainContent} ${isSidebarOpen ? styles.sidebarOpen : ''}`}>
+      <main className={`${styles.mainContent} ${
+        isSidebarOpen ? styles.sidebarOpen : ''
+      } ${
+        isSidebarCollapsed ? styles.sidebarCollapsed : ''
+      }`}>
         {/* Desktop Header */}
         <header className={styles.desktopHeader}>
           <div className={styles.headerLeft}>
             <button 
               className={styles.menuToggle}
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              onClick={() => {
+                console.log('Hamburger clicked, current state:', isSidebarOpen);
+                setIsSidebarOpen(!isSidebarOpen);
+              }}
               aria-label="Toggle menu"
             >
               <FiMenu />
