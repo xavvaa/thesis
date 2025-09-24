@@ -43,12 +43,29 @@ const ResumeSchema = new mongoose.Schema({
   
   // Personal Information
   personalInfo: {
-    name: String,
+    fullName: String,
     email: String,
     phone: String,
-    address: String,
     age: String,
-    birthday: String
+    birthday: String,
+    photo: String, // Base64 encoded image
+    // Address information
+    address: String,
+    zipCode: String,
+    // PSGC location codes (grouped in separate object)
+    location: {
+      region: String,
+      province: String,
+      city: String,
+      barangay: String
+    },
+    // Readable location names for display
+    readableLocation: {
+      region: String,
+      province: String,
+      city: String,
+      barangay: String
+    }
   },
   
   // Professional Summary
@@ -61,7 +78,6 @@ const ResumeSchema = new mongoose.Schema({
   workExperience: [{
     company: String,
     position: String,
-    duration: String,
     description: String,
     startDate: String,
     endDate: String,
@@ -69,24 +85,13 @@ const ResumeSchema = new mongoose.Schema({
   }],
   
   // Educational Background
-  education: {
-    tertiary: {
-      institution: String,
-      degree: String,
-      year: String,
-    },
-    secondary: {
-      institution: String,
-      degree: String,
-      year: String,
-    },
-    primary: {
-      institution: String,
-      degree: String,
-      year: String,
-      
-    }
-  },
+  education: [{
+    degree: String,
+    school: String,
+    location: String,
+    startDate: String,
+    endDate: String
+  }],
   
   
   // Version Control

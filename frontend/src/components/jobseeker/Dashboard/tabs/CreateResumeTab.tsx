@@ -1,17 +1,145 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiDownload, FiSave, FiUser, FiBriefcase, FiFileText, FiPlus, FiMinus, FiEdit3, FiSave as FiSaveIcon, FiX, FiMail, FiPhone, FiMapPin, FiClock, FiCalendar, FiTrash2, FiStar } from 'react-icons/fi';
+import { FiDownload, FiSave, FiUser, FiBriefcase, FiFileText, FiPlus, FiMinus, FiEdit3, FiSave as FiSaveIcon, FiX, FiMail, FiPhone, FiMapPin, FiClock, FiCalendar, FiTrash2, FiStar, FiUpload } from 'react-icons/fi';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { auth } from '../../../../config/firebase';
+import psgc from "@dctsph/psgc";
 import styles from './CreateResumeTab.module.css';
 
+// Year Picker Component
+interface YearPickerProps {
+  value: string;
+  onChange: (year: string) => void;
+  disabled?: boolean;
+  minYear?: number;
+  maxYear?: number;
+  placeholder?: string;
+  className?: string;
+}
+
+const YearPicker: React.FC<YearPickerProps> = ({ 
+  value, 
+  onChange, 
+  disabled = false, 
+  minYear = 1950, 
+  maxYear = new Date().getFullYear() + 10,
+  placeholder = "Select year",
+  className = ""
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [currentDecade, setCurrentDecade] = useState(Math.floor((value ? parseInt(value) : new Date().getFullYear()) / 12) * 12);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const generateYears = () => {
+    const years = [];
+    for (let i = 0; i < 12; i++) {
+      years.push(currentDecade + i);
+    }
+    return years;
+  };
+
+  const handleYearSelect = (year: number) => {
+    onChange(year.toString());
+    setIsOpen(false);
+  };
+
+  const navigateDecade = (direction: 'prev' | 'next') => {
+    setCurrentDecade(prev => direction === 'prev' ? prev - 12 : prev + 12);
+  };
+
+  const years = generateYears();
+  const startYear = years[0];
+  const endYear = years[years.length - 1];
+
+  return (
+    <div className={`${styles.yearPickerContainer} ${className}`} ref={containerRef}>
+      <div 
+        className={`${styles.formInput} ${styles.yearPickerInput} ${disabled ? styles.inputError : ''}`}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        style={{ 
+          backgroundColor: disabled ? '#f9fafb' : 'white',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          color: disabled ? '#9ca3af' : '#1f2937'
+        }}
+      >
+        {value || placeholder}
+      </div>
+      
+      {isOpen && !disabled && (
+        <div className={styles.yearPickerDropdown}>
+          <div className={styles.yearPickerHeader}>
+            <button 
+              className={styles.yearPickerNavButton}
+              onClick={() => navigateDecade('prev')}
+              type="button"
+            >
+              ‹
+            </button>
+            <div className={styles.yearPickerTitle}>
+              {startYear} - {endYear}
+            </div>
+            <button 
+              className={styles.yearPickerNavButton}
+              onClick={() => navigateDecade('next')}
+              type="button"
+            >
+              ›
+            </button>
+          </div>
+          
+          <div className={styles.yearPickerGrid}>
+            {years.map(year => {
+              const isSelected = value === year.toString();
+              const isDisabled = year < minYear || year > maxYear;
+              
+              return (
+                <div
+                  key={year}
+                  className={`${styles.yearPickerItem} ${isSelected ? styles.selected : ''} ${isDisabled ? styles.disabled : ''}`}
+                  onClick={() => !isDisabled && handleYearSelect(year)}
+                >
+                  {year}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 interface PersonalInfo {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
+  region: string;
+  province: string;
+  city: string;
+  barangay: string;
   address: string;
+  zipCode: string;
   age: string;
   birthday: string;
+  photo?: string; // Base64 encoded image
+  // Readable location names (loaded from database)
+  regionName?: string;
+  provinceName?: string;
+  cityName?: string;
+  barangayName?: string;
 }
 
 interface Experience {
@@ -19,29 +147,24 @@ interface Experience {
   position: string;
   duration: string;
   description: string;
+  location: string;
+  startDate: string;
+  endDate: string;
 }
 
 interface EducationLevel {
-  major: string;
+  degree: string;
   school: string;
-  ay: string;
-}
-
-interface Education {
-  tertiary: EducationLevel;
-  secondary: EducationLevel;
-  primary: EducationLevel;
+  location: string;
+  startDate: string;
+  endDate: string;
 }
 
 interface ResumeData {
   personalInfo: PersonalInfo;
   summary: string;
   experience: Experience[];
-  education: {
-    tertiary: EducationLevel;
-    secondary: EducationLevel;
-    primary: EducationLevel;
-  };
+  education: EducationLevel[];
   skills: string[];
   certifications: string[];
 }
@@ -51,43 +174,101 @@ interface CreateResumeTabProps {
   onResumeDataChange?: (data: ResumeData) => void;
 }
 
+// Helper function to capitalize first letter of each word
+const capitalizeWords = (str: string): string => {
+  return str.replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+// Helper function to migrate old education format to new format
+const migrateEducationData = (education: any): EducationLevel[] => {
+  if (Array.isArray(education)) {
+    return education;
+  }
+  
+  // Old format: convert object to array
+  const educationArray: EducationLevel[] = [];
+  
+  if (education?.tertiary && (education.tertiary.major || education.tertiary.school)) {
+    educationArray.push({
+      degree: education.tertiary.major || '',
+      school: education.tertiary.school || '',
+      location: '',
+      startDate: '',
+      endDate: ''
+    });
+  }
+  
+  if (education?.secondary && (education.secondary.major || education.secondary.school)) {
+    educationArray.push({
+      degree: education.secondary.major || '',
+      school: education.secondary.school || '',
+      location: '',
+      startDate: '',
+      endDate: ''
+    });
+  }
+  
+  if (education?.primary && (education.primary.major || education.primary.school)) {
+    educationArray.push({
+      degree: education.primary.major || '',
+      school: education.primary.school || '',
+      location: '',
+      startDate: '',
+      endDate: ''
+    });
+  }
+  
+  // If no education entries, add empty one
+  if (educationArray.length === 0) {
+    educationArray.push({
+      degree: '',
+      school: '',
+      location: '',
+      startDate: '',
+      endDate: ''
+    });
+  }
+  
+  return educationArray;
+};
+
 const CreateResumeTab: React.FC<CreateResumeTabProps> = ({ 
   resumeFormData, 
   onResumeDataChange 
 }) => {
   const [resumeData, setResumeData] = useState<ResumeData>({
     personalInfo: {
-      name: '',
+      firstName: '',
+      lastName: '',
       email: '',
       phone: '',
+      region: '',
+      province: '',
+      city: '',
+      barangay: '',
       address: '',
+      zipCode: '',
       age: '',
-      birthday: ''
+      birthday: '',
+      photo: ''
     },
     summary: '',
     experience: [{
       company: '',
       position: '',
       duration: '',
-      description: ''
+      description: '',
+      location: '',
+      startDate: '',
+      endDate: ''
     }],
-    education: {
-      tertiary: {
-        major: '',
-        school: '',
-        ay: ''
-      },
-      secondary: {
-        major: '',
-        school: '',
-        ay: ''
-      },
-      primary: {
-        major: '',
-        school: '',
-        ay: ''
-      }
-    },
+    education: [{
+      degree: '',
+      school: '',
+      location: '',
+      startDate: '',
+      endDate: ''
+    }],
     skills: [''],
     certifications: ['']
   });
@@ -100,63 +281,495 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
   const [isPDFReady, setIsPDFReady] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [hasExistingResume, setHasExistingResume] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // PSGC dropdown options
+  const [regions, setRegions] = useState<any[]>([]);
+  const [provinces, setProvinces] = useState<any[]>([]);
+  const [cities, setCities] = useState<any[]>([]);
+  const [barangays, setBarangays] = useState<any[]>([]);
 
-  // Load existing resume data on component mount or from props
+  // Load PSGC data on component mount
   useEffect(() => {
-    console.log('Loading resume data...', { resumeFormData, hasLocalStorage: !!localStorage.getItem('resumeData') });
-    
-    // Always check localStorage first for saved data
-    const savedResume = localStorage.getItem('resumeData');
-    console.log('Checking localStorage:', savedResume ? 'Found data' : 'No data');
-    
-    if (savedResume) {
+    try {
+      if (psgc && typeof psgc.getAllRegions === 'function') {
+        const regionData = psgc.getAllRegions();
+        setRegions(regionData);
+      } else {
+        // Fallback data
+        const fallbackRegions = [
+          { regCode: '130000000', regDesc: 'National Capital Region (NCR)' },
+          { regCode: '010000000', regDesc: 'Region I (Ilocos Region)' },
+          { regCode: '020000000', regDesc: 'Region II (Cagayan Valley)' },
+          { regCode: '030000000', regDesc: 'Region III (Central Luzon)' },
+          { regCode: '040000000', regDesc: 'Region IV-A (CALABARZON)' }
+        ];
+        setRegions(fallbackRegions);
+      }
+    } catch (error) {
+      console.error('Error loading PSGC data:', error);
+      setRegions([]);
+    }
+  }, []);
+
+  // Calculate age when birthday is loaded from existing data
+  useEffect(() => {
+    if (resumeData.personalInfo.birthday && !resumeData.personalInfo.age) {
+      handleBirthdayChange(resumeData.personalInfo.birthday);
+    }
+  }, [resumeData.personalInfo.birthday]);
+
+  // Load provinces for a given region (without clearing dependent fields)
+  const loadProvincesForRegion = (regionCode: string) => {
+    if (regionCode && psgc) {
       try {
-        const parsedData = JSON.parse(savedResume);
-        console.log('Parsed localStorage data:', parsedData);
+        let provinceData = [];
         
-        // Ensure the parsed data has all required fields with defaults
-        const completeData = {
+        if (typeof psgc.getProvincesByRegion === 'function') {
+          provinceData = psgc.getProvincesByRegion(regionCode);
+        } else if (psgc.provinces && Array.isArray(psgc.provinces)) {
+          provinceData = psgc.provinces.filter((p: any) => (p.reg_code || p.regCode) === regionCode);
+        } else if (psgc.getAllProvinces && typeof psgc.getAllProvinces === 'function') {
+          const allProvinces = psgc.getAllProvinces();
+          provinceData = allProvinces.filter((p: any) => (p.reg_code || p.regCode) === regionCode);
+        }
+        
+        setProvinces(provinceData);
+      } catch (error) {
+        console.error('Error loading provinces:', error);
+        setProvinces([]);
+      }
+    } else {
+      setProvinces([]);
+    }
+  };
+
+  // Handle region change
+  const handleRegionChange = (regionCode: string) => {
+    updatePersonalInfo('region', regionCode);
+    updatePersonalInfo('province', '');
+    updatePersonalInfo('city', '');
+    updatePersonalInfo('barangay', '');
+    
+    loadProvincesForRegion(regionCode);
+    setCities([]);
+    setBarangays([]);
+  };
+
+  // Load cities for a given province (without clearing dependent fields)
+  const loadCitiesForProvince = (provinceCode: string) => {
+    if (provinceCode && psgc) {
+      try {
+        let cityData = [];
+        
+        if (typeof psgc.getMunicipalitiesByProvince === 'function') {
+          cityData = psgc.getMunicipalitiesByProvince(provinceCode);
+        } else if (psgc.cities && Array.isArray(psgc.cities)) {
+          cityData = psgc.cities.filter((c: any) => (c.prov_code || c.provCode) === provinceCode);
+        } else if (psgc.getAllCities && typeof psgc.getAllCities === 'function') {
+          const allCities = psgc.getAllCities();
+          cityData = allCities.filter((c: any) => (c.prov_code || c.provCode) === provinceCode);
+        }
+        
+        setCities(cityData);
+      } catch (error) {
+        console.error('Error loading cities:', error);
+        setCities([]);
+      }
+    } else {
+      setCities([]);
+    }
+  };
+
+  // Handle province change
+  const handleProvinceChange = (provinceCode: string) => {
+    updatePersonalInfo('province', provinceCode);
+    updatePersonalInfo('city', '');
+    updatePersonalInfo('barangay', '');
+    
+    loadCitiesForProvince(provinceCode);
+    setBarangays([]);
+  };
+
+  // Load barangays for a given city (without clearing barangay value)
+  const loadBarangaysForCity = (cityCode: string) => {
+    if (cityCode && psgc) {
+      try {
+        let barangayData = [];
+        
+        if (typeof psgc.getBarangaysByMunicipality === 'function') {
+          barangayData = psgc.getBarangaysByMunicipality(cityCode);
+        } else if (psgc.barangays && Array.isArray(psgc.barangays)) {
+          barangayData = psgc.barangays.filter((b: any) => (b.mun_code || b.citymunCode) === cityCode);
+        } else if (psgc.getAllBarangays && typeof psgc.getAllBarangays === 'function') {
+          const allBarangays = psgc.getAllBarangays();
+          barangayData = allBarangays.filter((b: any) => (b.mun_code || b.citymunCode) === cityCode);
+        }
+        
+        setBarangays(barangayData);
+      } catch (error) {
+        console.error('Error loading barangays:', error);
+        setBarangays([]);
+      }
+    } else {
+      setBarangays([]);
+    }
+  };
+
+  // Handle city change
+  const handleCityChange = (cityCode: string) => {
+    updatePersonalInfo('city', cityCode);
+    updatePersonalInfo('barangay', ''); // Clear barangay when city changes
+    loadBarangaysForCity(cityCode);
+  };
+
+  // Handle barangay change
+  const handleBarangayChange = (barangayCode: string) => {
+    updatePersonalInfo('barangay', barangayCode);
+  };
+
+  // Handle birthday change and auto-calculate age
+  const handleBirthdayChange = (birthday: string) => {
+    updatePersonalInfo('birthday', birthday);
+    
+    if (birthday) {
+      const birthDate = new Date(birthday);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      
+      // Adjust age if birthday hasn't occurred this year yet
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      
+      // Ensure age is not negative
+      if (age >= 0) {
+        updatePersonalInfo('age', age.toString());
+      } else {
+        updatePersonalInfo('age', '');
+      }
+    } else {
+      updatePersonalInfo('age', '');
+    }
+  };
+
+  // Handle email validation
+  const handleEmailChange = (email: string) => {
+    updatePersonalInfo('email', email);
+  };
+
+  // Validate email format
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Handle phone number formatting (Philippine format)
+  const handlePhoneChange = (phone: string) => {
+    // Remove all non-digit characters
+    const digitsOnly = phone.replace(/\D/g, '');
+    
+    // Format based on length
+    let formattedPhone = '';
+    
+    if (digitsOnly.length <= 4) {
+      formattedPhone = digitsOnly;
+    } else if (digitsOnly.length <= 7) {
+      formattedPhone = `${digitsOnly.slice(0, 4)}-${digitsOnly.slice(4)}`;
+    } else if (digitsOnly.length <= 11) {
+      // Philippine mobile format: 0XXX-XXX-XXXX
+      if (digitsOnly.startsWith('0')) {
+        formattedPhone = `${digitsOnly.slice(0, 4)}-${digitsOnly.slice(4, 7)}-${digitsOnly.slice(7)}`;
+      } else {
+        // Add leading 0 if not present
+        const withZero = '0' + digitsOnly;
+        if (withZero.length <= 11) {
+          formattedPhone = `${withZero.slice(0, 4)}-${withZero.slice(4, 7)}-${withZero.slice(7)}`;
+        } else {
+          formattedPhone = `${digitsOnly.slice(0, 4)}-${digitsOnly.slice(4, 7)}-${digitsOnly.slice(7, 11)}`;
+        }
+      }
+    } else {
+      // Limit to 11 digits max
+      const limitedDigits = digitsOnly.slice(0, 11);
+      formattedPhone = `${limitedDigits.slice(0, 4)}-${limitedDigits.slice(4, 7)}-${limitedDigits.slice(7)}`;
+    }
+    
+    updatePersonalInfo('phone', formattedPhone);
+  };
+
+  // Validate Philippine phone number
+  const isValidPhoneNumber = (phone: string) => {
+    const digitsOnly = phone.replace(/\D/g, '');
+    // Philippine mobile numbers: 11 digits starting with 09
+    // Philippine landline: 7-8 digits (area code + number)
+    return (digitsOnly.length === 11 && digitsOnly.startsWith('09')) || 
+           (digitsOnly.length >= 7 && digitsOnly.length <= 8);
+  };
+
+  // Validate work experience dates
+  const validateExperienceDates = (startDate: string, endDate: string) => {
+    if (!startDate) return { isValid: true, error: '' };
+    
+    const start = new Date(startDate + '-01');
+    const now = new Date();
+    
+    // Check if start date is not in the future
+    if (start > now) {
+      return { isValid: false, error: 'Start date cannot be in the future' };
+    }
+    
+    // Check if start date is reasonable (not before 1950)
+    const minDate = new Date('1950-01-01');
+    if (start < minDate) {
+      return { isValid: false, error: 'Start date seems too early' };
+    }
+    
+    // If end date is provided and not "present", validate it
+    if (endDate && endDate !== 'present') {
+      const end = new Date(endDate + '-01');
+      
+      // Check if end date is not in the future (more than current month)
+      const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      if (end > currentMonth) {
+        return { isValid: false, error: 'End date cannot be in the future' };
+      }
+      
+      // Check if end date is after start date
+      if (end < start) {
+        return { isValid: false, error: 'End date must be after start date' };
+      }
+      
+      // Check if the duration is reasonable (not more than 50 years)
+      const yearsDiff = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+      if (yearsDiff > 50) {
+        return { isValid: false, error: 'Work duration seems too long' };
+      }
+    }
+    
+    return { isValid: true, error: '' };
+  };
+
+  // Get validation error for specific experience
+  const getExperienceValidationError = (index: number) => {
+    const exp = resumeData.experience[index];
+    if (!exp) return '';
+    
+    const validation = validateExperienceDates(exp.startDate, exp.endDate);
+    return validation.error;
+  };
+
+  // Validate education dates (years only for education)
+  const validateEducationDates = (startDate: string, endDate: string) => {
+    if (!startDate) return { isValid: true, error: '' };
+    
+    const startYear = new Date(startDate + '-01').getFullYear();
+    const currentYear = new Date().getFullYear();
+    
+    // Check if start year is not in the future
+    if (startYear > currentYear) {
+      return { isValid: false, error: 'Start year cannot be in the future' };
+    }
+    
+    // Check if start year is reasonable (not before 1950)
+    if (startYear < 1950) {
+      return { isValid: false, error: 'Start year seems too early' };
+    }
+    
+    // If end date is provided and not "present", validate it
+    if (endDate && endDate !== 'present') {
+      const endYear = new Date(endDate + '-01').getFullYear();
+      
+      // Check if end year is not too far in the future (allow up to 10 years for ongoing studies)
+      if (endYear > currentYear + 10) {
+        return { isValid: false, error: 'End year seems too far in the future' };
+      }
+      
+      // Check if end year is after start year
+      if (endYear < startYear) {
+        return { isValid: false, error: 'End year must be after start year' };
+      }
+      
+      // Check if the duration is reasonable (not more than 15 years for education)
+      const yearsDiff = endYear - startYear;
+      if (yearsDiff > 15) {
+        return { isValid: false, error: 'Education duration seems too long' };
+      }
+    }
+    
+    return { isValid: true, error: '' };
+  };
+
+  // Get validation error for specific education
+  const getEducationValidationError = (index: number) => {
+    const edu = resumeData.education[index];
+    if (!edu) return '';
+    
+    const validation = validateEducationDates(edu.startDate, edu.endDate);
+    return validation.error;
+  };
+
+  // Get display names for PSGC codes
+  const getLocationDisplayNames = () => {
+    const { region, province, city, barangay } = resumeData.personalInfo;
+    
+    let regionName = '';
+    let provinceName = '';
+    let cityName = '';
+    let barangayName = '';
+
+    // Get region name
+    if (region && psgc && typeof psgc.getAllRegions === 'function') {
+      const regionData = psgc.getAllRegions().find((r: any) => (r.reg_code || r.regCode) === region);
+      regionName = regionData ? (regionData.name || regionData.regDesc) : '';
+    }
+
+    // Get province name
+    if (province && psgc && typeof psgc.getProvincesByRegion === 'function' && region) {
+      const provinceData = psgc.getProvincesByRegion(region).find((p: any) => (p.prv_code || p.prov_code || p.provCode) === province);
+      provinceName = provinceData ? (provinceData.name || provinceData.provDesc) : '';
+    }
+
+    // Get city name
+    if (city && psgc && typeof psgc.getMunicipalitiesByProvince === 'function' && province) {
+      const cityData = psgc.getMunicipalitiesByProvince(province).find((c: any) => (c.mun_code || c.citymunCode) === city);
+      cityName = cityData ? (cityData.name || cityData.citymunDesc) : '';
+    }
+
+    // Get barangay name
+    if (barangay && psgc && typeof psgc.getBarangaysByMunicipality === 'function' && city) {
+      const barangayData = psgc.getBarangaysByMunicipality(city).find((b: any) => (b.bgy_code || b.brgy_code || b.brgyCode) === barangay);
+      barangayName = barangayData ? (barangayData.name || barangayData.brgyDesc) : '';
+    }
+
+    return { regionName, provinceName, cityName, barangayName };
+  };
+
+  // Function to load existing resume data from database
+  const loadExistingResumeData = async () => {
+    try {
+      console.log('Loading resume data from database...');
+      
+      if (!auth.currentUser) {
+        console.log('No authenticated user found');
+        return;
+      }
+      
+      const token = await auth.currentUser.getIdToken();
+      const response = await fetch('http://localhost:3001/api/resumes/current', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Loaded resume data from database:', result.data);
+        
+        // Transform database data back to form format
+        const dbData = result.data;
+        const transformedData = {
           personalInfo: {
-            name: '',
-            email: '',
-            phone: '',
-            address: '',
-            age: '',
-            birthday: '',
-            ...parsedData.personalInfo
+            firstName: dbData.personalInfo.fullName ? dbData.personalInfo.fullName.split(' ')[0] || '' : '',
+            lastName: dbData.personalInfo.fullName ? dbData.personalInfo.fullName.split(' ').slice(1).join(' ') || '' : '',
+            email: dbData.personalInfo.email || '',
+            phone: dbData.personalInfo.phone || '',
+            // Load PSGC codes from location object
+            region: dbData.personalInfo.location?.region || '',
+            province: dbData.personalInfo.location?.province || '',
+            city: dbData.personalInfo.location?.city || '',
+            barangay: dbData.personalInfo.location?.barangay || '',
+            address: dbData.personalInfo.address || '',
+            zipCode: dbData.personalInfo.zipCode || '',
+            age: dbData.personalInfo.age || '',
+            birthday: dbData.personalInfo.birthday || '',
+            photo: dbData.personalInfo.photo || '',
+            // Include readable location names from database for PDF generation
+            readableLocationRegion: dbData.personalInfo.readableLocation?.region || '',
+            readableLocationProvince: dbData.personalInfo.readableLocation?.province || '',
+            readableLocationCity: dbData.personalInfo.readableLocation?.city || '',
+            readableLocationBarangay: dbData.personalInfo.readableLocation?.barangay || ''
           },
-          summary: parsedData.summary || '',
-          experience: parsedData.experience || [{
+          summary: dbData.summary || '',
+          experience: dbData.workExperience || [{
             company: '',
             position: '',
             duration: '',
-            description: ''
+            description: '',
+            location: '',
+            startDate: '',
+            endDate: ''
           }],
-          education: {
-            tertiary: { major: '', school: '', ay: '', ...parsedData.education?.tertiary },
-            secondary: { major: '', school: '', ay: '', ...parsedData.education?.secondary },
-            primary: { major: '', school: '', ay: '', ...parsedData.education?.primary }
-          },
-          skills: parsedData.skills || [''],
-          certifications: parsedData.certifications || ['']
+          education: (dbData.education || []).map((edu: any) => ({
+            degree: edu.degree || '',
+            school: edu.school || '',
+            location: edu.location || '',
+            // Convert year back to YYYY-01 format for the year picker
+            startDate: edu.startDate ? `${edu.startDate}-01` : '',
+            endDate: edu.endDate === 'present' ? 'present' : (edu.endDate ? `${edu.endDate}-01` : '')
+          })),
+          skills: dbData.skills || [''],
+          certifications: [''] // Not stored in DB yet, keep empty
         };
         
-        console.log('Setting complete data:', completeData);
-        setResumeData(completeData);
+        console.log('Transformed data for form:', transformedData);
+        setResumeData(transformedData);
         setHasExistingResume(true);
+        setIsPDFReady(true); // Resume exists, PDF is ready
+        
+        // Populate dependent dropdowns based on loaded PSGC codes
+        const personalInfo = transformedData.personalInfo;
+        
+        // Load provinces if region is selected (without clearing dependent fields)
+        if (personalInfo.region) {
+          loadProvincesForRegion(personalInfo.region);
+        }
+        
+        // Load cities if province is selected (with a small delay to ensure provinces are loaded)
+        if (personalInfo.province) {
+          setTimeout(() => {
+            loadCitiesForProvince(personalInfo.province);
+          }, 100);
+        }
+        
+        // Load barangays if city is selected (with a small delay to ensure cities are loaded)
+        if (personalInfo.city) {
+          setTimeout(() => {
+            loadBarangaysForCity(personalInfo.city);
+          }, 200);
+        }
         
         // Update parent component with loaded data
         if (onResumeDataChange) {
-          onResumeDataChange(completeData);
+          onResumeDataChange(transformedData);
         }
-      } catch (error) {
-        console.error('Error loading saved resume:', error);
+      } else if (response.status === 404) {
+        console.log('No existing resume found in database');
+        // No existing resume, keep default empty state
+      } else {
+        console.error('Error loading resume:', response.statusText);
       }
-    } else if (resumeFormData) {
-      // Fallback to parent props if no localStorage
-      console.log('Loading from parent props:', resumeFormData);
-      setResumeData(resumeFormData);
-      setHasExistingResume(true);
+    } catch (error) {
+      console.error('Error loading existing resume data:', error);
+    }
+  };
+
+  // Load existing resume data on component mount
+  useEffect(() => {
+    if (auth.currentUser) {
+      loadExistingResumeData();
+    } else {
+      // Wait for auth to be ready
+      const unsubscribe = auth.onAuthStateChanged((user) => {
+        if (user) {
+          loadExistingResumeData();
+          unsubscribe();
+        }
+      });
+      return unsubscribe;
     }
   }, []);
 
@@ -165,7 +778,7 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
     const { personalInfo, summary, experience, education, skills } = resumeData;
     
     // Check personal info
-    if (!personalInfo.name || !personalInfo.email || !personalInfo.phone || !personalInfo.address || !personalInfo.age || !personalInfo.birthday) {
+    if (!personalInfo.firstName || !personalInfo.lastName || !personalInfo.email || !personalInfo.phone || !personalInfo.region || !personalInfo.province || !personalInfo.city || !personalInfo.barangay || !personalInfo.address || !personalInfo.zipCode || !personalInfo.age || !personalInfo.birthday) {
       return false;
     }
     
@@ -180,9 +793,31 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
       return false;
     }
     
-    // Check at least tertiary education
-    if (!education.tertiary.major || !education.tertiary.school || !education.tertiary.ay) {
+    // Validate experience dates
+    for (let i = 0; i < experience.length; i++) {
+      const exp = experience[i];
+      if (exp.company.trim() || exp.position.trim()) { // Only validate if experience has content
+        const validation = validateExperienceDates(exp.startDate, exp.endDate);
+        if (!validation.isValid) {
+          return false;
+        }
+      }
+    }
+    
+    // Check at least one education entry
+    if (!education.some(edu => edu.degree && edu.school)) {
       return false;
+    }
+    
+    // Validate education dates
+    for (let i = 0; i < education.length; i++) {
+      const edu = education[i];
+      if (edu.degree.trim() || edu.school.trim()) { // Only validate if education has content
+        const validation = validateEducationDates(edu.startDate, edu.endDate);
+        if (!validation.isValid) {
+          return false;
+        }
+      }
     }
     
     // Check at least one skill
@@ -226,7 +861,10 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
       company: '',
       position: '',
       duration: '',
-      description: ''
+      description: '',
+      location: '',
+      startDate: '',
+      endDate: ''
     }];
     updateResumeData('experience', newExperience);
   };
@@ -243,15 +881,29 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
     updateResumeData('experience', newExperience);
   };
 
-  const updateEducation = (level: 'tertiary' | 'secondary' | 'primary', field: keyof EducationLevel, value: string) => {
-    const newEducation = {
-      ...resumeData.education,
-      [level]: {
-        ...resumeData.education[level],
-        [field]: value
-      }
-    };
+  const addEducation = () => {
+    const newEducation = [...resumeData.education, {
+      degree: '',
+      school: '',
+      location: '',
+      startDate: '',
+      endDate: ''
+    }];
     updateResumeData('education', newEducation);
+  };
+
+  const updateEducation = (index: number, field: keyof EducationLevel, value: string) => {
+    const newEducation = resumeData.education.map((edu, i) => 
+      i === index ? { ...edu, [field]: value } : edu
+    );
+    updateResumeData('education', newEducation);
+  };
+
+  const removeEducation = (index: number) => {
+    if (resumeData.education.length > 1) {
+      const newEducation = resumeData.education.filter((_, i) => i !== index);
+      updateResumeData('education', newEducation);
+    }
   };
 
   const addSkill = () => {
@@ -296,183 +948,295 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
     const doc = new jsPDF();
     const { personalInfo, summary, experience, education, skills } = resumeData;
     
-    // Page margins and layout
+    // Page margins and layout - cleaner, more compact spacing
     const margin = 20;
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
     const contentWidth = pageWidth - (margin * 2);
     
-    let yPosition = 30;
+    let yPosition = 25;
+    
+    // Black and white color scheme
+    const blackColor = [0, 0, 0]; // Pure black
+    const grayColor = [100, 100, 100]; // Medium gray
     
     // Helper function to check if we need a new page
     const checkPageBreak = (requiredSpace: number) => {
       if (yPosition + requiredSpace > pageHeight - margin) {
         doc.addPage();
-        yPosition = margin;
+        yPosition = margin + 10;
         return true;
       }
       return false;
     };
     
-    // Name - Large and centered
+    // Header section - Name centered and bold
+    doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    const nameWidth = doc.getTextWidth(personalInfo.name || 'Your Name');
+    const fullName = `${personalInfo.firstName || ''} ${personalInfo.lastName || ''}`.trim() || 'Your Name';
+    const nameWidth = doc.getTextWidth(fullName);
     const nameX = (pageWidth - nameWidth) / 2;
-    doc.text(personalInfo.name || 'Your Name', nameX, yPosition);
+    doc.text(fullName.toUpperCase(), nameX, yPosition);
     yPosition += 10;
     
-    // Contact Information - Centered
+    // Contact information section - centered, smaller font
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    const contactInfo = [];
+    doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
     
-    if (personalInfo.email) contactInfo.push(personalInfo.email);
-    if (personalInfo.phone) contactInfo.push(personalInfo.phone);
-    if (personalInfo.address) contactInfo.push(personalInfo.address);
-    if (personalInfo.age) contactInfo.push(`Age: ${personalInfo.age}`);
-    if (personalInfo.birthday) {
-      const formattedDate = new Date(personalInfo.birthday).toLocaleDateString();
-      contactInfo.push(`Birthday: ${formattedDate}`);
+    // Construct full address - use stored readable names if available, otherwise convert PSGC codes
+    let regionName = '', provinceName = '', cityName = '', barangayName = '';
+    
+    // Check if we have stored readable names from database
+    const personalInfoAny = resumeData.personalInfo as any;
+    if (personalInfoAny.readableLocationRegion) {
+      regionName = personalInfoAny.readableLocationRegion;
+      provinceName = personalInfoAny.readableLocationProvince || '';
+      cityName = personalInfoAny.readableLocationCity || '';
+      barangayName = personalInfoAny.readableLocationBarangay || '';
+    } else {
+      // Fallback to converting PSGC codes (for current session or backward compatibility)
+      const displayNames = getLocationDisplayNames();
+      regionName = displayNames.regionName;
+      provinceName = displayNames.provinceName;
+      cityName = displayNames.cityName;
+      barangayName = displayNames.barangayName;
     }
     
-    // Display contact info centered, separated by bullets
-    if (contactInfo.length > 0) {
-      const contactText = contactInfo.join(' • ');
+    const addressParts = [];
+    if (personalInfo.address) addressParts.push(personalInfo.address);
+    if (barangayName) addressParts.push(barangayName);
+    if (cityName) addressParts.push(cityName);
+    if (provinceName) addressParts.push(provinceName);
+    if (regionName) addressParts.push(regionName);
+    if (personalInfo.zipCode) addressParts.push(personalInfo.zipCode);
+    
+    if (addressParts.length > 0) {
+      const fullAddress = addressParts.join(', ');
+      const addressWidth = doc.getTextWidth(fullAddress);
+      const addressX = (pageWidth - addressWidth) / 2;
+      doc.text(fullAddress, addressX, yPosition);
+      yPosition += 10;
+    }
+    
+    // Contact line - email and phone centered together with better spacing
+    const contactParts = [];
+    if (personalInfo.email) contactParts.push(personalInfo.email);
+    if (personalInfo.phone) contactParts.push(personalInfo.phone);
+    
+    if (contactParts.length > 0) {
+      const contactText = contactParts.join('  •  ');
       const contactWidth = doc.getTextWidth(contactText);
       const contactX = (pageWidth - contactWidth) / 2;
       doc.text(contactText, contactX, yPosition);
-      yPosition += 15;
+      yPosition += 10;
     }
     
-    // Add a simple line separator
-    doc.setLineWidth(0.5);
-    doc.line(margin, yPosition, pageWidth - margin, yPosition);
-    yPosition += 15;
+    // Birthday and Age line - centered with better formatting
+    const personalDetails = [];
+    if (personalInfo.birthday) {
+      const formattedDate = new Date(personalInfo.birthday).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      personalDetails.push(`Birthday: ${formattedDate}`);
+    }
+    if (personalInfo.age) {
+      personalDetails.push(`Age: ${personalInfo.age}`);
+    }
     
-    // Helper function to add section headers with consistent spacing
+    if (personalDetails.length > 0) {
+      const personalText = personalDetails.join('  •  ');
+      const personalWidth = doc.getTextWidth(personalText);
+      const personalX = (pageWidth - personalWidth) / 2;
+      doc.text(personalText, personalX, yPosition);
+      yPosition += 10;
+    }
+    
+    // Add subtle line separator
+    yPosition += 3;
+    doc.setDrawColor(blackColor[0], blackColor[1], blackColor[2]);
+    doc.setLineWidth(0.3);
+    doc.line(margin + 20, yPosition, pageWidth - margin - 20, yPosition);
+    yPosition += 8;
+    
+    // Helper function to add section headers - clean black style
     const addSectionHeader = (title: string) => {
-      checkPageBreak(25); // Reserve space for section header and spacing
+      checkPageBreak(20);
       
-      // Add moderate spacing before each section (except first one)
-      if (yPosition > 60) { // Skip spacing for first section after header
-        yPosition += 8; // Reduced space before section
-      }
+      // Add spacing before section
+      yPosition += 10;
+      
+      // Section header - black, bold, centered with gray background
+      doc.setFillColor(240, 240, 240); // Light gray background
+      doc.rect(margin, yPosition - 3, contentWidth, 8, 'F');
       
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 0, 0);
-      doc.text(title, margin, yPosition);
-      yPosition += 3;
+      doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
+      const titleWidth = doc.getTextWidth(title.toUpperCase());
+      const titleX = (pageWidth - titleWidth) / 2;
+      doc.text(title.toUpperCase(), titleX, yPosition + 2);
       
-      // Simple underline
-      doc.setLineWidth(0.3);
-      doc.line(margin, yPosition, margin + doc.getTextWidth(title), yPosition);
-      yPosition += 8; // Reduced space after header
+      yPosition += 12;
     };
     
-    // Professional Summary
+    // Professional Summary with improved typography
     if (summary) {
-      addSectionHeader('PROFESSIONAL SUMMARY');
+      addSectionHeader('Professional Summary');
       
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
-      doc.setTextColor(0, 0, 0);
+      doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
       const summaryLines = doc.splitTextToSize(summary, contentWidth);
       checkPageBreak(summaryLines.length * 5 + 10);
       doc.text(summaryLines, margin, yPosition);
-      yPosition += summaryLines.length * 5;
+      yPosition += summaryLines.length * 5 + 5;
     }
     
     // Work Experience
     const validExperience = experience.filter(exp => exp.company && exp.position);
     if (validExperience.length > 0) {
-      addSectionHeader('WORK EXPERIENCE');
+      addSectionHeader('Experience');
       
       validExperience.forEach((exp, index) => {
         // Calculate space needed for this experience entry
-        const descLines = exp.description ? doc.splitTextToSize(exp.description, contentWidth - 10) : [];
-        const spaceNeeded = 6 + (exp.duration ? 6 : 0) + (descLines.length * 5) + 8 + 5;
+        const descLines = exp.description ? doc.splitTextToSize(exp.description, contentWidth - 15) : [];
+        const spaceNeeded = 20 + (descLines.length * 5);
         checkPageBreak(spaceNeeded);
         
-        // Job title and company
-        doc.setFontSize(11);
+        // Experience entry with bullet point and formatting like the image
+        doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 0, 0);
-        doc.text(`${exp.position}`, margin, yPosition);
+        doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
         
-        // Company name
-        doc.setFont('helvetica', 'normal');
-        doc.text(`    - ${exp.company}`, margin + doc.getTextWidth(`${exp.position}`), yPosition);
-        yPosition += 6;
+        // Format: ❖ Position, Company ........................ Duration
+        const bulletPoint = '❖';
+        const positionCompany = `${bulletPoint} ${exp.position}, ${exp.company}`;
+        doc.text(positionCompany, margin, yPosition);
         
-        // Duration
-        if (exp.duration) {
-          doc.setFontSize(9);
-          doc.setFont('helvetica', 'italic');
-          doc.text(exp.duration, margin, yPosition);
-          yPosition += 6;
+        // Duration (right aligned) - format from start and end dates
+        let durationText = '';
+        if (exp.startDate && exp.endDate && exp.endDate !== 'present') {
+          const startDate = new Date(exp.startDate + '-01');
+          const endDate = new Date(exp.endDate + '-01');
+          const startMonth = startDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+          const endMonth = endDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+          durationText = `${startMonth} — ${endMonth}`;
+        } else if (exp.startDate) {
+          const startDate = new Date(exp.startDate + '-01');
+          const startMonth = startDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+          durationText = `${startMonth} — Present`;
+        } else if (exp.duration) {
+          // Fallback to old duration field if new dates aren't available
+          durationText = exp.duration;
         }
         
-        // Description
+        if (durationText) {
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
+          const durationWidth = doc.getTextWidth(durationText);
+          doc.text(durationText, pageWidth - margin - durationWidth, yPosition);
+        }
+        yPosition += 4;
+        
+        // Add location on next line if available
+        if (exp.location) {
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'italic');
+          doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
+          const locationWidth = doc.getTextWidth(exp.location);
+          doc.text(exp.location, pageWidth - margin - locationWidth, yPosition);
+          yPosition += 4;
+        }
+        
+        // Description with improved formatting
         if (exp.description) {
           doc.setFontSize(10);
           doc.setFont('helvetica', 'normal');
-          doc.text(descLines, margin + 5, yPosition);
-          yPosition += descLines.length * 5 + 8;
+          doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
+          
+          // Split description into bullet points (assuming it's separated by periods or newlines)
+          const bullets = exp.description.split(/[.\n]/).filter(bullet => bullet.trim().length > 0);
+          
+          bullets.forEach(bullet => {
+            const bulletText = `• ${bullet.trim()}`;
+            const bulletLines = doc.splitTextToSize(bulletText, contentWidth - 10);
+            
+            bulletLines.forEach((line: string, lineIndex: number) => {
+              if (lineIndex === 0) {
+                doc.text(line, margin + 5, yPosition);
+              } else {
+                doc.text(line, margin + 10, yPosition); // Indent continuation lines
+              }
+              yPosition += 4;
+            });
+          });
+          yPosition += 5;
         }
         
         // Add spacing between experiences
         if (index < validExperience.length - 1) {
-          yPosition += 5;
+          yPosition += 8;
         }
       });
     }
     
     // Educational Background
-    const hasEducation = education.tertiary.major || education.tertiary.school || 
-                         education.secondary.major || education.secondary.school ||
-                         education.primary.major || education.primary.school;
-    
-    if (hasEducation) {
-      addSectionHeader('EDUCATION');
+    const validEducation = education.filter(edu => edu.degree && edu.school);
+    if (validEducation.length > 0) {
+      addSectionHeader('Education');
       
-      const educationLevels = [
-        { level: 'Tertiary Education', data: education.tertiary },
-        { level: 'Secondary Education', data: education.secondary },
-        { level: 'Primary Education', data: education.primary }
-      ];
-      
-      educationLevels.forEach(({ level, data }) => {
-        if (data.major || data.school) {
-          // Calculate space needed for this education entry
-          const spaceNeeded = 6 + (data.major ? 5 : 0) + (data.school ? 5 : 0) + (data.ay ? 5 : 0) + 5;
-          checkPageBreak(spaceNeeded);
-          
-          doc.setFontSize(11);
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(0, 0, 0);
-          doc.text(level, margin, yPosition);
-          yPosition += 6;
-          
-          doc.setFontSize(10);
-          doc.setFont('helvetica', 'normal');
-          
-          if (data.major) {
-            doc.text(data.major, margin + 5, yPosition);
-            yPosition += 5;
-          }
-          if (data.school) {
-            doc.text(data.school, margin + 5, yPosition);
-            yPosition += 5;
-          }
-          if (data.ay) {
-            doc.text(data.ay, margin + 5, yPosition);
-            yPosition += 5;
-          }
-          yPosition += 5;
+      validEducation.forEach((edu, index) => {
+        checkPageBreak(25);
+        
+        // Degree (bold) with cleaner typography
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
+        doc.text(edu.degree, margin, yPosition);
+        
+        // Duration (right aligned) - format from start and end dates
+        let durationText = '';
+        if (edu.startDate && edu.endDate && edu.endDate !== 'present') {
+          const startDate = new Date(edu.startDate + '-01');
+          const endDate = new Date(edu.endDate + '-01');
+          const startYear = startDate.getFullYear();
+          const endYear = endDate.getFullYear();
+          durationText = `${startYear} — ${endYear}`;
+        } else if (edu.startDate) {
+          const startDate = new Date(edu.startDate + '-01');
+          const startYear = startDate.getFullYear();
+          durationText = `${startYear} — Present`;
         }
+        
+        if (durationText) {
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'italic');
+          doc.setTextColor(grayColor[0], grayColor[1], grayColor[2]);
+          const durationWidth = doc.getTextWidth(durationText);
+          doc.text(durationText, pageWidth - margin - durationWidth, yPosition);
+        }
+        yPosition += 5;
+        
+        // School name with cleaner styling
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
+        doc.text(edu.school, margin, yPosition);
+        
+        // Location if available
+        if (edu.location) {
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'italic');
+          doc.setTextColor(grayColor[0], grayColor[1], grayColor[2]);
+          const locationWidth = doc.getTextWidth(edu.location);
+          doc.text(edu.location, pageWidth - margin - locationWidth, yPosition);
+        }
+        yPosition += 8;
       });
     }
     
@@ -482,21 +1246,23 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
     console.log('Valid skills for PDF:', validSkills);
     
     if (validSkills.length > 0) {
-      addSectionHeader('SKILLS');
+      addSectionHeader('Skills');
       
-      doc.setFontSize(10);
+      doc.setFontSize(11);
       doc.setFont('helvetica', 'normal');
-      doc.setTextColor(0, 0, 0);
+      doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
       
-      // Display skills as comma-separated list
-      const skillsText = validSkills.join(', ');
-      const skillsLines = doc.splitTextToSize(skillsText, contentWidth);
+      // Display skills in a more compact, professional format
+      const skillsPerLine = 3;
+      const skillsText = validSkills.join('  •  ');
+      const skillLines = doc.splitTextToSize(skillsText, contentWidth);
       
-      // Check if we need a new page for skills
-      checkPageBreak(skillsLines.length * 5 + 10);
-      
-      doc.text(skillsLines, margin, yPosition);
-      yPosition += skillsLines.length * 5;
+      checkPageBreak(skillLines.length * 6 + 10);
+      skillLines.forEach((line: string) => {
+        doc.text(line, margin, yPosition);
+        yPosition += 5;
+      });
+      yPosition += 5;
     } else {
       console.log('No valid skills found for PDF generation');
     }
@@ -506,7 +1272,8 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
       return doc.output('blob');
     } else {
       // Use provided filename or generate a consistent one
-      const defaultFileName = `${personalInfo.name?.replace(/\s+/g, '_') || 'Resume'}_Resume.pdf`;
+      const fullName = `${personalInfo.firstName || ''}_${personalInfo.lastName || ''}`.replace(/\s+/g, '_') || 'Resume';
+      const defaultFileName = `${fullName}_Resume.pdf`;
       const fileName = filename || defaultFileName;
       doc.save(fileName);
     }
@@ -524,9 +1291,6 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
         skills: resumeData.skills.filter(skill => skill.trim() !== ''),
         certifications: resumeData.certifications.filter(cert => cert.trim() !== '')
       };
-
-      // Save to localStorage (keeps data editable)
-      localStorage.setItem('resumeData', JSON.stringify(cleanedData));
       
       // Update parent state
       if (onResumeDataChange) {
@@ -535,9 +1299,6 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
       
       // Simulate processing time for better UX
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Show success message
-      setGenerationStep('success');
       
       // Generate PDF blob for database storage (without downloading)
       const pdfBlob = generatePDF(undefined, true);
@@ -548,9 +1309,13 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
       // Save to database via API
       await saveResumeToDatabase(cleanedData, pdfBase64);
       
+      // Show success message
+      setGenerationStep('success');
+      
       // Set PDF ready state immediately after success
       setIsPDFReady(true);
       setHasUnsavedChanges(false);
+      setHasExistingResume(true);
       
     } catch (error) {
       console.error('Error saving resume:', error);
@@ -566,20 +1331,20 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
   };
 
   const handleSaveSection = () => {
-    // Save current data to localStorage
+    // Update parent state only (no localStorage)
     const cleanedData = {
       ...resumeData,
       experience: resumeData.experience.filter(exp => exp.company || exp.position),
       skills: resumeData.skills.filter(skill => skill.trim() !== ''),
       certifications: resumeData.certifications.filter(cert => cert.trim() !== '')
     };
-    localStorage.setItem('resumeData', JSON.stringify(cleanedData));
     
     if (onResumeDataChange) {
       onResumeDataChange(cleanedData);
     }
     
     setEditingSection(null);
+    setHasUnsavedChanges(true); // Mark as having unsaved changes
   };
 
   const handleCancelEdit = () => {
@@ -638,6 +1403,23 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
         throw new Error('No authentication token found. Please log in again.');
       }
 
+      // Get location display names for the database
+      const { regionName, provinceName, cityName, barangayName } = getLocationDisplayNames();
+      
+      
+      // Create enhanced resume data with readable location names
+      const enhancedResumeData = {
+        ...resumeData,
+        personalInfo: {
+          ...resumeData.personalInfo,
+          // Add readable location names for database storage
+          regionName,
+          provinceName,
+          cityName,
+          barangayName
+        }
+      };
+
       const response = await fetch('http://localhost:3001/api/resumes/create', {
         method: 'POST',
         headers: {
@@ -645,7 +1427,7 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          resumeData,
+          resumeData: enhancedResumeData,
           pdfData: pdfBase64
         })
       });
@@ -667,25 +1449,57 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
 
   const clearResumeData = () => {
     const emptyData = {
-      personalInfo: { name: '', email: '', phone: '', address: '', age: '', birthday: '' },
+      personalInfo: { firstName: '', lastName: '', email: '', phone: '', region: '', province: '', city: '', barangay: '', address: '', zipCode: '', age: '', birthday: '', photo: '' },
       summary: '',
-      experience: [{ company: '', position: '', duration: '', description: '' }],
-      education: {
-        tertiary: { major: '', school: '', ay: '' },
-        secondary: { major: '', school: '', ay: '' },
-        primary: { major: '', school: '', ay: '' }
-      },
+      experience: [{ company: '', position: '', duration: '', description: '', location: '', startDate: '', endDate: '' }],
+      education: [{ degree: '', school: '', location: '', startDate: '', endDate: '' }],
       skills: [''],
       certifications: ['']
     };
     setResumeData(emptyData);
-    localStorage.removeItem('resumeData');
     setHasExistingResume(false);
     setIsPDFReady(false);
+    setHasUnsavedChanges(true);
     // Clear parent component data as well
     if (onResumeDataChange) {
       onResumeDataChange(emptyData);
+    };
+  };
+
+  // Photo upload handler
+  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file.');
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Please select an image smaller than 5MB.');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64String = e.target?.result as string;
+        updatePersonalInfo('photo', base64String);
+      };
+      reader.readAsDataURL(file);
     }
+  };
+
+  const handleRemovePhoto = () => {
+    updatePersonalInfo('photo', '');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const triggerPhotoUpload = () => {
+    fileInputRef.current?.click();
   };
 
 
@@ -751,84 +1565,268 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
         <FiUser className={styles.sectionIcon} />
         <h2 className={styles.sectionTitle}>Personal Information</h2>
       </div>
+      
+      {/* Photo and Name Section */}
+      <div className={styles.photoAndNameSection}>
+        {/* Photo Upload */}
+        <div className={styles.photoUploadContainer}>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handlePhotoUpload}
+            accept="image/*"
+            style={{ display: 'none' }}
+          />
+          {resumeData.personalInfo.photo ? (
+            <div className={styles.photoPreview}>
+              <img 
+                src={resumeData.personalInfo.photo} 
+                alt="Profile" 
+                className={styles.photoImage}
+              />
+              <div className={styles.photoOverlay}>
+                <button 
+                  onClick={triggerPhotoUpload}
+                  className={styles.photoChangeButton}
+                >
+                  <FiUpload /> Change
+                </button>
+                <button 
+                  onClick={handleRemovePhoto}
+                  className={styles.photoRemoveButton}
+                >
+                  <FiX /> Remove
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className={styles.photoPlaceholder} onClick={triggerPhotoUpload}>
+              <FiUpload className={styles.photoPlaceholderIcon} />
+              <span className={styles.photoPlaceholderText}>Add photo</span>
+              <span className={styles.photoPlaceholderSubtext}>(optional)</span>
+            </div>
+          )}
+        </div>
+        
+        {/* Name and Contact Fields */}
+        <div className={styles.nameAndContactContainer}>
+          {/* Name Fields */}
+          <div className={styles.nameFieldsContainer}>
+            <div className={styles.formGroup}>
+              <label>
+                First Name <span className={styles.required}>*</span>
+              </label>
+              <input
+                type="text"
+                value={resumeData.personalInfo.firstName}
+                onChange={(e) => updatePersonalInfo('firstName', capitalizeWords(e.target.value))}
+                placeholder="Enter your first name"
+                className={styles.formInput}
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label>
+                Last Name <span className={styles.required}>*</span>
+              </label>
+              <input
+                type="text"
+                value={resumeData.personalInfo.lastName}
+                onChange={(e) => updatePersonalInfo('lastName', capitalizeWords(e.target.value))}
+                placeholder="Enter your last name"
+                className={styles.formInput}
+              />
+            </div>
+          </div>
+          
+          {/* Contact Fields */}
+          <div className={styles.contactFieldsContainer}>
+            <div className={styles.formGroup}>
+              <label>
+                Email Address <span className={styles.required}>*</span>
+              </label>
+              <input
+                type="email"
+                value={resumeData.personalInfo.email}
+                onChange={(e) => handleEmailChange(e.target.value)}
+                placeholder="example@email.com"
+                className={`${styles.formInput} ${resumeData.personalInfo.email && !isValidEmail(resumeData.personalInfo.email) ? styles.inputError : ''}`}
+              />
+              {resumeData.personalInfo.email && !isValidEmail(resumeData.personalInfo.email) && (
+                <span className={styles.errorText}>Please enter a valid email address</span>
+              )}
+            </div>
+            <div className={styles.formGroup}>
+              <label>
+                Phone Number <span className={styles.required}>*</span>
+              </label>
+              <input
+                type="tel"
+                value={resumeData.personalInfo.phone}
+                onChange={(e) => handlePhoneChange(e.target.value)}
+                placeholder="0XXX-XXX-XXXX"
+                className={`${styles.formInput} ${resumeData.personalInfo.phone && !isValidPhoneNumber(resumeData.personalInfo.phone) ? styles.inputError : ''}`}
+              />
+              {resumeData.personalInfo.phone && !isValidPhoneNumber(resumeData.personalInfo.phone) && (
+                <span className={styles.errorText}>Please enter a valid Philippine phone number</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Address Information */}
       <div className={styles.formGrid}>
         <div className={styles.formGroup}>
           <label>
-            <FiUser className={styles.labelIcon} />
-            Full Name
+            Region ({regions.length} available) <span className={styles.required}>*</span>
           </label>
-          <input
-            type="text"
-            value={resumeData.personalInfo.name}
-            onChange={(e) => updatePersonalInfo('name', e.target.value)}
-            placeholder="Enter your full name"
+          <select
+            value={resumeData.personalInfo.region}
+            onChange={(e) => handleRegionChange(e.target.value)}
             className={styles.formInput}
-          />
+          >
+            <option value="">Select Region</option>
+            {regions && regions.length > 0 ? (
+              regions.map((region, index) => {
+                const regionCode = region.reg_code || region.regCode;
+                const regionName = region.name || region.regDesc;
+                return (
+                  <option key={regionCode || index} value={regionCode}>
+                    {regionName || `Region ${index}`}
+                  </option>
+                );
+              })
+            ) : (
+              <option disabled>No regions available</option>
+            )}
+          </select>
         </div>
         <div className={styles.formGroup}>
           <label>
-            <FiMail className={styles.labelIcon} />
-            Email Address
+            Province ({provinces.length} available) <span className={styles.required}>*</span>
           </label>
-          <input
-            type="email"
-            value={resumeData.personalInfo.email}
-            onChange={(e) => updatePersonalInfo('email', e.target.value)}
-            placeholder="Enter your email"
+          <select
+            value={resumeData.personalInfo.province}
+            onChange={(e) => handleProvinceChange(e.target.value)}
             className={styles.formInput}
-          />
+            disabled={!resumeData.personalInfo.region}
+          >
+            <option value="">Select Province</option>
+            {provinces && provinces.length > 0 ? (
+              provinces.map((province, index) => {
+                const provinceCode = province.prv_code || province.prov_code || province.provCode;
+                const provinceName = province.name || province.provDesc;
+                return (
+                  <option key={provinceCode || index} value={provinceCode}>
+                    {provinceName || `Province ${index}`}
+                  </option>
+                );
+              })
+            ) : (
+              <option disabled>No provinces available</option>
+            )}
+          </select>
         </div>
         <div className={styles.formGroup}>
           <label>
-            <FiPhone className={styles.labelIcon} />
-            Phone Number
+            City/Municipality ({cities.length} available) <span className={styles.required}>*</span>
           </label>
-          <input
-            type="tel"
-            value={resumeData.personalInfo.phone}
-            onChange={(e) => updatePersonalInfo('phone', e.target.value)}
-            placeholder="Enter your phone number"
+          <select
+            value={resumeData.personalInfo.city}
+            onChange={(e) => handleCityChange(e.target.value)}
             className={styles.formInput}
-          />
+            disabled={!resumeData.personalInfo.province}
+          >
+            <option value="">Select City/Municipality</option>
+            {cities && cities.length > 0 ? (
+              cities.map((city, index) => {
+                const cityCode = city.mun_code || city.citymunCode;
+                const cityName = city.name || city.citymunDesc;
+                return (
+                  <option key={cityCode || index} value={cityCode}>
+                    {cityName || `City ${index}`}
+                  </option>
+                );
+              })
+            ) : (
+              <option disabled>No cities available</option>
+            )}
+          </select>
         </div>
         <div className={styles.formGroup}>
           <label>
-            <FiMapPin className={styles.labelIcon} />
-            Address
+            Barangay ({barangays.length} available) <span className={styles.required}>*</span>
+          </label>
+          <select
+            value={resumeData.personalInfo.barangay}
+            onChange={(e) => handleBarangayChange(e.target.value)}
+            className={styles.formInput}
+            disabled={!resumeData.personalInfo.city}
+          >
+            <option value="">Select Barangay</option>
+            {barangays && barangays.length > 0 ? (
+              barangays.map((barangay, index) => {
+                const barangayCode = barangay.bgy_code || barangay.brgy_code || barangay.brgyCode;
+                const barangayName = barangay.name || barangay.brgyDesc;
+                
+                
+                return (
+                  <option key={barangayCode || index} value={barangayCode || barangayName}>
+                    {barangayName || `Barangay ${index}`}
+                  </option>
+                );
+              })
+            ) : (
+              <option disabled>No barangays available</option>
+            )}
+          </select>
+        </div>
+        <div className={styles.formGroup}>
+          <label>
+            Street Address <span className={styles.required}>*</span>
           </label>
           <input
             type="text"
             value={resumeData.personalInfo.address}
             onChange={(e) => updatePersonalInfo('address', e.target.value)}
             className={styles.formInput}
-            placeholder="Enter your address"
+            placeholder="123 Rizal Street"
           />
         </div>
         <div className={styles.formGroup}>
           <label>
-            <FiClock className={styles.labelIcon} />
-            Age
+            Zip Code <span className={styles.required}>*</span>
           </label>
           <input
-            type="number"
-            value={resumeData.personalInfo.age}
-            onChange={(e) => updatePersonalInfo('age', e.target.value)}
+            type="text"
+            value={resumeData.personalInfo.zipCode}
+            onChange={(e) => updatePersonalInfo('zipCode', e.target.value)}
             className={styles.formInput}
-            placeholder="Enter your age"
-            min="16"
-            max="100"
+            placeholder="1000"
           />
         </div>
         <div className={styles.formGroup}>
           <label>
-            <FiCalendar className={styles.labelIcon} />
-            Birthday
+            Birthday <span className={styles.required}>*</span>
           </label>
           <input
             type="date"
             value={resumeData.personalInfo.birthday}
-            onChange={(e) => updatePersonalInfo('birthday', e.target.value)}
+            onChange={(e) => handleBirthdayChange(e.target.value)}
             className={styles.formInput}
+            max={new Date().toISOString().split('T')[0]}
+          />
+        </div>
+        <div className={styles.formGroup}>
+          <label>
+            Age <span className={styles.required}>*</span>
+          </label>
+          <input
+            type="number"
+            value={resumeData.personalInfo.age}
+            className={styles.formInput}
+            placeholder="Auto-calculated"
+            readOnly
           />
         </div>
       </div>
@@ -868,7 +1866,17 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
           </div>
           <div className={styles.formGrid}>
             <div className={styles.formGroup}>
-              <label>Company</label>
+              <label>Job title</label>
+              <input
+                type="text"
+                value={exp.position}
+                onChange={(e) => updateExperience(index, 'position', e.target.value)}
+                placeholder="Junior Accountant"
+                className={styles.formInput}
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label>Employer</label>
               <input
                 type="text"
                 value={exp.company}
@@ -877,25 +1885,65 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
                 className={styles.formInput}
               />
             </div>
+          </div>
+          <div className={styles.formGrid}>
             <div className={styles.formGroup}>
-              <label>Position</label>
+              <label>Location</label>
               <input
                 type="text"
-                value={exp.position}
-                onChange={(e) => updateExperience(index, 'position', e.target.value)}
-                placeholder="Job title"
+                value={exp.location || ''}
+                onChange={(e) => updateExperience(index, 'location', e.target.value)}
+                placeholder="Makati City, Metro Manila, Philippines"
                 className={styles.formInput}
               />
             </div>
-            <div className={styles.formGroup}>
-              <label>Years of Experience</label>
-              <input
-                type="text"
-                value={exp.duration}
-                onChange={(e) => updateExperience(index, 'duration', e.target.value)}
-                placeholder="e.g., Jan 2020 - Present"
-                className={styles.formInput}
-              />
+            <div style={{ display: 'flex', gap: '15px' }}>
+              <div className={styles.formGroup} style={{ flex: '1' }}>
+                <label>Start date <span className={styles.required}>*</span></label>
+                <input
+                  type="month"
+                  value={exp.startDate || ''}
+                  onChange={(e) => updateExperience(index, 'startDate', e.target.value)}
+                  className={`${styles.formInput} ${getExperienceValidationError(index) ? styles.inputError : ''}`}
+                  style={{ width: '100%' }}
+                  title="Select month and year (MM/YYYY format)"
+                  max={new Date().toISOString().slice(0, 7)} // Prevent future dates
+                />
+              </div>
+              <div className={styles.formGroup} style={{ flex: '1' }}>
+                <label>End date</label>
+                <div className={styles.dateInputContainer}>
+                  <input
+                    type="month"
+                    value={exp.endDate === 'present' ? '' : (exp.endDate || '')}
+                    onChange={(e) => updateExperience(index, 'endDate', e.target.value)}
+                    className={`${styles.formInput} ${getExperienceValidationError(index) ? styles.inputError : ''}`}
+                    style={{ width: '100%' }}
+                    title="Select month and year (MM/YYYY format)"
+                    max={new Date().toISOString().slice(0, 7)} // Prevent future dates
+                    disabled={exp.endDate === 'present'}
+                  />
+                  <label className={styles.presentCheckbox}>
+                    <input
+                      type="checkbox"
+                      checked={exp.endDate === 'present'}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          updateExperience(index, 'endDate', 'present');
+                        } else {
+                          updateExperience(index, 'endDate', '');
+                        }
+                      }}
+                    />
+                    <span>Currently working here</span>
+                  </label>
+                  {getExperienceValidationError(index) && (
+                    <div className={styles.errorText}>
+                      {getExperienceValidationError(index)}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
           <div className={styles.formGroup}>
@@ -922,122 +1970,119 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
         <h2 className={styles.sectionTitle}>Educational Background</h2>
       </div>
       
-      {/* Tertiary */}
-      <div className={styles.itemContainer}>
-        <div className={styles.itemHeader}>
-          <h3 className={styles.itemTitle}>Tertiary</h3>
-        </div>
-        <div className={styles.formGrid}>
-          <div className={styles.formGroup}>
-            <label>Major</label>
-            <input
-              type="text"
-              value={resumeData.education.tertiary.major}
-              onChange={(e) => updateEducation('tertiary', 'major', e.target.value)}
-              placeholder="e.g., Bachelor of Science in Computer Science"
-              className={styles.formInput}
-            />
+      {resumeData.education.map((edu, index) => (
+        <div key={index} className={styles.itemContainer}>
+          <div className={styles.itemHeader}>
+            <h3 className={styles.itemTitle}>Education {index + 1}</h3>
+            {resumeData.education.length > 1 && (
+              <button 
+                onClick={() => removeEducation(index)}
+                className={styles.removeButton}
+              >
+                <FiTrash2 />
+              </button>
+            )}
           </div>
-          <div className={styles.formGroup}>
-            <label>School</label>
-            <input
-              type="text"
-              value={resumeData.education.tertiary.school}
-              onChange={(e) => updateEducation('tertiary', 'school', e.target.value)}
-              placeholder="e.g., De La Salle Lipa"
-              className={styles.formInput}
-            />
+          <div className={styles.formGrid}>
+            <div className={styles.formGroup}>
+              <label>School name</label>
+              <input
+                type="text"
+                value={edu.school}
+                onChange={(e) => updateEducation(index, 'school', e.target.value)}
+                placeholder="De La Salle University"
+                className={styles.formInput}
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label>Location</label>
+              <input
+                type="text"
+                value={edu.location}
+                onChange={(e) => updateEducation(index, 'location', e.target.value)}
+                placeholder="Manila, Philippines"
+                className={styles.formInput}
+              />
+            </div>
           </div>
-          <div className={styles.formGroup}>
-            <label>Academic Year</label>
-            <input
-              type="text"
-              value={resumeData.education.tertiary.ay}
-              onChange={(e) => updateEducation('tertiary', 'ay', e.target.value)}
-              placeholder="e.g., 2018-2023"
-              className={styles.formInput}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Secondary */}
-      <div className={styles.itemContainer}>
-        <div className={styles.itemHeader}>
-          <h3 className={styles.itemTitle}>Secondary</h3>
-        </div>
-        <div className={styles.formGrid}>
-          <div className={styles.formGroup}>
-            <label>Major</label>
-            <input
-              type="text"
-              value={resumeData.education.secondary.major}
-              onChange={(e) => updateEducation('secondary', 'major', e.target.value)}
-              placeholder="e.g., Bachelor of Science in Computer Science"
-              className={styles.formInput}
-            />
-          </div>
-          <div className={styles.formGroup}>
-            <label>School</label>
-            <input
-              type="text"
-              value={resumeData.education.secondary.school}
-              onChange={(e) => updateEducation('secondary', 'school', e.target.value)}
-              placeholder="e.g., De La Salle Lipa"
-              className={styles.formInput}
-            />
-          </div>
-          <div className={styles.formGroup}>
-            <label>AY</label>
-            <input
-              type="text"
-              value={resumeData.education.secondary.ay}
-              onChange={(e) => updateEducation('secondary', 'ay', e.target.value)}
-              placeholder="e.g., 2018-2023"
-              className={styles.formInput}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Primary */}
-      <div className={styles.itemContainer}>
-        <div className={styles.itemHeader}>
-          <h3 className={styles.itemTitle}>Primary</h3>
-        </div>
-        <div className={styles.formGrid}>
-          <div className={styles.formGroup}>
-            <label>Major</label>
-            <input
-              type="text"
-              value={resumeData.education.primary.major}
-              onChange={(e) => updateEducation('primary', 'major', e.target.value)}
-              placeholder="e.g., Bachelor of Science in Computer Science"
-              className={styles.formInput}
-            />
-          </div>
-          <div className={styles.formGroup}>
-            <label>School</label>
-            <input
-              type="text"
-              value={resumeData.education.primary.school}
-              onChange={(e) => updateEducation('primary', 'school', e.target.value)}
-              placeholder="e.g., De La Salle Lipa"
-              className={styles.formInput}
-            />
-          </div>
-          <div className={styles.formGroup}>
-            <label>AY</label>
-            <input
-              type="text"
-              value={resumeData.education.primary.ay}
-              onChange={(e) => updateEducation('primary', 'ay', e.target.value)}
-              placeholder="e.g., 2018-2023"
-              className={styles.formInput}
-            />
+          <div className={styles.formGrid}>
+            <div className={styles.formGroup}>
+              <label>Degree</label>
+              <input
+                type="text"
+                value={edu.degree}
+                onChange={(e) => updateEducation(index, 'degree', e.target.value)}
+                placeholder="Bachelor of Science in Computer Science"
+                className={styles.formInput}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '15px' }}>
+              <div className={styles.formGroup} style={{ flex: '1' }}>
+                <label>Start year</label>
+                <YearPicker
+                  value={edu.startDate ? new Date(edu.startDate + '-01').getFullYear().toString() : ''}
+                  onChange={(year) => {
+                    if (year) {
+                      updateEducation(index, 'startDate', `${year}-01`);
+                    } else {
+                      updateEducation(index, 'startDate', '');
+                    }
+                  }}
+                  minYear={1950}
+                  maxYear={new Date().getFullYear()}
+                  placeholder="Select start year"
+                  className={getEducationValidationError(index) ? styles.inputError : ''}
+                />
+              </div>
+              <div className={styles.formGroup} style={{ flex: '1' }}>
+                <label>End year</label>
+                <div className={styles.dateInputContainer}>
+                  <YearPicker
+                    value={edu.endDate === 'present' ? '' : (edu.endDate ? new Date(edu.endDate + '-01').getFullYear().toString() : '')}
+                    onChange={(year) => {
+                      if (year) {
+                        updateEducation(index, 'endDate', `${year}-01`);
+                      } else {
+                        updateEducation(index, 'endDate', '');
+                      }
+                    }}
+                    minYear={1950}
+                    maxYear={new Date().getFullYear() + 10}
+                    placeholder="Select end year"
+                    disabled={edu.endDate === 'present'}
+                    className={getEducationValidationError(index) ? styles.inputError : ''}
+                  />
+                  <label className={styles.presentCheckbox}>
+                    <input
+                      type="checkbox"
+                      checked={edu.endDate === 'present'}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          updateEducation(index, 'endDate', 'present');
+                        } else {
+                          updateEducation(index, 'endDate', '');
+                        }
+                      }}
+                    />
+                    <span>Currently studying here</span>
+                  </label>
+                  {getEducationValidationError(index) && (
+                    <div className={styles.errorText}>
+                      {getEducationValidationError(index)}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      ))}
+      <button 
+        onClick={addEducation}
+        className={styles.addButton}
+      >
+        <FiPlus /> Add Education
+      </button>
 
       {/* Skills */}
       <div className={styles.sectionHeader}>

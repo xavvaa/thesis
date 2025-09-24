@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const { verifyToken } = require('../middleware/authMiddleware');
 const Resume = require('../models/Resume');
+const MLResume = require('../models/MLResume');
 const JobSeeker = require('../models/JobSeeker');
 
 // @route   GET /api/resumes
@@ -120,6 +121,29 @@ router.post('/create', verifyToken, async (req, res) => {
     
     let filename, filePath;
     
+    // Helper function to construct full name
+    const constructFullName = (personalInfo) => {
+      const { firstName, lastName } = personalInfo;
+      return `${firstName || ''} ${lastName || ''}`.trim() || 'Resume';
+    };
+
+    // Helper function to convert education dates to years only
+    const processEducationDates = (education) => {
+      return education.map(edu => ({
+        ...edu,
+        startDate: edu.startDate ? new Date(edu.startDate + '-01').getFullYear().toString() : '',
+        endDate: edu.endDate === 'present' ? 'present' : (edu.endDate ? new Date(edu.endDate + '-01').getFullYear().toString() : '')
+      }));
+    };
+
+    // Helper function to process work experience (remove duration field)
+    const processWorkExperience = (experience) => {
+      return experience.map(exp => {
+        const { duration, ...expWithoutDuration } = exp;
+        return expWithoutDuration;
+      });
+    };
+
     if (existingResume) {
       // Update existing resume - reuse the same filename
       filename = existingResume.filename;
@@ -141,67 +165,120 @@ router.post('/create', verifyToken, async (req, res) => {
 
     if (existingResume) {
       // Update existing resume
-      existingResume.originalName = `${resumeData.personalInfo.name || 'Resume'}_Resume.pdf`;
+      const fullName = constructFullName(resumeData.personalInfo);
+      existingResume.originalName = `${fullName}_Resume.pdf`;
       existingResume.fileSize = pdfBuffer.length;
       existingResume.processingStatus = 'completed';
-      existingResume.personalInfo = resumeData.personalInfo;
-      existingResume.summary = resumeData.summary;
-      existingResume.skills = resumeData.skills;
-      existingResume.workExperience = resumeData.experience;
-      existingResume.education = {
-        tertiary: {
-          institution: resumeData.education?.tertiary?.school || '',
-          degree: resumeData.education?.tertiary?.major || '',
-          year: resumeData.education?.tertiary?.ay || ''
+      existingResume.personalInfo = {
+        fullName: fullName,
+        email: resumeData.personalInfo.email,
+        phone: resumeData.personalInfo.phone,
+        age: resumeData.personalInfo.age,
+        birthday: resumeData.personalInfo.birthday,
+        photo: resumeData.personalInfo.photo || '',
+        // Store address and PSGC codes in grouped location object
+        address: resumeData.personalInfo.address,
+        zipCode: resumeData.personalInfo.zipCode,
+        location: {
+          region: resumeData.personalInfo.region || '',
+          province: resumeData.personalInfo.province || '',
+          city: resumeData.personalInfo.city || '',
+          barangay: resumeData.personalInfo.barangay || ''
         },
-        secondary: {
-          institution: resumeData.education?.secondary?.school || '',
-          degree: resumeData.education?.secondary?.major || '',
-          year: resumeData.education?.secondary?.ay || ''
-        },
-        primary: {
-          institution: resumeData.education?.primary?.school || '',
-          degree: resumeData.education?.primary?.major || '',
-          year: resumeData.education?.primary?.ay || ''
+        readableLocation: {
+          region: resumeData.personalInfo.regionName || '',
+          province: resumeData.personalInfo.provinceName || '',
+          city: resumeData.personalInfo.cityName || '',
+          barangay: resumeData.personalInfo.barangayName || ''
         }
       };
+      
+      // Debug: Log what's being stored
+      console.log('🔍 BACKEND BARANGAY DEBUG:');
+      console.log('  - Received barangay PSGC:', resumeData.personalInfo.barangay, '(type:', typeof resumeData.personalInfo.barangay, ')');
+      console.log('  - Received barangay name:', resumeData.personalInfo.barangayName, '(type:', typeof resumeData.personalInfo.barangayName, ')');
+      console.log('Storing location data:', {
+        psgcCodes: {
+          region: resumeData.personalInfo.region,
+          province: resumeData.personalInfo.province,
+          city: resumeData.personalInfo.city,
+          barangay: resumeData.personalInfo.barangay
+        },
+        readableNames: {
+          region: resumeData.personalInfo.regionName,
+          province: resumeData.personalInfo.provinceName,
+          city: resumeData.personalInfo.cityName,
+          barangay: resumeData.personalInfo.barangayName
+        }
+      });
+      
+      existingResume.summary = resumeData.summary;
+      existingResume.skills = resumeData.skills;
+      existingResume.workExperience = processWorkExperience(resumeData.experience);
+      existingResume.education = processEducationDates(resumeData.education);
       existingResume.updatedAt = new Date();
+      // Increment version on update
+      existingResume.version = (existingResume.version || 1) + 1;
       
       await existingResume.save();
       var resume = existingResume;
     } else {
       // Create new resume record
+      const fullName = constructFullName(resumeData.personalInfo);
       const newResume = new Resume({
         jobSeekerUid: uid,
         jobSeekerId: jobSeeker._id,
         filename: filename,
-        originalName: `${resumeData.personalInfo.name || 'Resume'}_Resume.pdf`,
+        originalName: `${fullName}_Resume.pdf`,
         fileUrl: `/uploads/resumes/${filename}`,
         fileSize: pdfBuffer.length,
         mimeType: 'application/pdf',
         processingStatus: 'completed',
-        personalInfo: resumeData.personalInfo,
-        summary: resumeData.summary,
-        skills: resumeData.skills,
-        workExperience: resumeData.experience,
-        education: {
-          tertiary: {
-            institution: resumeData.education?.tertiary?.school || '',
-            degree: resumeData.education?.tertiary?.major || '',
-            year: resumeData.education?.tertiary?.ay || ''
+        personalInfo: {
+          fullName: fullName,
+          email: resumeData.personalInfo.email,
+          phone: resumeData.personalInfo.phone,
+          age: resumeData.personalInfo.age,
+          birthday: resumeData.personalInfo.birthday,
+          photo: resumeData.personalInfo.photo || '',
+          // Store address and PSGC codes in grouped location object
+          address: resumeData.personalInfo.address,
+          zipCode: resumeData.personalInfo.zipCode,
+          location: {
+            region: resumeData.personalInfo.region || '',
+            province: resumeData.personalInfo.province || '',
+            city: resumeData.personalInfo.city || '',
+            barangay: resumeData.personalInfo.barangay || ''
           },
-          secondary: {
-            institution: resumeData.education?.secondary?.school || '',
-            degree: resumeData.education?.secondary?.major || '',
-            year: resumeData.education?.secondary?.ay || ''
-          },
-          primary: {
-            institution: resumeData.education?.primary?.school || '',
-            degree: resumeData.education?.primary?.major || '',
-            year: resumeData.education?.primary?.ay || ''
+          readableLocation: {
+            region: resumeData.personalInfo.regionName || '',
+            province: resumeData.personalInfo.provinceName || '',
+            city: resumeData.personalInfo.cityName || '',
+            barangay: resumeData.personalInfo.barangayName || ''
           }
         },
+        summary: resumeData.summary,
+        skills: resumeData.skills,
+        workExperience: processWorkExperience(resumeData.experience),
+        education: processEducationDates(resumeData.education),
+        version: 1, // Start new resumes at version 1
         isActive: true
+      });
+
+      // Debug: Log what's being stored for new resume
+      console.log('Storing NEW resume location data:', {
+        psgcCodes: {
+          region: resumeData.personalInfo.region,
+          province: resumeData.personalInfo.province,
+          city: resumeData.personalInfo.city,
+          barangay: resumeData.personalInfo.barangay
+        },
+        readableNames: {
+          region: resumeData.personalInfo.regionName,
+          province: resumeData.personalInfo.provinceName,
+          city: resumeData.personalInfo.cityName,
+          barangay: resumeData.personalInfo.barangayName
+        }
       });
 
       await newResume.save();
@@ -211,6 +288,14 @@ router.post('/create', verifyToken, async (req, res) => {
     // Update job seeker's current resume reference
     jobSeeker.currentResumeId = resume._id;
     await jobSeeker.save();
+
+    // Sync to ML Resume collection
+    try {
+      await MLResume.createOrUpdateFromResume(resume);
+    } catch (mlError) {
+      console.error('Error syncing to ML Resume collection:', mlError);
+      // Don't fail the main operation if ML sync fails
+    }
 
     res.status(201).json({
       success: true,
