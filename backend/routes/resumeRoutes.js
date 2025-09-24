@@ -176,7 +176,7 @@ router.post('/create', verifyToken, async (req, res) => {
         jobSeekerId: jobSeeker._id,
         filename: filename,
         originalName: `${resumeData.personalInfo.name || 'Resume'}_Resume.pdf`,
-        fileUrl: `/uploads/resumes/${filename}`,
+        fileUrl: `${process.env.BASE_URL || 'http://localhost:3001'}/uploads/resumes/${filename}`,
         fileSize: pdfBuffer.length,
         mimeType: 'application/pdf',
         processingStatus: 'completed',
@@ -260,6 +260,145 @@ router.get('/:id/download', verifyToken, async (req, res) => {
     }
 
     res.download(filePath, resume.originalName);
+
+  } catch (error) {
+    console.error('Error downloading resume:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to download resume'
+    });
+  }
+});
+
+// @route   GET /api/resumes/view/:applicationId
+// @desc    View resume PDF for an application
+// @access  Private (Employer)
+router.get('/view/:applicationId', verifyToken, async (req, res) => {
+  try {
+    const { applicationId } = req.params;
+    const { uid } = req.user;
+
+    // Find the application and verify employer access
+    const Application = require('../models/Application');
+    const application = await Application.findOne({
+      _id: applicationId,
+      employerUid: uid
+    });
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        error: 'Application not found or access denied'
+      });
+    }
+
+    // Get the job seeker's current resume
+    const JobSeeker = require('../models/JobSeeker');
+    const jobSeeker = await JobSeeker.findOne({ uid: application.jobSeekerUid });
+    
+    if (!jobSeeker || !jobSeeker.currentResumeId) {
+      return res.status(404).json({
+        success: false,
+        error: 'Resume not found'
+      });
+    }
+
+    const resume = await Resume.findById(jobSeeker.currentResumeId);
+    if (!resume || !resume.pdfPath) {
+      return res.status(404).json({
+        success: false,
+        error: 'Resume PDF not found'
+      });
+    }
+
+    const fs = require('fs');
+    const path = require('path');
+    
+    const filePath = path.resolve(resume.pdfPath);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        success: false,
+        error: 'Resume file not found on server'
+      });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${resume.fileName || 'resume.pdf'}"`);
+    
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+  } catch (error) {
+    console.error('Error viewing resume:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to view resume'
+    });
+  }
+});
+
+// @route   GET /api/resumes/download/:applicationId
+// @desc    Download resume PDF for an application
+// @access  Private (Employer)
+router.get('/download/:applicationId', verifyToken, async (req, res) => {
+  try {
+    const { applicationId } = req.params;
+    const { uid } = req.user;
+
+    // Find the application and verify employer access
+    const Application = require('../models/Application');
+    const application = await Application.findOne({
+      _id: applicationId,
+      employerUid: uid
+    });
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        error: 'Application not found or access denied'
+      });
+    }
+
+    // Get the job seeker's current resume
+    const JobSeeker = require('../models/JobSeeker');
+    const jobSeeker = await JobSeeker.findOne({ uid: application.jobSeekerUid });
+    
+    if (!jobSeeker || !jobSeeker.currentResumeId) {
+      return res.status(404).json({
+        success: false,
+        error: 'Resume not found'
+      });
+    }
+
+    const resume = await Resume.findById(jobSeeker.currentResumeId);
+    if (!resume || !resume.pdfPath) {
+      return res.status(404).json({
+        success: false,
+        error: 'Resume PDF not found'
+      });
+    }
+
+    const fs = require('fs');
+    const path = require('path');
+    
+    const filePath = path.resolve(resume.pdfPath);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        success: false,
+        error: 'Resume file not found on server'
+      });
+    }
+
+    const applicantName = application.applicant?.name || application.resumeData?.personalInfo?.name || 'applicant';
+    const fileName = `${applicantName.replace(/[^a-zA-Z0-9]/g, '_')}_Resume.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
 
   } catch (error) {
     console.error('Error downloading resume:', error);
