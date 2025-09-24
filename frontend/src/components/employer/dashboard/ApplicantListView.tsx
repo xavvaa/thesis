@@ -20,6 +20,17 @@ export const ApplicantListView: React.FC<ApplicantListViewProps> = ({
       .toUpperCase();
   };
 
+  const calculateMatchScore = (applicant: Applicant) => {
+    // Placeholder match score - will be replaced with actual ML-based calculation
+    // Using applicant ID to create varied scores for sorting demonstration
+    const applicantId = applicant.id.toString();
+    const hash = applicantId.split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0);
+    return Math.abs(hash % 40) + 60; // Score between 60-100
+  };
+
   return (
     <div className={styles.listContainer}>
       <div className={styles.listHeader}>
@@ -32,7 +43,10 @@ export const ApplicantListView: React.FC<ApplicantListViewProps> = ({
       
       <div className={styles.listBody}>
         {applicants.length > 0 ? (
-          applicants.map((applicant, index) => (
+          applicants
+            .map(applicant => ({ ...applicant, calculatedMatchScore: calculateMatchScore(applicant) }))
+            .sort((a, b) => b.calculatedMatchScore - a.calculatedMatchScore)
+            .map((applicant, index) => (
             <div key={applicant.id} className={styles.listRow}>
               <div className={styles.numberCell}>
                 <span className={styles.rowNumber}>{index + 1}</span>
@@ -73,10 +87,10 @@ export const ApplicantListView: React.FC<ApplicantListViewProps> = ({
                   <div className={styles.matchBar}>
                     <div 
                       className={styles.matchFill} 
-                      style={{ width: `${applicant.matchScore}%` }}
+                      style={{ width: `${applicant.calculatedMatchScore}%` }}
                     />
                   </div>
-                  <span className={styles.matchText}>{applicant.matchScore}%</span>
+                  <span className={styles.matchText}>{applicant.calculatedMatchScore}%</span>
                 </div>
               </div>
               

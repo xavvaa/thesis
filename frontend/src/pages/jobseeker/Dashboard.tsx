@@ -73,7 +73,7 @@ const Dashboard: React.FC = () => {
   const [showResumeUpload, setShowResumeUpload] = useState(false)
   const [resume, setResume] = useState<ParsedResume | null>(null)
   const [applications, setApplications] = useState<Application[]>([])
-  const [savedJobs, setSavedJobs] = useState<Set<number>>(new Set())
+  const [savedJobs, setSavedJobs] = useState<Set<string | number>>(new Set())
   const [notifications, setNotifications] = useState<number>(3)
   const [error, setError] = useState<string | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -442,26 +442,24 @@ const Dashboard: React.FC = () => {
     return jobsToShow;
   }
 
-  const handleSaveJob = (jobId: number) => {
-    const jobService = JobService.getInstance();
-    const updatedJob = jobService.toggleSaveJob(jobId);
+  const handleSaveJob = (jobId: string | number) => {
+    console.log('handleSaveJob called with jobId:', jobId);
     
     setSavedJobs(prev => {
       const newSet = new Set(prev)
+      console.log('Previous savedJobs:', Array.from(prev));
+      
       if (newSet.has(jobId)) {
         newSet.delete(jobId)
+        console.log('Removed job', jobId, 'from saved jobs');
       } else {
         newSet.add(jobId)
+        console.log('Added job', jobId, 'to saved jobs');
       }
+      
+      console.log('New savedJobs:', Array.from(newSet));
       return newSet
     })
-    
-    // Update the jobs list to reflect the saved status
-    if (updatedJob) {
-      setJobs(prev => prev.map(job => 
-        job.id === jobId ? { ...job, saved: updatedJob.saved } : job
-      ));
-    }
   }
 
   const handleApplyJob = async (jobId: string | number) => {
