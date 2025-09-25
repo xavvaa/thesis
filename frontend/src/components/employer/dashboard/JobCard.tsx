@@ -47,11 +47,11 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onView, onEdit, onDelete,
       // Use current time in the same timezone
       const now = new Date();
       
-      // Calculate difference in milliseconds
-      const diffTime = now.getTime() - date.getTime();
+      // Calculate difference in milliseconds (use absolute value for consistency)
+      const diffTime = Math.abs(now.getTime() - date.getTime());
       const diffMinutes = Math.floor(diffTime / (1000 * 60));
       const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       
       // Format full date in local timezone
       const fullDate = date.toLocaleDateString('en-US', {
@@ -61,12 +61,9 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onView, onEdit, onDelete,
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
       });
       
-      // Format relative time with more accurate calculations
+      // Format relative time with consistent calculations
       let timeAgo;
-      if (diffTime < 0) {
-        // Future date (shouldn't happen, but handle gracefully)
-        timeAgo = 'Just posted';
-      } else if (diffMinutes < 1) {
+      if (diffMinutes < 1) {
         timeAgo = 'Just now';
       } else if (diffMinutes < 60) {
         timeAgo = diffMinutes === 1 ? '1 minute ago' : `${diffMinutes} minutes ago`;
@@ -77,11 +74,9 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onView, onEdit, onDelete,
       } else if (diffDays < 7) {
         timeAgo = `${diffDays} days ago`;
       } else if (diffDays < 30) {
-        const weeks = Math.floor(diffDays / 7);
-        timeAgo = weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
+        timeAgo = `${Math.ceil(diffDays / 7)} weeks ago`;
       } else {
-        const months = Math.floor(diffDays / 30);
-        timeAgo = months === 1 ? '1 month ago' : `${months} months ago`;
+        timeAgo = `${Math.ceil(diffDays / 30)} months ago`;
       }
       
       return `${fullDate} — ${timeAgo}`;

@@ -38,15 +38,37 @@ const ApplicationSchema = new mongoose.Schema({
       duration: String,
       description: String
     }],
-    education: [{
-      institution: String,
-      degree: String,
-      year: String
-    }],
+    education: {
+      tertiary: {
+        institution: String,
+        degree: String,
+        year: String
+      },
+      secondary: {
+        institution: String,
+        degree: String,
+        year: String
+      },
+      primary: {
+        institution: String,
+        degree: String,
+        year: String
+      }
+    },
     certifications: [String]
   },
   coverLetter: String,
   notes: String,
+  // Resume file information
+  resumeFile: {
+    fileName: String,
+    filePath: String,
+    fileSize: Number,
+    uploadDate: {
+      type: Date,
+      default: Date.now
+    }
+  },
   // Additional fields for admin tracking
   applicantName: String,
   applicantEmail: String,

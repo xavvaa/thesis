@@ -109,7 +109,7 @@ const EmployerDashboard: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [jobPostings, setJobPostings] = useState<Job[]>([]);
   const [isLoadingJobs, setIsLoadingJobs] = useState(true);
-  const [applicantFilters, setApplicantFilters] = useState<{ status: string; sortBy: string; jobId: string }>({ status: '', sortBy: 'newest', jobId: '' });
+  const [applicantFilters, setApplicantFilters] = useState<{ status: string; sortBy: string; jobId: string; department: string; location: string }>({ status: '', sortBy: 'newest', jobId: '', department: '', location: '' });
   const [selectedApplicant, setSelectedApplicant] = useState<Applicant | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAuthReady, setIsAuthReady] = useState(false);
@@ -926,11 +926,18 @@ const EmployerDashboard: React.FC = () => {
 
   // This has been consolidated into the filteredApplicants definition above
 
-  // Filter jobs based on status
-  const filteredJobs = enhancedJobPostings.filter(job => {
-    if (filterStatus === 'all') return true;
-    return job.status === filterStatus;
-  });
+  // Filter and sort jobs based on status and date (latest first)
+  const filteredJobs = enhancedJobPostings
+    .filter(job => {
+      if (filterStatus === 'all') return true;
+      return job.status === filterStatus;
+    })
+    .sort((a, b) => {
+      // Sort by posted date, latest first
+      const dateA = new Date(a.postedDate || a.posted || 0).getTime();
+      const dateB = new Date(b.postedDate || b.posted || 0).getTime();
+      return dateB - dateA; // Latest first
+    });
 
   // Get status badge style
   const getStatusBadgeStyle = (status: string) => {
@@ -1046,22 +1053,32 @@ const EmployerDashboard: React.FC = () => {
           )}
 
           {activeTab === 'applicants' && (
-            <ApplicantsView
+            <ApplicantsTab
               applicants={filteredApplicants}
-              jobs={enhancedJobPostings}
-              searchQuery={searchQuery}
+              searchTerm={searchQuery}
+              filters={{
+                status: applicantFilters.status,
+                department: applicantFilters.department,
+                location: applicantFilters.location
+              }}
               onSearchChange={setSearchQuery}
-              filters={applicantFilters}
               onFilterChange={(filterType, value) => {
                 setApplicantFilters(prev => ({ ...prev, [filterType]: value }));
               }}
-              onViewApplicantDetails={(applicant) => {
+              onAcceptApplicant={handleApproveApplicant}
+              onRejectApplicant={handleRejectApplicant}
+              onViewResume={(resumeUrl) => {
+                if (resumeUrl) {
+                  window.open(resumeUrl, '_blank');
+                }
+              }}
+              onViewDetails={(applicant) => {
                 setSelectedApplicant(applicant);
                 setIsModalOpen(true);
               }}
-              onDownloadResume={handleDownloadResume}
-              onApproveApplicant={handleApproveApplicant}
-              onRejectApplicant={handleRejectApplicant}
+              onExport={() => {
+                console.log('Export applicants');
+              }}
             />
           )}
 

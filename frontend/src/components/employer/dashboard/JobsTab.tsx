@@ -48,11 +48,18 @@ export const JobsTab: React.FC<JobsTabProps> = ({
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [jobToEdit, setJobToEdit] = useState<Job | null>(null);
 
-  const filteredJobs = jobs.filter(job => {
-    const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = !filters.status || filters.status === 'all' || job.status === filters.status;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredJobs = jobs
+    .filter(job => {
+      const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = !filters.status || filters.status === 'all' || job.status === filters.status;
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      // Sort by posted date, latest first
+      const dateA = new Date(a.postedDate || a.posted || 0).getTime();
+      const dateB = new Date(b.postedDate || b.posted || 0).getTime();
+      return dateB - dateA; // Latest first
+    });
 
   const handleJobCardClick = (job: Job) => {
     setSelectedJob(job);

@@ -41,59 +41,58 @@ const ResumeSchema = new mongoose.Schema({
     default: 'pending'
   },
   
-  // Parsed Resume Data (from NER service)
-  parsedData: {
-    personalInfo: {
-      name: String,
-      email: String,
-      phone: String,
-      address: String
+  // Personal Information
+  personalInfo: {
+    fullName: String,
+    email: String,
+    phone: String,
+    age: String,
+    birthday: String,
+    photo: String, // Base64 encoded image
+    // Address information
+    address: String,
+    zipCode: String,
+    // PSGC location codes (grouped in separate object)
+    location: {
+      region: String,
+      province: String,
+      city: String,
+      barangay: String
     },
-    summary: String,
-    skills: [String],
-    experience: [{
-      company: String,
-      position: String,
-      duration: String,
-      description: String,
-      startDate: String,
-      endDate: String,
-      location: String
-    }],
-    education: [{
-      institution: String,
-      degree: String,
-      year: String,
-      fieldOfStudy: String,
-      gpa: String,
-      honors: String
-    }],
-    certifications: [String],
-    languages: [String],
-    projects: [{
-      name: String,
-      description: String,
-      technologies: [String],
-      duration: String
-    }],
-    references: [{
-      name: String,
-      position: String,
-      company: String,
-      contact: String
-    }]
+    // Readable location names for display
+    readableLocation: {
+      region: String,
+      province: String,
+      city: String,
+      barangay: String
+    }
   },
   
-  // Processing Metadata
-  processingLog: [{
-    timestamp: {
-      type: Date,
-      default: Date.now
-    },
-    status: String,
-    message: String,
-    details: mongoose.Schema.Types.Mixed
+  // Professional Summary
+  summary: String,
+  
+  // Skills
+  skills: [String],
+  
+  // Work Experience
+  workExperience: [{
+    company: String,
+    position: String,
+    description: String,
+    startDate: String,
+    endDate: String,
+    location: String
   }],
+  
+  // Educational Background
+  education: [{
+    degree: String,
+    school: String,
+    location: String,
+    startDate: String,
+    endDate: String
+  }],
+  
   
   // Version Control
   version: {
@@ -129,26 +128,20 @@ ResumeSchema.pre('save', function(next) {
   next();
 });
 
-// Method to add processing log entry
-ResumeSchema.methods.addProcessingLog = function(status, message, details = null) {
-  this.processingLog.push({
-    status,
-    message,
-    details
-  });
-};
-
 // Method to mark as processed
-ResumeSchema.methods.markAsProcessed = function(parsedData) {
+ResumeSchema.methods.markAsProcessed = function(resumeData) {
   this.processingStatus = 'completed';
-  this.parsedData = parsedData;
+  this.personalInfo = resumeData.personalInfo;
+  this.summary = resumeData.summary;
+  this.skills = resumeData.skills;
+  this.workExperience = resumeData.workExperience;
+  this.education = resumeData.education;
   this.processedAt = new Date();
 };
 
 // Method to mark as failed
 ResumeSchema.methods.markAsFailed = function(errorMessage) {
   this.processingStatus = 'failed';
-  this.addProcessingLog('failed', errorMessage);
 };
 
 // Static method to get active resume for job seeker

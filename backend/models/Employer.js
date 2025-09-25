@@ -262,7 +262,7 @@ EmployerSchema.pre('save', function(next) {
 // Method to check if employer can perform specific action
 EmployerSchema.methods.canPerform = function(action) {
   if (!this.isActive || this.accountStatus === 'suspended') return false;
-  if (action === 'post_jobs' && this.accountStatus !== 'verified') return false;
+  if (action === 'post_jobs' && !['approved', 'verified'].includes(this.accountStatus)) return false;
   return this.permissions.includes(action);
 };
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ApplicantCard } from './ApplicantCard';
+import { ApplicantListView } from './ApplicantListView';
 import { SearchAndFilter } from './SearchAndFilter';
 import Button from '../ui/Button';
 import { FiDownload } from 'react-icons/fi';
@@ -18,6 +18,7 @@ interface ApplicantsTabProps {
   onAcceptApplicant: (applicantId: number) => void;
   onRejectApplicant: (applicantId: number) => void;
   onViewResume: (resumeUrl: string) => void;
+  onViewDetails: (applicant: Applicant) => void;
   onExport?: () => void;
 }
 
@@ -30,41 +31,33 @@ export const ApplicantsTab: React.FC<ApplicantsTabProps> = ({
   onAcceptApplicant,
   onRejectApplicant,
   onViewResume,
+  onViewDetails,
   onExport,
 }) => {
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold text-gray-900">Applicants</h2>
-        <Button variant="outline" onClick={onExport}>
-          <FiDownload className="mr-2 h-4 w-4" />
-          Export
-        </Button>
-      </div>
+    <div className="p-8">
+      <div className="max-w-full">
+        {/* Header Section */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold text-gray-900 mb-2">Applicants</h1>
+          <p className="text-gray-600">Review and manage candidate applications</p>
+        </div>
 
-      <SearchAndFilter
-        searchTerm={searchTerm}
-        onSearchChange={onSearchChange}
-        onFilterChange={onFilterChange}
-        filters={filters}
-      />
+        {/* Search and Filter Section */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6 mb-12">
+          <SearchAndFilter
+            searchTerm={searchTerm}
+            onSearchChange={onSearchChange}
+            onFilterChange={onFilterChange}
+            filters={filters}
+          />
+        </div>
 
-      <div className="space-y-4">
-        {applicants.length > 0 ? (
-          applicants.map((applicant) => (
-            <ApplicantCard
-              key={applicant.id}
-              applicant={applicant}
-              onAccept={onAcceptApplicant}
-              onReject={onRejectApplicant}
-              onViewResume={onViewResume}
-            />
-          ))
-        ) : (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No applicants found.</p>
-          </div>
-        )}
+        {/* Applicants List */}
+        <ApplicantListView
+          applicants={applicants}
+          onViewDetails={onViewDetails}
+        />
       </div>
     </div>
   );

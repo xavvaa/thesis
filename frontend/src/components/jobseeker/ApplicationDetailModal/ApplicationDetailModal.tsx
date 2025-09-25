@@ -17,6 +17,18 @@ interface Application {
   status: 'pending' | 'approved' | 'rejected';
   appliedDate: string;
   updatedAt: string;
+  companyDetails?: {
+    name?: string;
+    description?: string;
+    industry?: string;
+    website?: string;
+    logo?: string;
+    size?: string;
+    founded?: number;
+    headquarters?: string;
+    email?: string;
+    phone?: string;
+  };
 }
 
 interface ApplicationDetailModalProps {
@@ -262,28 +274,22 @@ const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
             <div className={styles.sidebarSection}>
               <h3 className={styles.sidebarTitle}>About {application.company}</h3>
               <p className={styles.sidebarText}>
-                We are {application.company}, a leading company in our industry committed to excellence and innovation. Join our team and be part of our growth story.
+                {application.companyDetails?.description || 
+                 `We are ${application.company}, a leading company in our industry committed to excellence and innovation. Join our team and be part of our growth story.`}
               </p>
             </div>
 
             <div className={styles.sidebarSection}>
               <div className={styles.sidebarItem}>
                 <span className={styles.sidebarLabel}>INDUSTRY</span>
-                <span className={styles.sidebarValue}>{application.department || 'Technology & Services'}</span>
-              </div>
-            </div>
-
-            <div className={styles.sidebarSection}>
-              <div className={styles.sidebarItem}>
-                <span className={styles.sidebarLabel}>JOB TYPE</span>
-                <span className={styles.sidebarValue}>{application.type}</span>
+                <span className={styles.sidebarValue}>{application.companyDetails?.industry || application.department || 'Technology & Services'}</span>
               </div>
             </div>
 
             <div className={styles.sidebarSection}>
               <div className={styles.sidebarItem}>
                 <span className={styles.sidebarLabel}>HEADQUARTERS</span>
-                <span className={styles.sidebarValue}>{application.location}</span>
+                <span className={styles.sidebarValue}>{application.companyDetails?.headquarters || application.location}</span>
               </div>
             </div>
 
@@ -291,24 +297,17 @@ const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
               <h3 className={styles.sidebarTitle}>Contact Information</h3>
               <div className={styles.contactInfo}>
                 <div className={styles.contactItem}>
-                  <FiUser className={styles.contactIcon} />
-                  <div>
-                    <span className={styles.contactLabel}>Hiring Manager</span>
-                    <span className={styles.contactValue}>Sarah Johnson</span>
-                  </div>
-                </div>
-                <div className={styles.contactItem}>
                   <FiMail className={styles.contactIcon} />
                   <div>
                     <span className={styles.contactLabel}>Email</span>
-                    <span className={styles.contactValue}>careers@{application.company.toLowerCase().replace(/\s+/g, '')}.com</span>
+                    <span className={styles.contactValue}>{application.companyDetails?.email || `careers@${application.company.toLowerCase().replace(/\s+/g, '')}.com`}</span>
                   </div>
                 </div>
                 <div className={styles.contactItem}>
                   <FiPhone className={styles.contactIcon} />
                   <div>
                     <span className={styles.contactLabel}>Phone</span>
-                    <span className={styles.contactValue}>+63 2 8123 4567</span>
+                    <span className={styles.contactValue}>{application.companyDetails?.phone || '+63 2 8123 4567'}</span>
                   </div>
                 </div>
               </div>

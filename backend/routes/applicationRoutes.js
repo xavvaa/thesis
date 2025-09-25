@@ -63,7 +63,17 @@ router.post('/', verifyToken, async (req, res) => {
     const JobSeeker = require('../models/JobSeeker');
     const jobSeekerProfile = await JobSeeker.findOne({ uid });
     
-    // Enhance resume data with profile information
+    // Map resume education data to application format
+    const mapEducationData = (educationLevel) => {
+      if (!educationLevel) return {};
+      return {
+        institution: educationLevel.school || educationLevel.institution || '',
+        degree: educationLevel.major || educationLevel.degree || '',
+        year: educationLevel.ay || educationLevel.year || ''
+      };
+    };
+
+    // Enhance resume data with profile information and proper field mapping
     const enhancedResumeData = {
       ...resumeData,
       personalInfo: {
@@ -72,10 +82,64 @@ router.post('/', verifyToken, async (req, res) => {
         name: resumeData.personalInfo?.name || 
               (jobSeekerProfile ? `${jobSeekerProfile.firstName} ${jobSeekerProfile.lastName}` : 'Unknown Applicant'),
         email: resumeData.personalInfo?.email || jobSeekerProfile?.email || ''
+      },
+      // Map education from resume format to application format
+      education: {
+        tertiary: mapEducationData(resumeData.education?.tertiary),
+        secondary: mapEducationData(resumeData.education?.secondary),
+        primary: mapEducationData(resumeData.education?.primary)
       }
     };
     
     
+    // Get the job seeker's current resume file information
+    const Resume = require('../models/Resume');
+    let resumeFileInfo = null;
+    
+    console.log('=== RESUME FILE DEBUG ===');
+    console.log('jobSeekerProfile exists:', !!jobSeekerProfile);
+    console.log('currentResumeId:', jobSeekerProfile?.currentResumeId);
+    
+    if (jobSeekerProfile?.currentResumeId) {
+      const resume = await Resume.findById(jobSeekerProfile.currentResumeId);
+      console.log('Resume found:', !!resume);
+      console.log('Resume fileUrl:', resume?.fileUrl);
+      console.log('Resume filename:', resume?.filename);
+      console.log('Resume originalName:', resume?.originalName);
+      
+      if (resume && resume.fileUrl) {
+        resumeFileInfo = {
+          fileName: resume.originalName || resume.filename,
+          filePath: resume.fileUrl,
+          fileSize: resume.fileSize
+        };
+        console.log('Resume file info created:', resumeFileInfo);
+      } else {
+        console.log('No resume or fileUrl found');
+      }
+    } else {
+      // Try to find the most recent resume for this user
+      console.log('No currentResumeId, searching for recent resume...');
+      const recentResume = await Resume.findOne({ 
+        $or: [
+          { jobSeekerUid: uid },
+          { uid: uid }
+        ],
+        isActive: true 
+      }).sort({ uploadedAt: -1 });
+      console.log('Recent resume found:', !!recentResume);
+      console.log('Recent resume fileUrl:', recentResume?.fileUrl);
+      
+      if (recentResume && recentResume.fileUrl) {
+        resumeFileInfo = {
+          fileName: recentResume.originalName || recentResume.filename,
+          filePath: recentResume.fileUrl,
+          fileSize: recentResume.fileSize
+        };
+        console.log('Resume file info from recent resume:', resumeFileInfo);
+      }
+    }
+
     const applicationData = {
       jobId,
       jobSeekerUid: uid,
@@ -87,11 +151,18 @@ router.post('/', verifyToken, async (req, res) => {
       applicantName: enhancedResumeData.personalInfo.name,
       applicantEmail: enhancedResumeData.personalInfo.email,
       applicantPhone: enhancedResumeData.personalInfo.phone || jobSeekerProfile?.phone || '',
-      applicantAddress: enhancedResumeData.personalInfo.address || jobSeekerProfile?.address || ''
+      applicantAddress: enhancedResumeData.personalInfo.address || jobSeekerProfile?.address || '',
+      // Include resume file information
+      resumeFile: resumeFileInfo
     };
+    
+    console.log('Final resumeFileInfo being saved:', resumeFileInfo);
+    console.log('Application data resumeFile field:', applicationData.resumeFile);
     
     const application = new Application(applicationData);
     await application.save();
+    
+    console.log('Application saved with resumeFile:', application.resumeFile);
 
     // Update job application count
     await Job.findByIdAndUpdate(jobId, {
@@ -239,22 +310,56 @@ router.get('/jobseeker', verifyToken, async (req, res) => {
   try {
     const { uid } = req.user;
 
+    if (!uid) {
+      return res.status(401).json({
+        success: false,
+        error: 'User authentication failed'
+      });
+    }
+
     const applications = await Application.find({ jobSeekerUid: uid })
-      .populate('jobId', 'title companyName location type salary')
+      .populate('jobId', 'title companyName location type salary employerUid')
       .sort({ appliedDate: -1 });
 
-    const formattedApplications = applications.map(app => ({
-      id: app._id,
-      jobId: app.jobId._id,
-      jobTitle: app.jobId.title,
-      company: app.jobId.companyName,
-      location: app.jobId.location,
-      type: app.jobId.type,
-      salary: app.jobId.salary,
-      status: app.status,
-      appliedDate: app.appliedDate,
-      updatedAt: app.updatedAt
-    }));
+    // Filter out applications where the job was deleted and get employer details
+    const formattedApplications = await Promise.all(
+      applications
+        .filter(app => app.jobId) // Only include applications where job still exists
+        .map(async (app) => {
+          const job = app.jobId;
+          
+          // Fetch employer details directly from Employers collection
+          const Employer = require('../models/Employer');
+          const employer = await Employer.findOne({ uid: job.employerUid })
+            .select('companyName companyDescription industry address contactPerson website email');
+          
+          return {
+            id: app._id,
+            jobId: job._id,
+            jobTitle: job.title,
+            company: job.companyName || 'Company Name Not Available',
+            location: job.location || 'Location Not Available',
+            type: job.type || 'Type Not Available',
+            salary: job.salary || 'Salary Not Available',
+            status: app.status,
+            appliedDate: app.appliedDate,
+            updatedAt: app.updatedAt,
+            companyDetails: {
+              name: employer?.companyName || job.companyName,
+              description: employer?.companyDescription || `We are ${job.companyName}, a leading company in our industry.`,
+              industry: employer?.industry || 'Technology & Services',
+              website: employer?.website,
+              headquarters: employer?.address ? 
+                `${employer.address.city || ''}, ${employer.address.province || ''}`.trim().replace(/^,|,$/, '') || job.location :
+                job.location,
+              email: employer?.email || `careers@${job.companyName.toLowerCase().replace(/\s+/g, '')}.com`,
+              phone: employer?.contactPerson?.phoneNumber || '+63 2 8123 4567'
+            }
+          };
+        })
+    );
+
+    console.log(`Found ${applications.length} applications for user ${uid}, ${formattedApplications.length} with valid jobs`);
 
     res.json({
       success: true,
@@ -263,6 +368,11 @@ router.get('/jobseeker', verifyToken, async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching job seeker applications:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      uid: req.user?.uid
+    });
     res.status(500).json({
       success: false,
       error: 'Failed to fetch applications'
@@ -301,6 +411,92 @@ router.get('/user', verifyToken, async (req, res) => {
       success: false,
       error: 'Failed to fetch applications'
     });
+  }
+});
+
+// Route to download resume PDF
+router.get('/:applicationId/resume', verifyToken, async (req, res) => {
+  try {
+    const { applicationId } = req.params;
+    
+    console.log('=== RESUME DOWNLOAD DEBUG ===');
+    console.log('Application ID:', applicationId);
+    
+    const application = await Application.findById(applicationId);
+    if (!application) {
+      console.log('Application not found');
+      return res.status(404).json({ message: 'Application not found' });
+    }
+    
+    console.log('Application found, resumeFile:', application.resumeFile);
+    console.log('Application employerUid:', application.employerUid);
+    
+    // Check if user has permission to access this resume
+    const { uid, role } = req.user;
+    console.log('User role:', role);
+    console.log('User uid:', uid);
+    console.log('Application jobSeekerUid:', application.jobSeekerUid);
+    console.log('Access check: role === employer?', role === 'employer');
+    console.log('Access check: jobSeekerUid matches?', application.jobSeekerUid === uid);
+    console.log('Access check: employerUid matches?', application.employerUid === uid);
+    
+    // Allow access if user is the employer who posted the job OR the job seeker who applied
+    // Handle case where role might be undefined but UID matches
+    const isEmployer = (role === 'employer' || application.employerUid === uid) && application.employerUid === uid;
+    const isJobSeeker = application.jobSeekerUid === uid;
+    
+    console.log('Final access check - isEmployer:', isEmployer, 'isJobSeeker:', isJobSeeker);
+    
+    if (!isEmployer && !isJobSeeker) {
+      console.log('Access denied - user is not the employer or job seeker for this application');
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    
+    console.log('Access granted!');
+    
+    // Try to get resume file URL - check application first, then Resume collection
+    let resumeFileUrl = application.resumeFile?.filePath;
+    
+    if (!resumeFileUrl) {
+      console.log('No resumeFile in application, looking up Resume collection');
+      
+      const Resume = require('../models/Resume');
+      const resume = await Resume.findOne({ 
+        $or: [
+          { jobSeekerUid: application.jobSeekerUid },
+          { uid: application.jobSeekerUid }
+        ],
+        isActive: true 
+      }).sort({ uploadedAt: -1 });
+      
+      if (resume?.fileUrl) {
+        resumeFileUrl = resume.fileUrl;
+        console.log('Found resume fileUrl from Resume collection:', resumeFileUrl);
+      }
+    }
+    
+    if (!resumeFileUrl) {
+      return res.status(404).json({ message: 'Resume file not found' });
+    }
+    
+    // Check if it's a URL (production) or local path (development)
+    if (resumeFileUrl.startsWith('http')) {
+      console.log('Redirecting to URL:', resumeFileUrl);
+      return res.redirect(resumeFileUrl);
+    } else {
+      // Development: serve local file via static middleware URL
+      const baseUrl = process.env.BASE_URL || 'http://localhost:3001';
+      const staticUrl = resumeFileUrl.startsWith('/uploads') 
+        ? `${baseUrl}${resumeFileUrl}`
+        : `${baseUrl}/uploads/resumes/${path.basename(resumeFileUrl)}`;
+      
+      console.log('Redirecting to static URL:', staticUrl);
+      return res.redirect(staticUrl);
+    }
+    
+  } catch (error) {
+    console.error('Error downloading resume:', error);
+    res.status(500).json({ message: 'Error downloading resume file' });
   }
 });
 

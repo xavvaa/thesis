@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiSearch, FiFileText, FiBriefcase, FiUser } from 'react-icons/fi';
+import { FiSearch, FiFileText, FiBriefcase, FiUser, FiEdit3 } from 'react-icons/fi';
 import styles from './QuickActions.module.css';
 
 interface QuickActionsProps {
@@ -23,12 +23,10 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onNavigate, onShowResumeUpl
         
         <button 
           className={styles.actionCard}
-          onClick={onShowResumeUpload}
+          onClick={() => onNavigate('create-resume')}
         >
-          <FiFileText className={styles.actionIcon} />
-          <span className={styles.actionLabel}>
-            {userProfile?.resumeUrl ? 'Update Resume' : 'Upload Resume'}
-          </span>
+          <FiEdit3 className={styles.actionIcon} />
+          <span className={styles.actionLabel}>Create Resume</span>
         </button>
         
         <button 

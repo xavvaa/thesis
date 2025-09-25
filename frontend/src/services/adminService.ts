@@ -348,6 +348,64 @@ class AdminService {
     localStorage.removeItem('adminUser');
     localStorage.removeItem('adminToken');
   }
+
+  // Report generation methods
+  async generateReport(params: {
+    reportType: string;
+    startDate: string;
+    endDate: string;
+    format: 'pdf' | 'csv' | 'json';
+    includeDetails: boolean;
+  }): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/reports/generate`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(params)
+    });
+    
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to generate report');
+    }
+
+    return data;
+  }
+
+  async getReportHistory(): Promise<any[]> {
+    const response = await fetch(`${this.baseUrl}/reports/history`, {
+      headers: this.getAuthHeaders()
+    });
+    
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to fetch report history');
+    }
+
+    return data.reports;
+  }
+
+  async generateAllReports(params: {
+    startDate: string;
+    endDate: string;
+    format: 'pdf' | 'csv' | 'json';
+    includeDetails: boolean;
+  }): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/reports/generate-all`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(params)
+    });
+    
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to generate all reports');
+    }
+
+    return data;
+  }
 }
 
 export default new AdminService();

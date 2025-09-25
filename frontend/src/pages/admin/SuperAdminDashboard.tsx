@@ -10,7 +10,8 @@ import {
   UsersTab,
   AdminManagementTab,
   SystemSettingsTab,
-  AnalyticsTab
+  AnalyticsTab,
+  ReportsTab
 } from '../../components/admin';
 import adminService from '../../services/adminService';
 import './SuperAdminDashboard.css';
@@ -225,6 +226,10 @@ const SuperAdminDashboard: React.FC = () => {
 
         {activeTab === 'settings' && (
           <SystemSettingsTab />
+        )}
+
+        {activeTab === 'reports' && (
+          <ReportsTab />
         )}
       </div>
     </div>

@@ -5,17 +5,62 @@
   padding: 1rem 1.5rem;
   background: #ffffff;
   border-bottom: 1px solid #f0f0f0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
-.userGreeting {
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.headerRight {
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
 
+.menuButton {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.menuButton:hover {
+  background: #f7fafc;
+}
+
+.menuButton svg {
+  width: 20px;
+  height: 20px;
+  color: #4a5568;
+}
+
+.titleSection {
+  flex: 1;
+}
+
+.pageTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a202c;
+  margin: 0;
+  text-align: left;
+}
+
 .userAvatar {
-  width: 48px;
-  height: 48px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
@@ -23,28 +68,13 @@
   justify-content: center;
   color: white;
   font-weight: 600;
-  font-size: 1.125rem;
-}
-
-.greetingText h1 {
-  font-size: 1.125rem;
-  font-weight: 400;
-  color: #2d3748;
-  margin: 0;
-}
-
-.greetingText h2 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #1a202c;
-  margin: 0;
-  margin-top: 0.125rem;
+  font-size: 0.875rem;
 }
 
 .filterButton {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
   border: none;
   background: #f7fafc;
   display: flex;
@@ -56,11 +86,82 @@
 
 .filterButton:hover {
   background: #edf2f7;
-  transform: scale(1.05);
 }
 
 .filterButton svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   color: #4a5568;
+}
+
+.notificationButton {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.notificationButton:hover {
+  background: #f7fafc;
+}
+
+.notificationButton svg {
+  width: 18px;
+  height: 18px;
+  color: #4a5568;
+}
+
+.notificationBadge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: #dc2626;
+  color: white;
+  border-radius: 10px;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.mobileSearchContainer {
+  background: #ffffff;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 0.75rem 1.5rem;
+  position: sticky;
+  top: 72px; /* Height of main header */
+  z-index: 99;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .appHeader {
+    padding: 0.75rem 1rem;
+  }
+  
+  .pageTitle {
+    font-size: 1.125rem;
+  }
+  
+  .headerRight {
+    gap: 0.5rem;
+  }
+  
+  .userAvatar {
+    width: 32px;
+    height: 32px;
+    font-size: 0.75rem;
+  }
 }

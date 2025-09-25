@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import styles from './Dashboard.module.css'
-import { FiHome, FiBriefcase, FiFileText, FiUser, FiBookmark, FiMapPin, FiDollarSign, FiClock, FiBell, FiMenu, FiX, FiFilter, FiSliders, FiLogOut } from 'react-icons/fi'
+import { FiHome, FiBriefcase, FiFileText, FiUser, FiBookmark, FiMapPin, FiDollarSign, FiClock, FiBell, FiMenu, FiX, FiFilter, FiSliders, FiLogOut, FiEdit3 } from 'react-icons/fi'
 import FilterModal from '../../components/jobseeker/FilterModal/FilterModal'
 import SearchBar from '../../components/jobseeker/SearchBar/SearchBar'
 import ResumeUploadPrompt from '../../components/ResumeUploadPrompt';
@@ -11,7 +11,10 @@ import DashboardTab from '../../components/jobseeker/Dashboard/tabs/DashboardTab
 import JobsTab from '../../components/jobseeker/Dashboard/tabs/JobsTab';
 import SavedJobsTab from '../../components/jobseeker/Dashboard/tabs/SavedJobsTab';
 import ApplicationsTab from '../../components/jobseeker/Dashboard/tabs/ApplicationsTab';
+import CreateResumeTab from '../../components/jobseeker/Dashboard/tabs/CreateResumeTab';
 import SettingsTab from '../../components/jobseeker/Settings/SettingsTab';
+import Sidebar from './components/Sidebar';
+import MobileHeader from '../../components/jobseeker/MobileHeader/MobileHeader';
 import { parseResume } from '../../utils/resumeParser'
 import { Job } from '../../types/Job'
 import { JobService } from '../../services/jobService'
@@ -70,10 +73,11 @@ const Dashboard: React.FC = () => {
   const [showResumeUpload, setShowResumeUpload] = useState(false)
   const [resume, setResume] = useState<ParsedResume | null>(null)
   const [applications, setApplications] = useState<Application[]>([])
-  const [savedJobs, setSavedJobs] = useState<Set<number>>(new Set())
+  const [savedJobs, setSavedJobs] = useState<Set<string | number>>(new Set())
   const [notifications, setNotifications] = useState<number>(3)
   const [error, setError] = useState<string | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isFirstVisit, setIsFirstVisit] = useState(true)
   const [hasSkippedResume, setHasSkippedResume] = useState(false)
   const [showInitialResumePrompt, setShowInitialResumePrompt] = useState(false)
@@ -81,6 +85,7 @@ const Dashboard: React.FC = () => {
   const [showFilterModal, setShowFilterModal] = useState(false)
   const [userProfile, setUserProfile] = useState<any>(null)
   const [currentResume, setCurrentResume] = useState<any>(null)
+  const [resumeFormData, setResumeFormData] = useState<any>(null)
   
   interface ActiveFilters {
     lastUpdate: string;
@@ -437,26 +442,24 @@ const Dashboard: React.FC = () => {
     return jobsToShow;
   }
 
-  const handleSaveJob = (jobId: number) => {
-    const jobService = JobService.getInstance();
-    const updatedJob = jobService.toggleSaveJob(jobId);
+  const handleSaveJob = (jobId: string | number) => {
+    console.log('handleSaveJob called with jobId:', jobId);
     
     setSavedJobs(prev => {
       const newSet = new Set(prev)
+      console.log('Previous savedJobs:', Array.from(prev));
+      
       if (newSet.has(jobId)) {
         newSet.delete(jobId)
+        console.log('Removed job', jobId, 'from saved jobs');
       } else {
         newSet.add(jobId)
+        console.log('Added job', jobId, 'to saved jobs');
       }
+      
+      console.log('New savedJobs:', Array.from(newSet));
       return newSet
     })
-    
-    // Update the jobs list to reflect the saved status
-    if (updatedJob) {
-      setJobs(prev => prev.map(job => 
-        job.id === jobId ? { ...job, saved: updatedJob.saved } : job
-      ));
-    }
   }
 
   const handleApplyJob = async (jobId: string | number) => {
@@ -619,55 +622,29 @@ const Dashboard: React.FC = () => {
     setShowFilters(false)
   }
 
+  // Function to get the display title based on active tab
+  const getPageTitle = (tabId: string): string => {
+    const tabTitles: { [key: string]: string } = {
+      'dashboard': 'Dashboard',
+      'create-resume': 'Create Resume',
+      'jobs': 'Find Jobs',
+      'applications': 'Applications',
+      'saved': 'Saved Jobs',
+      'profile': 'Settings'
+    }
+    return tabTitles[tabId] || 'Dashboard'
+  }
+
   const renderDesktopSidebar = () => (
-    <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.open : ''}`}>
-      <div className={styles.sidebarHeader}>
-        <h2 className={styles.logo}>JobPortal</h2>
-        <button 
-          className={styles.closeSidebar}
-          onClick={() => setIsSidebarOpen(false)}
-        >
-          <FiX />
-        </button>
-      </div>
-      <nav className={styles.sidebarNav}>
-        <button
-          className={`${styles.navItem} ${activeTab === 'dashboard' ? styles.active : ''}`}
-          onClick={() => setActiveTab('dashboard')}
-        >
-          <FiHome />
-          <span>Dashboard</span>
-        </button>
-        <button
-          className={`${styles.navItem} ${activeTab === 'jobs' ? styles.active : ''}`}
-          onClick={() => setActiveTab('jobs')}
-        >
-          <FiBriefcase />
-          <span>Find Jobs</span>
-        </button>
-        <button
-          className={`${styles.navItem} ${activeTab === 'applications' ? styles.active : ''}`}
-          onClick={() => setActiveTab('applications')}
-        >
-          <FiFileText />
-          <span>Applications</span>
-        </button>
-        <button
-          className={`${styles.navItem} ${activeTab === 'saved' ? styles.active : ''}`}
-          onClick={() => setActiveTab('saved')}
-        >
-          <FiBookmark />
-          <span>Saved Jobs</span>
-        </button>
-        <button
-          className={`${styles.navItem} ${activeTab === 'profile' ? styles.active : ''}`}
-          onClick={() => setActiveTab('profile')}
-        >
-          <FiUser />
-          <span>Settings</span>
-        </button>
-      </nav>
-    </aside>
+    <Sidebar
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      isSidebarOpen={isSidebarOpen}
+      onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+      notifications={notifications}
+      isCollapsed={isSidebarCollapsed}
+      onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+    />
   )
 
   const renderContent = () => {
@@ -696,6 +673,11 @@ const Dashboard: React.FC = () => {
         return <SavedJobsTab {...tabProps} />;
       case 'applications':
         return <ApplicationsTab />;
+      case 'create-resume':
+        return <CreateResumeTab 
+          resumeFormData={resumeFormData}
+          onResumeDataChange={setResumeFormData}
+        />;
       case 'profile':
         return <SettingsTab />;
       default:
@@ -713,24 +695,50 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className={styles.dashboard}>
-      {/* Desktop Sidebar */}
+      {/* Enhanced Sidebar */}
       {renderDesktopSidebar()}
       
-      {/* Mobile Header - Removed for now */}
+      {/* Mobile Header */}
+      <div className={styles.mobileHeaderContainer}>
+        <MobileHeader
+          pageTitle={getPageTitle(activeTab)}
+          userInitial={resume?.personalInfo?.name?.charAt(0) || 'U'}
+          onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          onFilterClick={activeTab === 'jobs' ? () => setShowFilterModal(true) : undefined}
+          notifications={notifications}
+          showSearch={activeTab === 'jobs'}
+          searchComponent={activeTab === 'jobs' ? (
+            <SearchBar 
+              value={searchQuery}
+              onChange={(value) => setSearchQuery(value)}
+              placeholder="Search for jobs, companies, or keywords"
+            />
+          ) : undefined}
+        />
+      </div>
 
       {/* Main Content */}
-      <main className={`${styles.mainContent} ${isSidebarOpen ? styles.sidebarOpen : ''}`}>
+      <main className={`${styles.mainContent} ${
+        isSidebarOpen ? styles.sidebarOpen : ''
+      } ${
+        isSidebarCollapsed ? styles.sidebarCollapsed : ''
+      } ${
+        activeTab === 'jobs' ? styles.withMobileSearch : ''
+      }`}>
         {/* Desktop Header */}
         <header className={styles.desktopHeader}>
           <div className={styles.headerLeft}>
             <button 
               className={styles.menuToggle}
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              onClick={() => {
+                console.log('Hamburger clicked, current state:', isSidebarOpen);
+                setIsSidebarOpen(!isSidebarOpen);
+              }}
               aria-label="Toggle menu"
             >
               <FiMenu />
             </button>
-            <h1 className={styles.pageTitle}>Dashboard</h1>
+            <h1 className={styles.pageTitle}>{getPageTitle(activeTab)}</h1>
           </div>
           
           {activeTab === 'jobs' && (

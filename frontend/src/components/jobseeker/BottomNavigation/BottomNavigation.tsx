@@ -1,5 +1,5 @@
 import React from 'react'
-import { FiHome, FiBell, FiFileText, FiBookmark, FiUser } from 'react-icons/fi'
+import { FiHome, FiBell, FiFileText, FiBookmark, FiUser, FiEdit3 } from 'react-icons/fi'
 import styles from './BottomNavigation.module.css'
 
 interface BottomNavigationProps {
@@ -13,9 +13,9 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
 }) => {
   const navItems = [
     { id: 'dashboard', label: 'Home', icon: FiHome },
-    { id: 'notifications', label: 'Notifications', icon: FiBell },
     { id: 'applications', label: 'Applications', icon: FiFileText },
-    { id: 'saved', label: 'Saved Jobs', icon: FiBookmark },
+    { id: 'create-resume', label: 'Resume', icon: FiEdit3 },
+    { id: 'saved', label: 'Saved', icon: FiBookmark },
     { id: 'profile', label: 'Profile', icon: FiUser }
   ]
 

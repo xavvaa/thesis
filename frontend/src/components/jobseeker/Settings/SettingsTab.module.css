@@ -150,7 +150,7 @@
   display: flex;
   gap: 0;
   align-items: flex-start;
-  min-height: calc(100vh - 140px);
+  position: relative;
 }
 
 .settingsNav {
@@ -160,8 +160,10 @@
   padding: 24px 0;
   position: sticky;
   top: 0;
-  height: calc(100vh - 140px);
+  height: calc(100vh - 80px);
   overflow-y: auto;
+  box-sizing: border-box;
+  align-self: flex-start;
 }
 
 .navButton {
@@ -200,12 +202,212 @@
   height: 18px;
 }
 
+.navDivider {
+  height: 1px;
+  background-color: #e2e8f0;
+  margin: 16px 24px;
+}
+
+.signOutNavButton {
+  color: #dc2626 !important;
+  margin-top: 8px;
+}
+
+.signOutNavButton:hover {
+  background-color: #fef2f2 !important;
+  color: #b91c1c !important;
+  border-left-color: #dc2626 !important;
+}
+
+.signOutNavButton.active {
+  background-color: #fef2f2 !important;
+  color: #dc2626 !important;
+  border-left-color: #dc2626 !important;
+}
+
 .settingsMain {
   flex: 1;
   background: white;
-  overflow: hidden;
-  height: calc(100vh - 140px);
-  overflow-y: auto;
+}
+
+/* Mobile Navigation Toggle */
+.mobileNavToggle {
+  display: none;
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 1000;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+
+.mobileNavOverlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .settingsNav {
+    flex: 0 0 240px;
+    height: calc(100vh - 80px);
+  }
+  
+  .sectionHeader {
+    padding: 24px 32px;
+  }
+  
+  .profileForm,
+  .resumeContent,
+  .preferencesContent,
+  .privacyOptions,
+  .accountContent {
+    padding: 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  .settingsTab {
+    height: 100vh;
+  }
+  
+  .header {
+    padding: 20px;
+  }
+  
+  .title {
+    font-size: 24px;
+  }
+  
+  .settingsContent {
+    flex-direction: column;
+  }
+  
+  .settingsNav {
+    position: relative;
+    flex: none;
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 16px 0;
+    overflow-x: auto;
+    overflow-y: visible;
+    top: auto;
+    left: auto;
+    bottom: auto;
+  }
+  
+  
+  .settingsNav .navButton {
+    display: inline-flex;
+    min-width: 160px;
+    margin: 0 8px;
+    padding: 12px 16px;
+    border-left: none;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+  }
+  
+  .settingsNav .navButton:hover {
+    border-left-color: transparent;
+    border-bottom-color: #cbd5e1;
+  }
+  
+  .settingsNav .navButton.active {
+    border-left-color: transparent;
+    border-bottom-color: #2563eb;
+  }
+  
+  .settingsNav .signOutNavButton:hover {
+    border-left-color: transparent !important;
+    border-bottom-color: #dc2626 !important;
+  }
+  
+  .settingsNav .signOutNavButton.active {
+    border-left-color: transparent !important;
+    border-bottom-color: #dc2626 !important;
+  }
+  
+  .navDivider {
+    display: none;
+  }
+  
+  .settingsMain {
+    height: auto;
+    flex: 1;
+  }
+  
+  .sectionHeader {
+    padding: 20px;
+  }
+  
+  .sectionHeader h2 {
+    font-size: 20px;
+  }
+  
+  .profileForm,
+  .resumeContent,
+  .preferencesContent,
+  .privacyOptions,
+  .accountContent {
+    padding: 20px;
+  }
+  
+  .formRow {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: 16px;
+  }
+  
+  .title {
+    font-size: 20px;
+  }
+  
+  .settingsNav {
+    padding: 12px 0;
+  }
+  
+  .settingsNav .navButton {
+    min-width: 140px;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+  
+  .sectionHeader {
+    padding: 16px;
+  }
+  
+  .sectionHeader h2 {
+    font-size: 18px;
+  }
+  
+  .profileForm,
+  .resumeContent,
+  .preferencesContent,
+  .privacyOptions,
+  .accountContent {
+    padding: 16px;
+  }
+  
+  .formRow {
+    gap: 16px;
+  }
 }
 
 .sectionHeader {

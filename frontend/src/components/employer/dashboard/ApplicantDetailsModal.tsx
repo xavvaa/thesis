@@ -1,23 +1,79 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FiX, 
-  FiDownload, 
-  FiEye, 
-  FiCheck, 
-  FiXCircle, 
+  FiUser, 
+  FiMail, 
+  FiPhone, 
   FiMapPin, 
+  FiCalendar, 
   FiClock, 
+  FiEye, 
+  FiDownload, 
+  FiFileText, 
+  FiEdit3, 
+  FiSave,
   FiBriefcase,
-  FiMail,
-  FiPhone,
-  FiCalendar,
-  FiStar,
-  FiUser,
-  FiFileText,
-  FiMessageCircle
+  FiMessageCircle,
+  FiXCircle,
+  FiCheck
 } from 'react-icons/fi';
 import { Applicant } from '../../../types/dashboard';
+import { auth } from '../../../config/firebase';
 import styles from './ApplicantDetailsModal.module.css';
+
+interface ApplicationData {
+  _id: string;
+  jobTitle: string;
+  applicant: {
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+  };
+  resumeData: {
+    personalInfo: {
+      name: string;
+      email: string;
+      phone: string;
+      address: string;
+    };
+    summary: string;
+    skills: string[];
+    experience: Array<{
+      company: string;
+      position: string;
+      duration: string;
+      description: string;
+    }>;
+    education: {
+      tertiary?: {
+        institution?: string;
+        degree?: string;
+        year?: string;
+      };
+      secondary?: {
+        institution?: string;
+        degree?: string;
+        year?: string;
+      };
+      primary?: {
+        institution?: string;
+        degree?: string;
+        year?: string;
+      };
+    };
+  };
+  status: string;
+  appliedDate: string;
+  coverLetter: string;
+  notes: string;
+  resumeFile?: {
+    fileName: string;
+    filePath: string;
+    fileSize: number;
+    uploadDate: string;
+  };
+}
 
 interface ApplicantDetailsModalProps {
   applicant: Applicant;
@@ -40,6 +96,138 @@ export const ApplicantDetailsModal: React.FC<ApplicantDetailsModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'resume' | 'notes'>('overview');
   const [notes, setNotes] = useState('');
+  const [applicationData, setApplicationData] = useState<ApplicationData | null>(null);
+  const [isLoadingApplication, setIsLoadingApplication] = useState(false);
+  const [resumePreviewUrl, setResumePreviewUrl] = useState<string | null>(null);
+
+  // Fetch detailed application data when modal opens
+  useEffect(() => {
+    if (isOpen && applicant.id) {
+      fetchApplicationDetails();
+    }
+  }, [isOpen, applicant.id]);
+
+  const fetchApplicationDetails = async () => {
+    try {
+      setIsLoadingApplication(true);
+      const currentUser = auth.currentUser;
+      if (!currentUser) return;
+
+      const token = await currentUser.getIdToken();
+      const response = await fetch('http://localhost:3001/api/applications/employer', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Full applications data:', data);
+        const application = data.data.find((app: any) => app._id === applicant.id);
+        console.log('Found application:', application);
+        console.log('Resume data:', application?.resumeData);
+        console.log('Education data:', application?.resumeData?.education);
+        if (application) {
+          setApplicationData(application);
+          setNotes(application.notes || '');
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching application details:', error);
+    } finally {
+      setIsLoadingApplication(false);
+    }
+  };
+
+  const handleViewResume = async () => {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser || !applicationData?._id) return;
+
+      const token = await currentUser.getIdToken();
+      const response = await fetch(`http://localhost:3001/api/applications/${applicationData._id}/resume`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        setResumePreviewUrl(url);
+      } else {
+        const errorText = await response.text();
+        console.error('Resume view error:', errorText);
+        alert('Resume not found or unable to view');
+      }
+    } catch (error) {
+      console.error('Error viewing resume:', error);
+      alert('Error viewing resume');
+    }
+  };
+
+  const handleDownloadResume = async () => {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser || !applicationData?._id) return;
+
+      const token = await currentUser.getIdToken();
+      const response = await fetch(`http://localhost:3001/api/applications/${applicationData._id}/resume`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = applicationData.resumeFile?.fileName || `${applicationData.applicant.name}_Resume.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else {
+        const errorText = await response.text();
+        console.error('Resume download error:', errorText);
+        alert('Resume not found or unable to download');
+      }
+    } catch (error) {
+      console.error('Error downloading resume:', error);
+      alert('Error downloading resume');
+    }
+  };
+
+  const saveNotes = async () => {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) return;
+
+      const token = await currentUser.getIdToken();
+      const response = await fetch(`http://localhost:3001/api/applications/${applicant.id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          status: applicant.status,
+          notes: notes
+        })
+      });
+
+      if (response.ok) {
+        alert('Notes saved successfully');
+      } else {
+        alert('Failed to save notes');
+      }
+    } catch (error) {
+      console.error('Error saving notes:', error);
+      alert('Error saving notes');
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -155,25 +343,147 @@ export const ApplicantDetailsModal: React.FC<ApplicantDetailsModalProps> = ({
                   <div className={styles.contactInfo}>
                     <div className={styles.contactItem}>
                       <FiMail size={16} />
-                      <span>{applicant.name.toLowerCase().replace(' ', '.')}@email.com</span>
+                      <span>{applicationData?.applicant.email || applicationData?.resumeData?.personalInfo?.email || 'Email not provided'}</span>
                     </div>
                     <div className={styles.contactItem}>
                       <FiPhone size={16} />
-                      <span>+1 (555) 123-4567</span>
+                      <span>{applicationData?.applicant.phone || applicationData?.resumeData?.personalInfo?.phone || 'Phone not provided'}</span>
                     </div>
+                    <div className={styles.contactItem}>
+                      <FiMapPin size={16} />
+                      <span>{applicationData?.applicant.address || applicationData?.resumeData?.personalInfo?.address || 'Address not provided'}</span>
+                    </div>
+                    {applicationData?.resumeFile && (
+                      <div className={styles.contactItem}>
+                        <FiFileText size={16} />
+                        <div className={styles.resumeFileInfo}>
+                          <span>{applicationData.resumeFile.fileName}</span>
+                          <small>({(applicationData.resumeFile.fileSize / 1024).toFixed(1)} KB)</small>
+                          <button 
+                            className={styles.downloadLink}
+                            onClick={handleDownloadResume}
+                            title="Download Resume"
+                          >
+                            <FiDownload size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 <div className={styles.section}>
                   <h4>Skills & Expertise</h4>
                   <div className={styles.skillsContainer}>
-                    {applicant.skills.map((skill, index) => (
-                      <span key={index} className={styles.skillTag}>
-                        {skill}
-                      </span>
-                    ))}
+                    {applicationData?.resumeData?.skills?.length > 0 ? (
+                      applicationData.resumeData.skills.map((skill, index) => (
+                        <span key={index} className={styles.skillTag}>
+                          {skill}
+                        </span>
+                      ))
+                    ) : (
+                      <p>No skills listed</p>
+                    )}
                   </div>
                 </div>
+
+                {applicationData?.resumeData?.summary && (
+                  <div className={styles.section}>
+                    <h4>Professional Summary</h4>
+                    <p className={styles.summaryText}>{applicationData.resumeData.summary}</p>
+                  </div>
+                )}
+
+                {applicationData?.resumeData?.experience?.length > 0 && (
+                  <div className={styles.section}>
+                    <h4>Work Experience</h4>
+                    <div className={styles.experienceList}>
+                      {applicationData.resumeData.experience.map((exp, index) => (
+                        <div key={index} className={styles.experienceItem}>
+                          <div className={styles.experienceHeader}>
+                            <h5>{exp.position}</h5>
+                            <span className={styles.experienceDuration}>{exp.duration}</span>
+                          </div>
+                          <p className={styles.experienceCompany}>{exp.company}</p>
+                          {exp.description && (
+                            <p className={styles.experienceDescription}>{exp.description}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+
+                {(() => {
+                  if (!applicationData?.resumeData?.education) return null;
+                  
+                  const education = applicationData.resumeData.education;
+                  console.log('Education data:', education);
+                  
+                  // Extract tertiary, secondary, primary directly
+                  const tertiary = education.tertiary;
+                  const secondary = education.secondary; 
+                  const primary = education.primary;
+                  
+                  // Check if any education level has data
+                  if (!tertiary?.institution && !secondary?.institution && !primary?.institution) {
+                    return null;
+                  }
+                  
+                  return (
+                    <div className={styles.section}>
+                      <h4>Education</h4>
+                      <div className={styles.educationList}>
+                        {tertiary?.institution && (
+                          <div className={styles.educationItem}>
+                            <div className={styles.educationHeader}>
+                              <FiUser size={16} />
+                              <div>
+                                <h5>{tertiary.degree || 'Tertiary Education'}</h5>
+                                <p>{tertiary.institution}</p>
+                                <span className={styles.educationYear}>{tertiary.year}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        {secondary?.institution && (
+                          <div className={styles.educationItem}>
+                            <div className={styles.educationHeader}>
+                              <FiUser size={16} />
+                              <div>
+                                <h5>{secondary.degree || 'Secondary Education'}</h5>
+                                <p>{secondary.institution}</p>
+                                <span className={styles.educationYear}>{secondary.year}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        {primary?.institution && (
+                          <div className={styles.educationItem}>
+                            <div className={styles.educationHeader}>
+                              <FiUser size={16} />
+                              <div>
+                                <h5>{primary.degree || 'Primary Education'}</h5>
+                                <p>{primary.institution}</p>
+                                <span className={styles.educationYear}>{primary.year}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {applicationData?.coverLetter && (
+                  <div className={styles.section}>
+                    <h4>Cover Letter</h4>
+                    <div className={styles.coverLetterText}>
+                      {applicationData.coverLetter}
+                    </div>
+                  </div>
+                )}
 
                 <div className={styles.section}>
                   <h4>Application Timeline</h4>
@@ -205,33 +515,78 @@ export const ApplicantDetailsModal: React.FC<ApplicantDetailsModalProps> = ({
 
             {activeTab === 'resume' && (
               <div className={styles.resumeContent}>
-                <div className={styles.resumePreview}>
-                  <div className={styles.resumeHeader}>
-                    <FiFileText size={24} />
-                    <div>
-                      <h4>{applicant.name}_Resume.pdf</h4>
-                      <p>Last updated: {formatDate(applicant.appliedDate)}</p>
+                <div className={styles.resumeSection}>
+                  <div className={styles.resumeInfo}>
+                    <div className={styles.resumeHeader}>
+                      <div className={styles.resumeIcon}>
+                        <FiFileText size={28} />
+                      </div>
+                      <div className={styles.resumeDetails}>
+                        <h3>{applicationData?.resumeFile?.fileName || `${applicant.name}_Resume.pdf`}</h3>
+                        <div className={styles.resumeMeta}>
+                          <span className={styles.fileSize}>
+                            {applicationData?.resumeFile?.fileSize 
+                              ? `${(applicationData.resumeFile.fileSize / 1024).toFixed(1)} KB`
+                              : 'Size unknown'
+                            }
+                          </span>
+                          <span className={styles.uploadDate}>
+                            Uploaded: {formatDate(applicant.appliedDate)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className={styles.resumeActions}>
+                      <button 
+                        className={`${styles.actionButton} ${styles.viewButton}`}
+                        onClick={handleViewResume}
+                        disabled={!applicationData?._id}
+                      >
+                        <FiEye size={18} />
+                        <span>View Resume</span>
+                      </button>
+                      <button 
+                        className={`${styles.actionButton} ${styles.downloadButton}`}
+                        onClick={handleDownloadResume}
+                        disabled={!applicationData?._id}
+                      >
+                        <FiDownload size={18} />
+                        <span>Download</span>
+                      </button>
                     </div>
                   </div>
-                  <div className={styles.resumeActions}>
-                    <button 
-                      className={styles.viewButton}
-                      onClick={() => onViewResume(applicant.id)}
-                    >
-                      <FiEye size={16} />
-                      View Resume
-                    </button>
-                    <button 
-                      className={styles.downloadButton}
-                      onClick={() => onDownloadResume(applicant.id)}
-                    >
-                      <FiDownload size={16} />
-                      Download
-                    </button>
-                  </div>
                 </div>
-                <div className={styles.resumePlaceholder}>
-                  <p>Resume preview would appear here in a real application</p>
+
+                <div className={styles.resumePreviewSection}>
+                  {resumePreviewUrl ? (
+                    <div className={styles.resumePreviewContainer}>
+                      <div className={styles.previewHeader}>
+                        <h4>Resume Preview</h4>
+                        <button 
+                          className={styles.closePreview}
+                          onClick={() => setResumePreviewUrl(null)}
+                        >
+                          <FiX size={16} />
+                        </button>
+                      </div>
+                      <div className={styles.previewFrame}>
+                        <iframe 
+                          src={resumePreviewUrl} 
+                          className={styles.resumeIframe}
+                          title="Resume Preview"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={styles.resumePlaceholder}>
+                      <div className={styles.placeholderContent}>
+                        <FiFileText size={48} />
+                        <h4>Resume Preview</h4>
+                        <p>Click "View Resume" to preview the candidate's resume in this area</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -249,7 +604,7 @@ export const ApplicantDetailsModal: React.FC<ApplicantDetailsModalProps> = ({
                   onChange={(e) => setNotes(e.target.value)}
                   rows={8}
                 />
-                <button className={styles.saveNotesButton}>
+                <button className={styles.saveNotesButton} onClick={saveNotes}>
                   Save Notes
                 </button>
               </div>

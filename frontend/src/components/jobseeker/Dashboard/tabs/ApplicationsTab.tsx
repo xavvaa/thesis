@@ -107,10 +107,6 @@ const ApplicationsTab: React.FC<any> = ({
   if (loading) {
     return (
       <div className={styles.pageContent}>
-        <div className={styles.pageHeader}>
-          <h1 className={styles.pageTitle}>My Applications</h1>
-          <p className={styles.pageSubtitle}>Track your job application progress</p>
-        </div>
         <div className={styles.loadingState}>
           <p>Loading applications...</p>
         </div>
@@ -121,10 +117,6 @@ const ApplicationsTab: React.FC<any> = ({
   if (error) {
     return (
       <div className={styles.pageContent}>
-        <div className={styles.pageHeader}>
-          <h1 className={styles.pageTitle}>My Applications</h1>
-          <p className={styles.pageSubtitle}>Track your job application progress</p>
-        </div>
         <div className={styles.errorState}>
           <p>Error: {error}</p>
           <button onClick={fetchApplications} className={styles.retryButton}>
@@ -137,14 +129,6 @@ const ApplicationsTab: React.FC<any> = ({
 
   return (
     <div className={styles.pageContent}>
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>My Applications</h1>
-        <p className={styles.pageSubtitle}>
-          {applications.length > 0 
-            ? `Track your ${applications.length} job application${applications.length === 1 ? '' : 's'}`
-            : 'Your job applications will appear here'}
-        </p>
-      </div>
       <JobsList
         jobs={convertApplicationsToJobs()}
         title=""
