@@ -273,25 +273,56 @@ Flagged jobs will be temporarily hidden from jobseekers while under review. The 
       };
 
       const response = await adminService.getJobs(params);
-      console.log('📄 Jobs response:', response);
 
       if (response.success && response.jobs) {
-        // Convert admin job format to jobseeker job format
-        let convertedJobs = response.jobs.map((job: any) => ({
-          id: job._id || job.id,
-          title: job.jobTitle || job.title,
-          company: job.companyName || job.company,
-          location: job.location || 'Not specified',
-          type: job.jobType || job.type || 'Full-time',
-          status: job.status || 'active',
-          postedDate: job.postedDate || job.createdAt,
-          views: job.views || 0,
-          applicants: job.applicants || 0,
-          description: job.description || job.jobDescription || '',
-          requirements: job.requirements || [],
-          benefits: job.benefits || [],
-          salary: job.salary || job.salaryRange || 'Competitive'
-        }));
+        // Fetch all applications to count by jobId (client-side counting)
+        let allApplications: any[] = [];
+        try {
+          allApplications = await adminService.getAllApplications();
+        } catch (error) {
+          // Silently handle error
+        }
+
+        // Convert jobs and calculate real application counts
+        let convertedJobs = response.jobs.map((job: any) => {
+          const jobId = job._id || job.id;
+          const jobTitle = job.jobTitle || job.title || 'Untitled Job';
+          
+          // Count applications for this specific job using multiple field matching
+          const applicationsForJob = allApplications.filter(app => {
+            // Check multiple possible field names and formats based on the actual data structure
+            const appJobId = app.jobId || app.job_id;
+            const matches = [
+              appJobId === jobId,
+              String(appJobId) === String(jobId),
+              // Handle ObjectId comparison
+              appJobId && appJobId.toString() === jobId.toString(),
+              // Handle nested jobId object
+              appJobId && appJobId._id === jobId,
+              appJobId && String(appJobId._id) === String(jobId)
+            ];
+            
+            return matches.some(match => match === true);
+          });
+          
+          const realApplicantCount = applicationsForJob.length;
+
+          return {
+            id: jobId,
+            title: jobTitle,
+            company: job.companyName || job.company || 'Unknown Company',
+            location: job.location || 'Not specified',
+            type: job.jobType || job.type || 'Full-time',
+            status: job.status || 'active',
+            postedDate: job.postedDate || job.createdAt,
+            views: job.views || 0,
+            applicants: realApplicantCount,
+            description: job.description || job.jobDescription || '',
+            requirements: job.requirements || [],
+            benefits: job.benefits || [],
+            salary: job.salary || job.salaryRange || 'Competitive'
+          };
+        });
 
         // Apply client-side search filtering
         if (searchQuery.trim()) {
@@ -328,10 +359,6 @@ Flagged jobs will be temporarily hidden from jobseekers while under review. The 
             case 'daysActive':
               valueA = Math.ceil(Math.abs(new Date().getTime() - new Date(a.postedDate || new Date()).getTime()) / (1000 * 60 * 60 * 24));
               valueB = Math.ceil(Math.abs(new Date().getTime() - new Date(b.postedDate || new Date()).getTime()) / (1000 * 60 * 60 * 24));
-              break;
-            case 'views':
-              valueA = a.views || 0;
-              valueB = b.views || 0;
               break;
             case 'applicants':
               valueA = a.applicants || 0;
@@ -526,16 +553,6 @@ Flagged jobs will be temporarily hidden from jobseekers while under review. The 
                         )}
                       </div>
                     </th>
-                    <th className="sortable-header" onClick={() => handleSort('views')}>
-                      <div className="header-content">
-                        <span>VIEWS</span>
-                        {sortBy === 'views' ? (
-                          sortOrder === 'desc' ? <FiChevronDown /> : <FiChevronUp />
-                        ) : (
-                          <FiChevronDown className="sort-icon-inactive" />
-                        )}
-                      </div>
-                    </th>
                     <th className="sortable-header" onClick={() => handleSort('applicants')}>
                       <div className="header-content">
                         <span>APPLICANTS</span>
@@ -586,11 +603,6 @@ Flagged jobs will be temporarily hidden from jobseekers while under review. The 
                           <span className="days-active">{daysActive}</span>
                         </td>
                         
-                        <td className="views-cell">
-                          <div className="stat-value">
-                            {job.views || 0}
-                          </div>
-                        </td>
                         
                         <td className="applicants-cell">
                           <div className="stat-value">

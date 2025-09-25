@@ -229,11 +229,13 @@
   background: white;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  overflow-x: auto;
+  width: 100%;
 }
 
 .admin-jobs-table {
   width: 100%;
+  min-width: 1100px;
   border-collapse: collapse;
   font-size: 0.875rem;
   table-layout: fixed;
@@ -268,14 +270,13 @@
 }
 
 /* Fixed column widths */
-.admin-jobs-table th:nth-child(1) { width: 180px; } /* Job Title */
-.admin-jobs-table th:nth-child(2) { width: 120px; } /* Company */
-.admin-jobs-table th:nth-child(3) { width: 70px; text-align: center; } /* Status */
-.admin-jobs-table th:nth-child(4) { width: 110px; text-align: center; } /* Posted Date */
-.admin-jobs-table th:nth-child(5) { width: 80px; text-align: center; }  /* Days Active */
-.admin-jobs-table th:nth-child(6) { width: 60px; text-align: center; }  /* Views */
-.admin-jobs-table th:nth-child(7) { width: 80px; text-align: center; }  /* Applicants */
-.admin-jobs-table th:nth-child(8) { width: 240px; } /* Actions */
+.admin-jobs-table th:nth-child(1) { width: 220px; text-align: left; } /* Job Title */
+.admin-jobs-table th:nth-child(2) { width: 160px; text-align: left; } /* Company */
+.admin-jobs-table th:nth-child(3) { width: 100px; text-align: left; } /* Status */
+.admin-jobs-table th:nth-child(4) { width: 130px; text-align: left; } /* Posted Date */
+.admin-jobs-table th:nth-child(5) { width: 110px; text-align: left; } /* Days Active */
+.admin-jobs-table th:nth-child(6) { width: 100px; text-align: left; } /* Applicants */
+.admin-jobs-table th:nth-child(7) { width: 280px; text-align: left; } /* Actions */
 
 .sortable-header {
   cursor: pointer;
@@ -291,7 +292,7 @@
   display: flex !important;
   align-items: flex-start !important;
   gap: 0.25rem !important;
-  justify-content: center !important;
+  justify-content: flex-start !important;
 }
 
 .header-content span {
@@ -302,7 +303,7 @@
 .two-line-header {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   line-height: 1.1;
   gap: 0.1rem;
   justify-content: flex-start;
@@ -366,7 +367,7 @@
 }
 
 .job-title-cell {
-  min-width: 200px;
+  min-width: 220px;
 }
 
 .job-title-info {
@@ -425,7 +426,7 @@
 }
 
 .company-cell {
-  min-width: 150px;
+  min-width: 160px;
 }
 
 .company-info {
@@ -450,7 +451,7 @@
 }
 
 .date-cell {
-  min-width: 120px;
+  min-width: 130px;
 }
 
 .date-info {
@@ -471,7 +472,7 @@
 }
 
 .days-active-cell {
-  min-width: 100px;
+  min-width: 110px;
   text-align: center;
 }
 
@@ -481,10 +482,18 @@
   font-size: 0.8rem;
 }
 
-.views-cell,
 .applicants-cell {
-  min-width: 60px;
-  text-align: center;
+  min-width: 80px;
+  text-align: left;
+}
+
+.applicants-cell .stat-value {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  color: #6b7280;
+  font-weight: 500;
+  font-size: 0.8rem;
 }
 
 .stat-value {
@@ -603,14 +612,13 @@
   }
   
   /* Reset fixed widths on smaller screens */
-  .admin-jobs-table th:nth-child(1) { width: auto; min-width: 180px; }
-  .admin-jobs-table th:nth-child(2) { width: auto; min-width: 130px; }
-  .admin-jobs-table th:nth-child(3) { width: auto; min-width: 110px; }
+  .admin-jobs-table th:nth-child(1) { width: auto; min-width: 200px; }
+  .admin-jobs-table th:nth-child(2) { width: auto; min-width: 140px; }
+  .admin-jobs-table th:nth-child(3) { width: auto; min-width: 90px; }
   .admin-jobs-table th:nth-child(4) { width: auto; min-width: 120px; }
-  .admin-jobs-table th:nth-child(5) { width: auto; min-width: 90px; }
-  .admin-jobs-table th:nth-child(6) { width: auto; min-width: 70px; }
-  .admin-jobs-table th:nth-child(7) { width: auto; min-width: 90px; }
-  .admin-jobs-table th:nth-child(8) { width: auto; min-width: 280px; }
+  .admin-jobs-table th:nth-child(5) { width: auto; min-width: 100px; }
+  .admin-jobs-table th:nth-child(6) { width: auto; min-width: 90px; }
+  .admin-jobs-table th:nth-child(7) { width: auto; min-width: 260px; }
   
   .action-btn {
     min-width: 60px;
@@ -673,15 +681,13 @@
     min-width: 240px;
   }
   
-  .views-cell,
   .applicants-cell {
-    min-width: 45px;
+    min-width: 80px;
   }
   
   .stat-value {
     font-size: 0.75rem;
   }
-  
   .job-title {
     font-size: 0.8rem;
   }

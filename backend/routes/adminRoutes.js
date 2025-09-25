@@ -17,7 +17,6 @@ router.post('/login', verifyToken, async (req, res) => {
   try {
     const { uid, email } = req.user; // From Firebase token
     
-    console.log('🔐 Admin login attempt:', { uid, email });
 
     // First check Admin collection
     let adminUser = await Admin.findOne({ 
@@ -27,7 +26,6 @@ router.post('/login', verifyToken, async (req, res) => {
 
     // If not found in Admin collection, check User collection for backward compatibility
     if (!adminUser) {
-      console.log('🔍 Not found in Admin collection, checking User collection...');
       const userAdmin = await User.findOne({ 
         uid: uid,
         role: { $in: ['admin', 'superadmin'] },
@@ -36,7 +34,6 @@ router.post('/login', verifyToken, async (req, res) => {
       
       if (userAdmin) {
         // Migrate user to Admin collection
-        console.log('🔄 Migrating admin user to Admin collection...');
         adminUser = new Admin({
           uid: userAdmin.uid,
           email: userAdmin.email,
@@ -54,19 +51,11 @@ router.post('/login', verifyToken, async (req, res) => {
           createdAt: userAdmin.createdAt || new Date()
         });
         await adminUser.save();
-        console.log('✅ Admin user migrated successfully');
       }
     }
 
-    console.log('👤 Database lookup result:', adminUser ? {
-      email: adminUser.email,
-      role: adminUser.role,
-      isActive: adminUser.isActive,
-      registrationStatus: adminUser.registrationStatus
-    } : 'Admin user not found');
 
     if (!adminUser) {
-      console.log('❌ Access denied - no admin user found');
       return res.status(403).json({ 
         success: false, 
         message: 'Access denied. Admin privileges required.' 
@@ -77,7 +66,6 @@ router.post('/login', verifyToken, async (req, res) => {
     adminUser.lastLogin = new Date();
     await adminUser.save();
 
-    console.log('✅ Admin login successful');
     
     // Return admin data
     res.json({
@@ -271,32 +259,18 @@ router.get('/employers/pending', verifyToken, adminMiddleware, async (req, res) 
 // Verify/reject employer
 router.put('/employers/:employerId/verify', verifyToken, adminMiddleware, async (req, res) => {
   try {
-    console.log('🔄 Employer verification request:', {
-      employerId: req.params.employerId,
-      action: req.body.action,
-      reason: req.body.reason,
-      adminUid: req.user.uid
-    });
 
     const { employerId } = req.params;
     const { action, reason } = req.body; // action: 'approve' or 'reject'
 
     const employer = await Employer.findById(employerId).populate('userId', 'email uid');
     if (!employer) {
-      console.error('❌ Employer not found:', employerId);
       return res.status(404).json({ 
         success: false, 
         message: 'Employer not found' 
       });
     }
 
-    console.log('📋 Current employer status:', employer.accountStatus);
-    console.log('👤 Employer details:', {
-      id: employer._id,
-      email: employer.userId?.email,
-      uid: employer.userId?.uid,
-      companyName: employer.companyName
-    });
 
     // Update employer status
     employer.accountStatus = action === 'approve' ? 'verified' : 'rejected';
@@ -309,16 +283,12 @@ router.put('/employers/:employerId/verify', verifyToken, adminMiddleware, async 
     // employer.verifiedBy = req.user.uid; // Will implement proper admin tracking later
 
     await employer.save();
-    console.log('✅ Employer status updated to:', employer.accountStatus);
-    console.log('🔍 DEBUG: About to start document update section');
 
     // Update all employer documents to match the employer decision
     const documentUpdateStatus = action === 'approve' ? 'approved' : 'rejected';
-    console.log('🔄 Starting document update process for employer:', employerId, 'to status:', documentUpdateStatus);
     
     try {
       // Update document verification status in employer record
-      console.log('📋 Updating document verification status in employer record');
       
       employer.documentVerificationStatus = documentUpdateStatus;
       employer.documentVerifiedAt = new Date();
@@ -336,7 +306,6 @@ router.put('/employers/:employerId/verify', verifyToken, adminMiddleware, async 
             doc.rejectionReason = undefined;
           }
         });
-        console.log('📄 Updated verification status for', employer.documents.length, 'individual documents');
       }
       
       if (action === 'reject') {
@@ -345,11 +314,9 @@ router.put('/employers/:employerId/verify', verifyToken, adminMiddleware, async 
         employer.documentRejectionReason = undefined;
       }
       
-      console.log('📄 Document verification status updated to:', documentUpdateStatus);
       
       // Save the employer again with document verification updates
       await employer.save();
-      console.log('✅ Employer saved with document verification updates');
       
     } catch (docUpdateError) {
       console.error('❌ Error updating document verification:', docUpdateError);
@@ -365,10 +332,6 @@ router.put('/employers/:employerId/verify', verifyToken, adminMiddleware, async 
       { new: true }
     );
 
-    console.log('✅ User status updated:', {
-      canLogin: userUpdate?.canLogin,
-      registrationStatus: userUpdate?.registrationStatus
-    });
 
     // Send email notification
     try {
@@ -376,25 +339,19 @@ router.put('/employers/:employerId/verify', verifyToken, adminMiddleware, async 
       const companyName = employer.companyName;
       
       if (employerEmail) {
-        console.log('📧 Sending email notification to:', employerEmail);
         
         if (action === 'approve') {
           const emailResult = await emailService.sendEmployerApprovalEmail(employerEmail, companyName);
-          console.log('✅ Approval email result:', emailResult);
         } else {
           const emailResult = await emailService.sendEmployerRejectionEmail(employerEmail, companyName, reason);
-          console.log('✅ Rejection email result:', emailResult);
         }
       } else {
-        console.warn('⚠️ No email address found for employer');
       }
     } catch (emailError) {
       console.error('❌ Error sending email notification:', emailError);
       // Don't fail the entire operation if email fails
     }
 
-    console.log('🎯 About to send response - employer verification complete');
-    console.log('🔍 DEBUG: Document update section should have executed by now');
     
     res.json({
       success: true,
@@ -455,6 +412,47 @@ router.get('/jobs', verifyToken, adminMiddleware, async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: 'Error fetching jobs' 
+    });
+  }
+});
+
+// Get all applications for admin dashboard
+router.get('/applications', verifyToken, adminMiddleware, async (req, res) => {
+  try {
+    const applications = await Application.find({})
+      .populate('jobId', 'title companyName location type')
+      .sort({ appliedDate: -1 });
+
+    // Format applications for admin view
+    const formattedApplications = applications.map(app => ({
+      _id: app._id,
+      id: app._id,
+      jobId: app.jobId?._id || app.jobId,
+      jobTitle: app.jobId?.title || 'Job Title Not Available',
+      companyName: app.jobId?.companyName || 'Company Not Available',
+      jobLocation: app.jobId?.location || 'Location Not Available',
+      jobType: app.jobId?.type || 'Type Not Available',
+      applicantName: app.applicantName || app.resumeData?.personalInfo?.name || 'Unknown Applicant',
+      applicantEmail: app.applicantEmail || app.resumeData?.personalInfo?.email || '',
+      applicantPhone: app.applicantPhone || app.resumeData?.personalInfo?.phone || '',
+      status: app.status,
+      appliedDate: app.appliedDate,
+      updatedAt: app.updatedAt,
+      jobSeekerUid: app.jobSeekerUid,
+      employerUid: app.employerUid
+    }));
+
+    res.json({
+      success: true,
+      applications: formattedApplications,
+      total: applications.length
+    });
+
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error fetching applications',
+      error: error.message
     });
   }
 });
@@ -564,13 +562,11 @@ router.get('/analytics/users', verifyToken, adminMiddleware, async (req, res) =>
 // Super admin only: Manage admin users
 router.get('/admins', verifyToken, superAdminMiddleware, async (req, res) => {
   try {
-    console.log('🔍 Fetching admin users from Admin collection');
     
     const admins = await Admin.find({})
       .sort({ createdAt: -1 })
       .select('-__v');
 
-    console.log('✅ Found admins:', admins.length);
 
     res.json({
       success: true,
@@ -591,7 +587,6 @@ router.post('/admins', verifyToken, superAdminMiddleware, async (req, res) => {
   try {
     const { email, adminName, department, adminLevel, password } = req.body;
     
-    console.log('🔄 Creating admin user:', { email, adminName, department, adminLevel });
 
     // Validate required fields
     if (!email || !adminName || !adminLevel || !password) {
@@ -604,7 +599,6 @@ router.post('/admins', verifyToken, superAdminMiddleware, async (req, res) => {
     // Check if email already exists in Admin collection
     const existingAdmin = await Admin.findOne({ email: email.toLowerCase() });
     if (existingAdmin) {
-      console.log('❌ Admin email already exists:', email);
       return res.status(400).json({ 
         success: false, 
         message: 'Admin email already exists' 
@@ -614,7 +608,6 @@ router.post('/admins', verifyToken, superAdminMiddleware, async (req, res) => {
     // Check if email already exists in User collection
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
-      console.log('❌ Email already exists in users:', email);
       return res.status(400).json({ 
         success: false, 
         message: 'Email already exists' 
@@ -624,14 +617,12 @@ router.post('/admins', verifyToken, superAdminMiddleware, async (req, res) => {
     let firebaseUser;
     try {
       // Create user in Firebase
-      console.log('🔥 Creating Firebase user...');
       firebaseUser = await admin.auth().createUser({
         email: email.toLowerCase(),
         password: password,
         displayName: adminName,
         emailVerified: true
       });
-      console.log('✅ Firebase user created:', firebaseUser.uid);
     } catch (firebaseError) {
       console.error('❌ Firebase user creation failed:', firebaseError);
       return res.status(500).json({ 
@@ -642,7 +633,6 @@ router.post('/admins', verifyToken, superAdminMiddleware, async (req, res) => {
 
     try {
       // Create admin user in MongoDB Admin collection
-      console.log('💾 Creating admin in MongoDB...');
       const adminUser = new Admin({
         uid: firebaseUser.uid,
         email: email.toLowerCase(),
@@ -660,7 +650,6 @@ router.post('/admins', verifyToken, superAdminMiddleware, async (req, res) => {
       });
 
       await adminUser.save();
-      console.log('✅ Admin user created in MongoDB:', adminUser.uid);
 
       res.json({
         success: true,
@@ -683,7 +672,6 @@ router.post('/admins', verifyToken, superAdminMiddleware, async (req, res) => {
       // Rollback: Delete the Firebase user if MongoDB creation fails
       try {
         await admin.auth().deleteUser(firebaseUser.uid);
-        console.log('🔄 Rolled back Firebase user creation');
       } catch (rollbackError) {
         console.error('❌ Failed to rollback Firebase user:', rollbackError);
       }
@@ -863,7 +851,6 @@ router.get('/users', verifyToken, superAdminMiddleware, async (req, res) => {
   try {
     const { page = 1, limit = 20, role, status, search } = req.query;
     
-    console.log('🔍 Fetching users with params:', { page, limit, role, status, search });
     
     // If role is 'admin', fetch from Admin collection
     if (role === 'admin') {
@@ -886,7 +873,6 @@ router.get('/users', verifyToken, superAdminMiddleware, async (req, res) => {
 
       const total = await Admin.countDocuments(query);
 
-      console.log('✅ Found admins:', admins.length);
 
       return res.json({
         success: true,
@@ -937,7 +923,6 @@ router.get('/users', verifyToken, superAdminMiddleware, async (req, res) => {
 
     const total = await User.countDocuments(query);
 
-    console.log('✅ Found users:', users.length);
 
     res.json({
       success: true,
@@ -979,7 +964,6 @@ router.put('/users/:userId', verifyToken, superAdminMiddleware, async (req, res)
     const { userId } = req.params;
     const { role, isActive, canLogin, registrationStatus, adminLevel, department, adminName } = req.body;
 
-    console.log('🔄 Updating user:', userId, req.body);
 
     const updateData = {};
     if (role !== undefined) updateData.role = role;
@@ -1013,7 +997,6 @@ router.put('/users/:userId', verifyToken, superAdminMiddleware, async (req, res)
       });
     }
 
-    console.log('✅ User updated successfully');
 
     res.json({
       success: true,
@@ -1046,7 +1029,6 @@ router.delete('/users/:userId', verifyToken, superAdminMiddleware, async (req, r
   try {
     const { userId } = req.params;
 
-    console.log('🗑️ Deleting user:', userId);
 
     // Try to find in Admin collection first
     let user = await Admin.findById(userId);
@@ -1077,7 +1059,6 @@ router.delete('/users/:userId', verifyToken, superAdminMiddleware, async (req, r
     if (isAdminCollection) {
       try {
         await admin.auth().deleteUser(user.uid);
-        console.log('✅ Deleted from Firebase:', user.uid);
       } catch (firebaseError) {
         console.error('⚠️ Firebase deletion failed:', firebaseError.message);
         // Continue with MongoDB deletion even if Firebase fails
@@ -1091,7 +1072,6 @@ router.delete('/users/:userId', verifyToken, superAdminMiddleware, async (req, r
       await User.findByIdAndDelete(userId);
     }
 
-    console.log('✅ User deleted successfully');
 
     res.json({
       success: true,
@@ -1168,7 +1148,6 @@ router.post('/reports/generate', verifyToken, superAdminMiddleware, async (req, 
   try {
     const { reportType, startDate, endDate, format, includeDetails } = req.body;
     
-    console.log('🔄 Generating report:', { reportType, startDate, endDate, format, includeDetails });
     
     let reportData = {};
     const start = new Date(startDate);
@@ -1334,7 +1313,6 @@ router.post('/reports/generate', verifyToken, superAdminMiddleware, async (req, 
       data: reportData
     };
     
-    console.log('✅ Report generated successfully');
     
     res.json({
       success: true,
@@ -1374,7 +1352,6 @@ router.post('/reports/generate-all', verifyToken, superAdminMiddleware, async (r
   try {
     const { startDate, endDate, format, includeDetails } = req.body;
     
-    console.log('🔄 Generating all reports:', { startDate, endDate, format, includeDetails });
     
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -1536,7 +1513,6 @@ router.post('/reports/generate-all', verifyToken, superAdminMiddleware, async (r
       failedReports
     };
     
-    console.log(`✅ Bulk generation completed: ${successfulReports.length} successful, ${failedReports.length} failed`);
     
     res.json({
       success: true,
