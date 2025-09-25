@@ -1530,6 +1530,28 @@ router.post('/reports/generate-all', verifyToken, superAdminMiddleware, async (r
   }
 });
 
+// Get all jobseekers for admin dashboard
+router.get('/jobseekers/all', verifyToken, adminMiddleware, async (req, res) => {
+  try {
+    const jobseekers = await JobSeeker.find({})
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      jobseekers: jobseekers,
+      total: jobseekers.length
+    });
+
+  } catch (error) {
+    console.error('Error fetching jobseekers:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error fetching jobseekers',
+      error: error.message
+    });
+  }
+});
+
 // Get all resumes for admin dashboard
 router.get('/resumes/all', verifyToken, adminMiddleware, async (req, res) => {
   try {

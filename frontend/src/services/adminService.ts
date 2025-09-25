@@ -264,11 +264,29 @@ class AdminService {
     }
   }
 
+  // Get all jobseekers for admin
+  async getAllJobSeekers(): Promise<any[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/jobseekers/all`, {
+        headers: this.getAuthHeaders()
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.jobseekers || [];
+      }
+      return [];
+    } catch (error) {
+      console.error('Error fetching jobseekers:', error);
+      return [];
+    }
+  }
+
   // Get all resumes for admin - fetch directly from resumes endpoint
   async getAllResumes(): Promise<any[]> {
     try {
       // Try to fetch from a direct resumes endpoint first
-      const response = await fetch(`http://localhost:3001/api/resumes/all`, {
+      const response = await fetch(`${this.baseUrl}/resumes/all`, {
         headers: this.getAuthHeaders()
       });
       
@@ -291,7 +309,9 @@ class AdminService {
         console.log('🔍 Processing application:', {
           hasResumeData: !!app.resumeData,
           jobSeekerUid: app.jobSeekerUid,
-          applicantName: app.applicantName
+          applicantName: app.applicantName,
+          resumePersonalInfo: app.resumeData?.personalInfo,
+          resumeSkills: app.resumeData?.skills
         });
         
         if (app.resumeData && app.jobSeekerUid) {

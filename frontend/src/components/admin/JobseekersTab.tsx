@@ -9,7 +9,6 @@ interface Jobseeker {
   firstName: string;
   lastName: string;
   email: string;
-  phone?: string;
   skills: string[];
   experience: string;
   applications: number;
@@ -99,32 +98,40 @@ const JobseekersTab: React.FC = () => {
       setLoading(true);
       
       // Make parallel API calls for different data
-      const [usersResponse, jobsResponse, dashboardStats, applicationsResponse, resumesResponse] = await Promise.all([
+      const [usersResponse, jobsResponse, dashboardStats, applicationsResponse, resumesResponse, jobseekersResponse] = await Promise.all([
         adminService.getUsers({}),
         adminService.getJobs({}), // Get all job postings
         adminService.getDashboardStats(),
         adminService.getAllApplications(), // Get all applications
-        adminService.getAllResumes() // Get all resumes with names and skills
+        adminService.getAllResumes(), // Get all resumes with names and skills
+        adminService.getAllJobSeekers() // Get all jobseeker profiles
       ]);
       // Process users data
 const allUsers = usersResponse.users || [];
 const allJobs = jobsResponse.jobs || jobsResponse.data || [];
 const allApplications = applicationsResponse || [];
 const allResumes = resumesResponse || [];
+const allJobSeekers = jobseekersResponse || [];
 
-// Create a map of resumes by jobSeekerUid for quick lookup
+// Create maps for quick lookup
 const resumeMap = new Map();
 allResumes.forEach((resume: any) => {
   resumeMap.set(resume.jobSeekerUid, resume);
+});
+
+const jobSeekerMap = new Map();
+allJobSeekers.forEach((js: any) => {
+  jobSeekerMap.set(js.uid, js);
 });
 
 const jobSeekerUsers = allUsers.filter((user: any) => 
   user.role === 'jobseeker' || user.userType === 'jobseeker' || user.type === 'jobseeker'
 );
 
-// Transform jobseekers by merging user data with resume data
+// Transform jobseekers by merging user data with resume and jobseeker data
 const transformedJobseekers = jobSeekerUsers.map((user: any) => {
   const resume = resumeMap.get(user.uid);
+  const jobSeekerProfile = jobSeekerMap.get(user.uid);
   
   // If no resume found by uid, try to find by email
   let fallbackResume = null;
@@ -137,62 +144,141 @@ const transformedJobseekers = jobSeekerUsers.map((user: any) => {
   
   const finalResume = resume || fallbackResume;
   
+  // Determine the best name source
+  let fullName = 'Unknown';
+  let dataSource = 'user_only';
+  
+  if (finalResume?.personalInfo?.fullName) {
+    // Priority 1: Resume collection fullName
+    fullName = finalResume.personalInfo.fullName;
+    dataSource = 'resume';
+  } else if (jobSeekerProfile?.fullName) {
+    // Priority 2: JobSeeker collection fullName
+    fullName = jobSeekerProfile.fullName;
+    dataSource = 'jobseeker_profile';
+  } else if (jobSeekerProfile?.firstName && jobSeekerProfile?.lastName) {
+    // Priority 3: JobSeeker firstName + lastName
+    fullName = `${jobSeekerProfile.firstName} ${jobSeekerProfile.lastName}`;
+    dataSource = 'jobseeker_profile';
+  } else if (user.firstName || user.name) {
+    // Priority 4: User data fallback
+    fullName = user.firstName || user.name || 'Unknown';
+    dataSource = 'user_only';
+  }
+
   return {
     _id: user._id,
-    // Get name from resume first, fallback to user data
-    firstName: finalResume?.personalInfo?.fullName?.split(' ')[0] || 
-               finalResume?.applicantName?.split(' ')[0] || 
-               user.firstName || 
-               user.name?.split(' ')[0] || 
-               'Unknown',
-    lastName: finalResume?.personalInfo?.fullName?.split(' ').slice(1).join(' ') || 
-              finalResume?.applicantName?.split(' ').slice(1).join(' ') || 
-              user.lastName || 
-              user.name?.split(' ').slice(1).join(' ') || 
-              '',
-    // Get email from resume or user
-    email: finalResume?.personalInfo?.email || finalResume?.applicantEmail || user.email,
-    // Get phone from resume or user
-    phone: finalResume?.personalInfo?.phone || finalResume?.applicantPhone || user.phone,
-    // Get skills from resume (this is the key fix!)
-    skills: finalResume?.skills || [],
+    // Use the determined fullName
+    firstName: fullName,
+    lastName: '', // Keep empty since we're using fullName in firstName
+    // Get email - Resume first, then JobSeeker, then User
+    email: finalResume?.personalInfo?.email || 
+           jobSeekerProfile?.email || 
+           user.email,
+    // Get skills - Resume first, then JobSeeker
+    skills: finalResume?.skills || jobSeekerProfile?.skills || [],
+    // Get experience - Resume first, then JobSeeker
     experience: finalResume?.workExperience?.[0]?.position || 
                finalResume?.workExperience?.[0]?.jobTitle ||
+               jobSeekerProfile?.experience ||
                'Not specified',
     applications: allApplications.filter((app: any) => app.jobSeekerUid === user.uid).length,
     status: user.status || (user.isActive ? 'active' : 'inactive'),
     createdAt: user.createdAt || user.dateRegistered,
-    lastActive: user.lastActive || user.updatedAt || user.lastLogin,
+    // Try multiple sources for lastActive
+    lastActive: finalResume?.updatedAt || 
+               jobSeekerProfile?.updatedAt || 
+               jobSeekerProfile?.lastActive ||
+               user.lastActive || 
+               user.updatedAt || 
+               user.lastLogin ||
+               user.lastLoginAt,
     // Debug info
     hasResume: !!finalResume,
-    resumeSource: resume ? 'uid_match' : (fallbackResume ? 'email_match' : 'none')
+    hasJobSeekerProfile: !!jobSeekerProfile,
+    dataSource: dataSource,
+    nameSource: finalResume?.personalInfo?.fullName ? 'resume_fullName' : 
+                (jobSeekerProfile?.fullName ? 'jobseeker_fullName' : 
+                (jobSeekerProfile?.firstName ? 'jobseeker_firstName_lastName' : 'user_fallback')),
+    // Debug lastActive sources
+    lastActiveDebug: {
+      resumeUpdatedAt: finalResume?.updatedAt,
+      jobSeekerUpdatedAt: jobSeekerProfile?.updatedAt,
+      jobSeekerLastActive: jobSeekerProfile?.lastActive,
+      userLastActive: user.lastActive,
+      userUpdatedAt: user.updatedAt,
+      userLastLogin: user.lastLogin,
+      userLastLoginAt: user.lastLoginAt,
+      allUserFields: Object.keys(user)
+    }
   };
 });
 
-console.log('🔍 DEBUG - Resumes Data:', allResumes);
-console.log('🔍 DEBUG - Resume Map:', resumeMap);
-console.log('🔍 DEBUG - First Resume Sample:', allResumes[0]);
-console.log('🔍 DEBUG - JobSeeker Users:', jobSeekerUsers);
-console.log('🔍 DEBUG - Transformed Jobseekers with Resume Data:', transformedJobseekers);
-
-// Debug each jobseeker transformation
-jobSeekerUsers.forEach((user: any, index: number) => {
-  const resume = resumeMap.get(user.uid);
-  console.log(`🔍 DEBUG - User ${index}:`, {
-    userUid: user.uid,
-    userName: user.firstName || user.name,
-    resumeFound: !!resume,
-    resumePersonalInfo: resume?.personalInfo,
-    resumeSkills: resume?.skills,
-    resumeApplicantName: resume?.applicantName
+// Debug all resume data structure
+allResumes.forEach((resume: any, index: number) => {
+  console.log(`🔍 DEBUG - Resume ${index}:`, {
+    jobSeekerUid: resume.jobSeekerUid,
+    personalInfo: resume.personalInfo,
+    fullName: resume.personalInfo?.fullName,
+    skills: resume.skills,
+    applicantName: resume.applicantName
   });
 });
-      
-      // Use real data from dashboard stats API
-      console.log('Dashboard Stats:', dashboardStats);
-      console.log('Users Response:', usersResponse);
-      console.log('Jobs Response:', jobsResponse);
-      console.log('Applications Response:', allApplications);
+
+// Debug each jobseeker transformation with clear priority
+jobSeekerUsers.forEach((user: any, index: number) => {
+  const resume = resumeMap.get(user.uid);
+  const jobSeekerProfile = jobSeekerMap.get(user.uid);
+  
+  // Determine name source priority
+  let nameSource = 'none';
+  let finalName = 'Unknown';
+  
+  if (resume?.personalInfo?.fullName) {
+    nameSource = '1_RESUME_FULLNAME';
+    finalName = resume.personalInfo.fullName;
+  } else if (jobSeekerProfile?.fullName) {
+    nameSource = '2_JOBSEEKER_FULLNAME';
+    finalName = jobSeekerProfile.fullName;
+  } else if (jobSeekerProfile?.firstName && jobSeekerProfile?.lastName) {
+    nameSource = '3_JOBSEEKER_FIRST_LAST';
+    finalName = `${jobSeekerProfile.firstName} ${jobSeekerProfile.lastName}`;
+  } else {
+    nameSource = '4_USER_FALLBACK';
+    finalName = user.firstName || user.name || 'Unknown';
+  }
+  
+  console.log(`🔍 DEBUG - User ${index} (${user.uid}):`, {
+    nameSource: nameSource,
+    finalName: finalName,
+    resumeExists: !!resume,
+    resumeFullName: resume?.personalInfo?.fullName,
+    jobSeekerExists: !!jobSeekerProfile,
+    jobSeekerFullName: jobSeekerProfile?.fullName,
+    jobSeekerFirstLast: jobSeekerProfile?.firstName && jobSeekerProfile?.lastName ? 
+                        `${jobSeekerProfile.firstName} ${jobSeekerProfile.lastName}` : null,
+    skillsSource: resume?.skills ? 'RESUME' : (jobSeekerProfile?.skills ? 'JOBSEEKER' : 'NONE'),
+    finalSkills: resume?.skills || jobSeekerProfile?.skills || [],
+    // LastActive debugging
+    lastActiveSources: {
+      resumeUpdatedAt: resume?.updatedAt,
+      jobSeekerUpdatedAt: jobSeekerProfile?.updatedAt,
+      jobSeekerLastActive: jobSeekerProfile?.lastActive,
+      userLastActive: user.lastActive,
+      userUpdatedAt: user.updatedAt,
+      userLastLogin: user.lastLogin,
+      userLastLoginAt: user.lastLoginAt
+    },
+    finalLastActive: resume?.updatedAt || 
+                    jobSeekerProfile?.updatedAt || 
+                    jobSeekerProfile?.lastActive ||
+                    user.lastActive || 
+                    user.updatedAt || 
+                    user.lastLogin ||
+                    user.lastLoginAt,
+    userFields: Object.keys(user)
+  });
+});
       
       // Set individual stats using real API data
       setTotalUsers(dashboardStats.totalJobSeekers || jobSeekerUsers.length || 0);
@@ -204,7 +290,6 @@ jobSeekerUsers.forEach((user: any, index: number) => {
       setTotalJobseekers(transformedJobseekers.length);
       
     } catch (error) {
-      console.error('Error fetching jobseekers data:', error);
       setJobseekers([]);
       setTotalUsers(0);
       setTotalJobs(0);
@@ -288,7 +373,7 @@ jobSeekerUsers.forEach((user: any, index: number) => {
       ...currentJobseekers.map(jobseeker => [
         `${jobseeker.firstName} ${jobseeker.lastName}`,
         jobseeker.email,
-        jobseeker.phone || '',
+        '', // Phone removed
         jobseeker.skills.join('; '),
         jobseeker.experience,
         jobseeker.applications.toString(),
@@ -451,7 +536,6 @@ jobSeekerUsers.forEach((user: any, index: number) => {
                       <td className="name-cell">
                         <div className="name-info">
                           <span className="jobseeker-name">{jobseeker.firstName} {jobseeker.lastName}</span>
-                          <span className="jobseeker-phone">{jobseeker.phone || 'No phone'}</span>
                         </div>
                       </td>
                       
@@ -513,14 +597,6 @@ jobSeekerUsers.forEach((user: any, index: number) => {
                             title="View Details"
                           >
                             View
-                          </button>
-                          
-                          <button 
-                            onClick={() => console.log('Contact jobseeker:', jobseeker._id)}
-                            className="action-btn contact-btn"
-                            title="Contact Jobseeker"
-                          >
-                            Contact
                           </button>
                         </div>
                       </td>
