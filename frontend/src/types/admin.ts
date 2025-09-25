@@ -128,4 +128,4 @@ export interface AdminFormData {
   adminLevel?: string;
 }
 
-export type AdminTab = 'overview' | 'analytics' | 'employers' | 'jobs' | 'users' | 'admins' | 'settings';
+export type AdminTab = 'overview' | 'analytics' | 'employers' | 'jobs' | 'users' | 'admins' | 'settings' | 'reports';

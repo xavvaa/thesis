@@ -7,7 +7,8 @@ import {
   FiLogOut,
   FiSettings,
   FiUserCheck,
-  FiBarChart2
+  FiBarChart2,
+  FiDownload
 } from 'react-icons/fi';
 import { HiShieldCheck } from 'react-icons/hi2';
 import { HiSparkles } from 'react-icons/hi';
@@ -36,7 +37,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   if (adminUser.role === 'superadmin') {
     navItems.push(
-      { id: 'admins' as AdminTab, icon: HiShieldCheck, label: 'Admin Management' }
+      { id: 'admins' as AdminTab, icon: HiShieldCheck, label: 'Admin Management' },
+      { id: 'reports' as AdminTab, icon: FiDownload, label: 'Reports' }
     );
   }
 

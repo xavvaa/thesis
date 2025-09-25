@@ -1163,4 +1163,394 @@ router.get('/analytics/system', verifyToken, superAdminMiddleware, async (req, r
   }
 });
 
+// Report Generation Endpoints
+router.post('/reports/generate', verifyToken, superAdminMiddleware, async (req, res) => {
+  try {
+    const { reportType, startDate, endDate, format, includeDetails } = req.body;
+    
+    console.log('🔄 Generating report:', { reportType, startDate, endDate, format, includeDetails });
+    
+    let reportData = {};
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999); // Include the entire end date
+    
+    switch (reportType) {
+      case 'user-summary':
+        const [totalUsers, jobseekers, employers, activeUsers] = await Promise.all([
+          User.countDocuments({ createdAt: { $gte: start, $lte: end } }),
+          User.countDocuments({ role: 'jobseeker', createdAt: { $gte: start, $lte: end } }),
+          User.countDocuments({ role: 'employer', createdAt: { $gte: start, $lte: end } }),
+          User.countDocuments({ 
+            isActive: true, 
+            lastLoginAt: { $gte: start, $lte: end } 
+          })
+        ]);
+        
+        reportData = {
+          summary: { totalUsers, jobseekers, employers, activeUsers },
+          details: includeDetails ? await User.find({ 
+            createdAt: { $gte: start, $lte: end } 
+          }).select('email role createdAt isActive lastLoginAt') : []
+        };
+        break;
+        
+      case 'user-registration':
+        const registrationsByDay = await User.aggregate([
+          { $match: { createdAt: { $gte: start, $lte: end } } },
+          {
+            $group: {
+              _id: {
+                year: { $year: '$createdAt' },
+                month: { $month: '$createdAt' },
+                day: { $dayOfMonth: '$createdAt' },
+                role: '$role'
+              },
+              count: { $sum: 1 }
+            }
+          },
+          { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
+        ]);
+        
+        reportData = {
+          summary: { totalRegistrations: registrationsByDay.length },
+          registrationTrends: registrationsByDay
+        };
+        break;
+        
+      case 'job-postings':
+        const [totalJobs, activeJobs, expiredJobs] = await Promise.all([
+          Job.countDocuments({ createdAt: { $gte: start, $lte: end } }),
+          Job.countDocuments({ 
+            status: 'active', 
+            createdAt: { $gte: start, $lte: end } 
+          }),
+          Job.countDocuments({ 
+            status: 'expired', 
+            createdAt: { $gte: start, $lte: end } 
+          })
+        ]);
+        
+        reportData = {
+          summary: { totalJobs, activeJobs, expiredJobs },
+          details: includeDetails ? await Job.find({ 
+            createdAt: { $gte: start, $lte: end } 
+          }).populate('employerUid', 'email companyName') : []
+        };
+        break;
+        
+      case 'application-summary':
+        const [totalApplications, pendingApps, acceptedApps, rejectedApps] = await Promise.all([
+          Application.countDocuments({ createdAt: { $gte: start, $lte: end } }),
+          Application.countDocuments({ 
+            status: 'pending', 
+            createdAt: { $gte: start, $lte: end } 
+          }),
+          Application.countDocuments({ 
+            status: 'accepted', 
+            createdAt: { $gte: start, $lte: end } 
+          }),
+          Application.countDocuments({ 
+            status: 'rejected', 
+            createdAt: { $gte: start, $lte: end } 
+          })
+        ]);
+        
+        reportData = {
+          summary: { totalApplications, pendingApps, acceptedApps, rejectedApps },
+          details: includeDetails ? await Application.find({ 
+            createdAt: { $gte: start, $lte: end } 
+          }).populate('jobId', 'title').populate('jobseekerId', 'email') : []
+        };
+        break;
+        
+      case 'system-health':
+        const systemStats = await Promise.all([
+          User.countDocuments(),
+          Job.countDocuments(),
+          Application.countDocuments(),
+          Employer.countDocuments({ accountStatus: 'pending' })
+        ]);
+        
+        reportData = {
+          summary: {
+            totalUsers: systemStats[0],
+            totalJobs: systemStats[1],
+            totalApplications: systemStats[2],
+            pendingVerifications: systemStats[3],
+            systemUptime: process.uptime(),
+            memoryUsage: process.memoryUsage(),
+            generatedAt: new Date()
+          }
+        };
+        break;
+        
+      case 'verification-report':
+        const [pendingEmployers, verifiedEmployers, rejectedEmployers] = await Promise.all([
+          Employer.countDocuments({ 
+            accountStatus: 'pending',
+            createdAt: { $gte: start, $lte: end }
+          }),
+          Employer.countDocuments({ 
+            accountStatus: 'verified',
+            verifiedAt: { $gte: start, $lte: end }
+          }),
+          Employer.countDocuments({ 
+            accountStatus: 'rejected',
+            updatedAt: { $gte: start, $lte: end }
+          })
+        ]);
+        
+        reportData = {
+          summary: { pendingEmployers, verifiedEmployers, rejectedEmployers },
+          details: includeDetails ? await Employer.find({
+            $or: [
+              { accountStatus: 'pending', createdAt: { $gte: start, $lte: end } },
+              { accountStatus: 'verified', verifiedAt: { $gte: start, $lte: end } },
+              { accountStatus: 'rejected', updatedAt: { $gte: start, $lte: end } }
+            ]
+          }).populate('userId', 'email companyName') : []
+        };
+        break;
+        
+      default:
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid report type'
+        });
+    }
+    
+    // Add metadata
+    const finalReportData = {
+      reportMetadata: {
+        reportType,
+        startDate,
+        endDate,
+        format,
+        includeDetails,
+        generatedAt: new Date(),
+        generatedBy: req.user.email
+      },
+      data: reportData
+    };
+    
+    console.log('✅ Report generated successfully');
+    
+    res.json({
+      success: true,
+      report: finalReportData,
+      message: 'Report generated successfully'
+    });
+    
+  } catch (error) {
+    console.error('Report generation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error generating report'
+    });
+  }
+});
+
+// Get report history (for future implementation)
+router.get('/reports/history', verifyToken, superAdminMiddleware, async (req, res) => {
+  try {
+    // For now, return empty array - can be implemented with a Reports collection later
+    res.json({
+      success: true,
+      reports: [],
+      message: 'Report history retrieved successfully'
+    });
+  } catch (error) {
+    console.error('Report history error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching report history'
+    });
+  }
+});
+
+// Bulk report generation endpoint
+router.post('/reports/generate-all', verifyToken, superAdminMiddleware, async (req, res) => {
+  try {
+    const { startDate, endDate, format, includeDetails } = req.body;
+    
+    console.log('🔄 Generating all reports:', { startDate, endDate, format, includeDetails });
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+    
+    const reportTypes = [
+      'user-summary',
+      'user-registration', 
+      'user-activity',
+      'job-postings',
+      'job-performance',
+      'employer-activity',
+      'application-summary',
+      'application-trends',
+      'system-health',
+      'verification-report',
+      'platform-analytics',
+      'revenue-analytics'
+    ];
+    
+    const allReports = [];
+    const failedReports = [];
+    
+    // Generate all reports in parallel for better performance
+    const reportPromises = reportTypes.map(async (reportType) => {
+      try {
+        let reportData = {};
+        
+        switch (reportType) {
+          case 'user-summary':
+            const [totalUsers, jobseekers, employers, activeUsers] = await Promise.all([
+              User.countDocuments({ createdAt: { $gte: start, $lte: end } }),
+              User.countDocuments({ role: 'jobseeker', createdAt: { $gte: start, $lte: end } }),
+              User.countDocuments({ role: 'employer', createdAt: { $gte: start, $lte: end } }),
+              User.countDocuments({ 
+                isActive: true, 
+                lastLoginAt: { $gte: start, $lte: end } 
+              })
+            ]);
+            
+            reportData = {
+              summary: { totalUsers, jobseekers, employers, activeUsers },
+              details: includeDetails ? await User.find({ 
+                createdAt: { $gte: start, $lte: end } 
+              }).select('email role createdAt isActive lastLoginAt') : []
+            };
+            break;
+            
+          case 'job-postings':
+            const [totalJobs, activeJobs, expiredJobs] = await Promise.all([
+              Job.countDocuments({ createdAt: { $gte: start, $lte: end } }),
+              Job.countDocuments({ 
+                status: 'active', 
+                createdAt: { $gte: start, $lte: end } 
+              }),
+              Job.countDocuments({ 
+                status: 'expired', 
+                createdAt: { $gte: start, $lte: end } 
+              })
+            ]);
+            
+            reportData = {
+              summary: { totalJobs, activeJobs, expiredJobs },
+              details: includeDetails ? await Job.find({ 
+                createdAt: { $gte: start, $lte: end } 
+              }).populate('employerUid', 'email companyName') : []
+            };
+            break;
+            
+          case 'application-summary':
+            const [totalApplications, pendingApps, acceptedApps, rejectedApps] = await Promise.all([
+              Application.countDocuments({ createdAt: { $gte: start, $lte: end } }),
+              Application.countDocuments({ 
+                status: 'pending', 
+                createdAt: { $gte: start, $lte: end } 
+              }),
+              Application.countDocuments({ 
+                status: 'accepted', 
+                createdAt: { $gte: start, $lte: end } 
+              }),
+              Application.countDocuments({ 
+                status: 'rejected', 
+                createdAt: { $gte: start, $lte: end } 
+              })
+            ]);
+            
+            reportData = {
+              summary: { totalApplications, pendingApps, acceptedApps, rejectedApps },
+              details: includeDetails ? await Application.find({ 
+                createdAt: { $gte: start, $lte: end } 
+              }).populate('jobId', 'title').populate('jobseekerId', 'email') : []
+            };
+            break;
+            
+          case 'system-health':
+            const systemStats = await Promise.all([
+              User.countDocuments(),
+              Job.countDocuments(),
+              Application.countDocuments(),
+              Employer.countDocuments({ accountStatus: 'pending' })
+            ]);
+            
+            reportData = {
+              summary: {
+                totalUsers: systemStats[0],
+                totalJobs: systemStats[1],
+                totalApplications: systemStats[2],
+                pendingVerifications: systemStats[3],
+                systemUptime: process.uptime(),
+                memoryUsage: process.memoryUsage(),
+                generatedAt: new Date()
+              }
+            };
+            break;
+            
+          // Add other report types with basic data
+          default:
+            reportData = {
+              summary: { message: `${reportType} report - basic implementation` },
+              details: []
+            };
+        }
+        
+        return {
+          reportType,
+          reportMetadata: {
+            reportType,
+            startDate,
+            endDate,
+            format,
+            includeDetails,
+            generatedAt: new Date(),
+            generatedBy: req.user.email
+          },
+          data: reportData
+        };
+        
+      } catch (error) {
+        console.error(`Error generating ${reportType}:`, error);
+        failedReports.push(reportType);
+        return null;
+      }
+    });
+    
+    // Wait for all reports to complete
+    const results = await Promise.all(reportPromises);
+    const successfulReports = results.filter(report => report !== null);
+    
+    const response = {
+      metadata: {
+        generatedAt: new Date(),
+        dateRange: `${startDate} to ${endDate}`,
+        totalReports: successfulReports.length,
+        failedReports: failedReports.length,
+        generatedBy: req.user.email,
+        format
+      },
+      reports: successfulReports,
+      failedReports
+    };
+    
+    console.log(`✅ Bulk generation completed: ${successfulReports.length} successful, ${failedReports.length} failed`);
+    
+    res.json({
+      success: true,
+      data: response,
+      message: `Generated ${successfulReports.length} reports successfully`
+    });
+    
+  } catch (error) {
+    console.error('Bulk report generation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error generating bulk reports'
+    });
+  }
+});
+
 module.exports = router;
