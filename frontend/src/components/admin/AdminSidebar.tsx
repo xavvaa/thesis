@@ -8,7 +8,10 @@ import {
   FiSettings,
   FiUserCheck,
   FiBarChart2,
-  FiDownload
+  FiDownload,
+  FiCheck,
+  FiAlertCircle,
+  FiStar
 } from 'react-icons/fi';
 import { HiShieldCheck } from 'react-icons/hi2';
 import { HiSparkles } from 'react-icons/hi';
@@ -29,21 +32,23 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 }) => {
   const navItems = [
     { id: 'overview' as AdminTab, icon: FiTrendingUp, label: 'Overview' },
-  
-    { id: 'employers' as AdminTab, icon: FiBriefcase, label: 'Employer Verification' },
-    { id: 'jobs' as AdminTab, icon: FiFileText, label: 'Job Listings' },
-    { id: 'analytics' as AdminTab, icon: FiBarChart2, label: 'User Analytics' },
+    { id: 'employer-verification' as AdminTab, icon: FiCheck, label: 'Employer Verification' },
+    { id: 'job-postings' as AdminTab, icon: FiFileText, label: 'Job Postings' },
+    { id: 'applicants' as AdminTab, icon: FiUsers, label: 'Applicants' },
+    { id: 'compliance' as AdminTab, icon: FiAlertCircle, label: 'Compliance' },
+    { id: 'user-analytics' as AdminTab, icon: FiBarChart2, label: 'User Analytics' },
+    { id: 'skills-analytics' as AdminTab, icon: FiStar, label: 'Skills Analytics' },
+    { id: 'generate-reports' as AdminTab, icon: FiDownload, label: 'Generate Reports' },
   ];
 
   if (adminUser.role === 'superadmin') {
     navItems.push(
-      { id: 'admins' as AdminTab, icon: HiShieldCheck, label: 'Admin Management' },
-      { id: 'reports' as AdminTab, icon: FiDownload, label: 'Reports' }
+      { id: 'admin-management' as AdminTab, icon: HiShieldCheck, label: 'Admin Management' }
     );
   }
 
   navItems.push(
-    { id: 'settings' as AdminTab, icon: FiSettings, label: 'System Settings' }
+    { id: 'settings' as AdminTab, icon: FiSettings, label: 'Settings' }
   );
 
   return (

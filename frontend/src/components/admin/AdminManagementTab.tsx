@@ -62,15 +62,7 @@ const AdminManagementTab: React.FC<AdminManagementTabProps> = ({
 
   return (
     <div className="admin-content">
-      <div className="admin-management-header">
-        <div className="header-content">
-          <div>
-            <h2>Admin Management</h2>
-            <p>Manage admin users, roles, and permissions</p>
-          </div>
-         
-        </div>
-        
+      <div className="admin-management-header" style={{ marginBottom: '24px', display: 'flex', justifyContent: 'flex-end' }}>
         <button 
           className="add-admin-btn"
           onClick={() => setShowCreateForm(true)}

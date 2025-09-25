@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { HiCheckCircle, HiUsers, HiX, HiFilter, HiSearch } from 'react-icons/hi';
+import { HiCheckCircle, HiUsers, HiX, HiFilter, HiSearch, HiClock, HiEye, HiExclamation } from 'react-icons/hi';
 import { PendingEmployer } from '../../types/admin';
 import EmployerCard from './EmployerCard';
 import EmployerDetailsView from './EmployerDetailsView';
+import StatsCard from './StatsCard';
 import './EmployersTab.css';
 
 interface EmployersTabProps {
@@ -75,19 +76,33 @@ const EmployersTab: React.FC<EmployersTabProps> = ({
 
   return (
     <div className="admin-content">
-      <div className="section-header">
-        <div className="header-content">
-          <div>
-            <h2>Employer Verification</h2>
-            <p>Click on employer cards to view documents and make approval decisions</p>
-          </div>
-        </div>
-        
-        <div className="employers-stats">
-          <span className="stat-item">
-            <HiUsers /> {filteredEmployers.length} of {pendingEmployers.length} Employers
-          </span>
-        </div>
+      {/* Employer Stats Cards */}
+      <div className="stats-grid">
+        <StatsCard
+          icon={HiClock}
+          value={statusCounts.pending}
+          label="Pending Review"
+          changeText="Awaiting verification"
+        />
+        <StatsCard
+          icon={HiEye}
+          value={statusCounts.pending > 0 ? Math.min(statusCounts.pending, 12) : 0}
+          label="Under Review"
+          changeText="Currently reviewing"
+        />
+        <StatsCard
+          icon={HiCheckCircle}
+          value={statusCounts.verified}
+          label="Verified"
+          change={statusCounts.verified > 0 ? statusCounts.verified : 0}
+          changeLabel="this week"
+        />
+        <StatsCard
+          icon={HiExclamation}
+          value={statusCounts.rejected}
+          label="Flagged"
+          changeText="Requires attention"
+        />
       </div>
 
       {/* Search and Filter Section */}
@@ -153,10 +168,6 @@ const EmployersTab: React.FC<EmployersTabProps> = ({
       </div>
 
       <div className="employers-list">
-        {(() => {
-          console.log('EmployersTab - pendingEmployers:', pendingEmployers);
-          return null;
-        })()}
         {filteredEmployers.length === 0 ? (
           <div className="empty-state">
             <HiCheckCircle />

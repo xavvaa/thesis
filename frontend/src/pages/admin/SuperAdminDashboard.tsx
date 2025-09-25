@@ -7,11 +7,16 @@ import {
   OverviewTab, 
   EmployersTab, 
   JobsTab, 
+  SuperAdminJobsTab,
   UsersTab,
   AdminManagementTab,
   SystemSettingsTab,
   AnalyticsTab,
-  ReportsTab
+  ReportsTab,
+  ApplicantsTab,
+  ComplianceTab,
+  UserAnalyticsTab,
+  SkillsAnalyticsTab
 } from '../../components/admin';
 import adminService from '../../services/adminService';
 import './SuperAdminDashboard.css';
@@ -140,6 +145,53 @@ const SuperAdminDashboard: React.FC = () => {
     navigate('/admin/auth');
   };
 
+  const getTabInfo = (tab: string) => {
+    const tabMap: Record<string, { title: string; subtitle: string }> = {
+      'overview': {
+        title: 'Dashboard',
+        subtitle: 'System overview and key metrics'
+      },
+      'employer-verification': {
+        title: 'Employer Verification',
+        subtitle: 'Review and approve employer applications'
+      },
+      'job-postings': {
+        title: 'Job Postings',
+        subtitle: 'Manage and monitor job listings'
+      },
+      'applicants': {
+        title: 'Applicants',
+        subtitle: 'Job seeker applications and profiles'
+      },
+      'compliance': {
+        title: 'Compliance',
+        subtitle: 'System compliance and regulatory oversight'
+      },
+      'user-analytics': {
+        title: 'User Analytics',
+        subtitle: 'User behavior and engagement insights'
+      },
+      'skills-analytics': {
+        title: 'Skills Analytics',
+        subtitle: 'Skills demand and market trends'
+      },
+      'generate-reports': {
+        title: 'Reports',
+        subtitle: 'Generate system and performance reports'
+      },
+      'admin-management': {
+        title: 'Admin Management',
+        subtitle: 'Manage administrator accounts and permissions'
+      },
+      'settings': {
+        title: 'System Settings',
+        subtitle: 'Configure system parameters and preferences'
+      },
+    };
+
+    return tabMap[tab] || { title: 'Dashboard', subtitle: 'System management' };
+  };
+
   const generateSystemReport = () => {
     // Mock system report generation
     const reportData = {
@@ -178,8 +230,8 @@ const SuperAdminDashboard: React.FC = () => {
 
       <div className="admin-main">
         <AdminHeader 
-          title="Super Admin Dashboard"
-          subtitle="Comprehensive system management and oversight"
+          title={getTabInfo(activeTab).title}
+          subtitle={getTabInfo(activeTab).subtitle}
           actions={
             <button className="report-btn" onClick={generateSystemReport}>
               Generate Report
@@ -187,17 +239,13 @@ const SuperAdminDashboard: React.FC = () => {
           }
         />
 
-        {activeTab === 'analytics' && (
-          <AnalyticsTab />
-        )}
-
         {activeTab === 'overview' && (
           <OverviewTab 
             stats={stats}
           />
         )}
 
-        {activeTab === 'employers' && (
+        {activeTab === 'employer-verification' && (
           <EmployersTab 
             pendingEmployers={pendingEmployers}
             onEmployerAction={handleEmployerAction}
@@ -205,17 +253,38 @@ const SuperAdminDashboard: React.FC = () => {
           />
         )}
 
-        {activeTab === 'jobs' && (
-          <JobsTab 
-            jobs={jobs}
+        {activeTab === 'job-postings' && (
+          <SuperAdminJobsTab 
+            onJobStatusChange={(jobId, status) => {
+              console.log('Job status changed:', jobId, status);
+              // Refresh dashboard data if needed
+              fetchDashboardData();
+            }}
           />
         )}
 
-        {activeTab === 'users' && (
-          <UsersTab />
+
+        {activeTab === 'applicants' && (
+          <ApplicantsTab />
         )}
 
-        {activeTab === 'admins' && (
+        {activeTab === 'compliance' && (
+          <ComplianceTab />
+        )}
+
+        {activeTab === 'user-analytics' && (
+          <UserAnalyticsTab />
+        )}
+
+        {activeTab === 'skills-analytics' && (
+          <SkillsAnalyticsTab />
+        )}
+
+        {activeTab === 'generate-reports' && (
+          <ReportsTab />
+        )}
+
+        {activeTab === 'admin-management' && (
           <AdminManagementTab 
             adminUsers={adminUsers}
             onCreateAdmin={handleCreateAdmin}
@@ -228,9 +297,6 @@ const SuperAdminDashboard: React.FC = () => {
           <SystemSettingsTab />
         )}
 
-        {activeTab === 'reports' && (
-          <ReportsTab />
-        )}
       </div>
     </div>
   );
