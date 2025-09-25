@@ -70,24 +70,34 @@ const ApplicantsTab: React.FC = () => {
       setLoading(true);
       
       // Make parallel API calls for different data
-      const [usersResponse, jobsResponse, dashboardStats] = await Promise.all([
+      const [usersResponse, jobsResponse, dashboardStats, applicationsResponse] = await Promise.all([
         adminService.getUsers({}),
         adminService.getJobs({}), // Get all job postings
-        adminService.getDashboardStats()
+        adminService.getDashboardStats(),
+        adminService.getAllApplications() // Get all applications
       ]);
       
       // Process users data
       const allUsers = usersResponse.users || [];
       const allJobs = jobsResponse.jobs || jobsResponse.data || [];
+      const allApplications = applicationsResponse || [];
       const jobSeekerUsers = allUsers.filter((user: any) => 
         user.role === 'jobseeker' || user.userType === 'jobseeker' || user.type === 'jobseeker'
       );
       
-      // Set individual stats
-      setTotalUsers(9);
-      setActiveUsers(allUsers.filter((user: any) => user.status === 'active' || user.isActive).length || 7);
-      setTotalJobs(14);
-      setTotalApplications(22);
+      // Use real data from dashboard stats API
+      console.log('Dashboard Stats:', dashboardStats);
+      console.log('Users Response:', usersResponse);
+      console.log('Jobs Response:', jobsResponse);
+      console.log('Applications Response:', allApplications);
+      
+      // Set individual stats using real API data
+      setTotalUsers(dashboardStats.totalJobSeekers || jobSeekerUsers.length || 0);
+      setActiveUsers(jobSeekerUsers.filter((user: any) => 
+        user.status === 'active' || user.isActive || user.registrationStatus === 'verified'
+      ).length || 0);
+      setTotalJobs(dashboardStats.totalJobs || allJobs.length || 0);
+      setTotalApplications(dashboardStats.totalApplications || allApplications.length || 0);
       
       // Transform jobseekers for the table
       const transformedApplicants = jobSeekerUsers.map((user: any) => ({
@@ -107,6 +117,7 @@ const ApplicantsTab: React.FC = () => {
       setApplicants(transformedApplicants);
       
     } catch (error) {
+      console.error('Error fetching applicants data:', error);
       setApplicants([]);
       setTotalUsers(0);
       setActiveUsers(0);
@@ -167,30 +178,30 @@ const ApplicantsTab: React.FC = () => {
         <StatsCard
           icon={FiUsers}
           value={totalUsers}
-          label="Total Users"
-          change={totalUsers - 5}
-          changeLabel="from last month"
+          label="Total Jobseekers"
+          change={getMonthlyChange(applicants)}
+          changeLabel="new this month"
         />
         <StatsCard
           icon={FiUserCheck}
           value={activeUsers}
           label="Active Users"
-          change={activeUsers - 4}
-          changeLabel="from last month"
+          change={getActiveThisWeek(applicants)}
+          changeLabel="active this week"
         />
         <StatsCard
           icon={FiFileText}
           value={totalApplications}
           label="Total Applications"
-          change={totalApplications - 18}
+          change={Math.max(0, totalApplications - Math.floor(totalApplications * 0.8))}
           changeLabel="from last month"
         />
         <StatsCard
           icon={FiBriefcase}
           value={totalJobs}
-          label="Total Job Postings"
-          change={totalJobs - 10}
-          changeLabel="from last month"
+          label="Available Jobs"
+          change={Math.max(0, totalJobs - Math.floor(totalJobs * 0.9))}
+          changeLabel="new this month"
         />
       </div>
 

@@ -8,6 +8,7 @@ const Admin = require('../models/Admin');
 const JobSeeker = require('../models/JobSeeker');
 const Job = require('../models/Job');
 const Application = require('../models/Application');
+const Resume = require('../models/Resume');
 const { verifyToken } = require('../middleware/authMiddleware');
 const { adminMiddleware, superAdminMiddleware } = require('../middleware/adminMiddleware');
 const admin = require('../config/firebase');
@@ -1525,6 +1526,46 @@ router.post('/reports/generate-all', verifyToken, superAdminMiddleware, async (r
     res.status(500).json({
       success: false,
       message: 'Error generating bulk reports'
+    });
+  }
+});
+
+// Get all resumes for admin dashboard
+router.get('/resumes/all', verifyToken, adminMiddleware, async (req, res) => {
+  try {
+    const resumes = await Resume.find({})
+      .sort({ createdAt: -1 });
+
+    // Format resumes for admin view
+    const formattedResumes = resumes.map(resume => ({
+      _id: resume._id,
+      jobSeekerUid: resume.jobSeekerUid,
+      jobSeekerId: resume.jobSeekerId,
+      filename: resume.filename,
+      originalName: resume.originalName,
+      personalInfo: resume.personalInfo,
+      skills: resume.skills,
+      workExperience: resume.workExperience,
+      education: resume.education,
+      summary: resume.summary,
+      processingStatus: resume.processingStatus,
+      isActive: resume.isActive,
+      createdAt: resume.createdAt,
+      updatedAt: resume.updatedAt
+    }));
+
+    res.json({
+      success: true,
+      resumes: formattedResumes,
+      total: resumes.length
+    });
+
+  } catch (error) {
+    console.error('Error fetching all resumes:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error fetching resumes',
+      error: error.message
     });
   }
 });

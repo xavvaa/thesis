@@ -264,6 +264,79 @@ class AdminService {
     }
   }
 
+  // Get all resumes for admin - fetch directly from resumes endpoint
+  async getAllResumes(): Promise<any[]> {
+    try {
+      // Try to fetch from a direct resumes endpoint first
+      const response = await fetch(`http://localhost:3001/api/resumes/all`, {
+        headers: this.getAuthHeaders()
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.resumes) {
+          return data.resumes;
+        }
+      }
+      
+      // Fallback: Extract resume data from applications
+      console.log('🔍 Fallback: Extracting resumes from applications...');
+      const applications = await this.getAllApplications();
+      console.log('🔍 Applications for resume extraction:', applications);
+      
+      // Extract unique resumes from applications
+      const resumesMap = new Map();
+      
+      applications.forEach((app: any) => {
+        console.log('🔍 Processing application:', {
+          hasResumeData: !!app.resumeData,
+          jobSeekerUid: app.jobSeekerUid,
+          applicantName: app.applicantName
+        });
+        
+        if (app.resumeData && app.jobSeekerUid) {
+          resumesMap.set(app.jobSeekerUid, {
+            jobSeekerUid: app.jobSeekerUid,
+            personalInfo: app.resumeData.personalInfo || {},
+            skills: app.resumeData.skills || [],
+            workExperience: app.resumeData.workExperience || [],
+            education: app.resumeData.education || [],
+            summary: app.resumeData.summary || '',
+            applicantName: app.applicantName,
+            applicantEmail: app.applicantEmail,
+            applicantPhone: app.applicantPhone
+          });
+        } else if (app.jobSeekerUid) {
+          // Even if no resumeData, create entry with basic info
+          resumesMap.set(app.jobSeekerUid, {
+            jobSeekerUid: app.jobSeekerUid,
+            personalInfo: { 
+              fullName: app.applicantName,
+              email: app.applicantEmail,
+              phone: app.applicantPhone
+            },
+            skills: [],
+            workExperience: [],
+            education: [],
+            summary: '',
+            applicantName: app.applicantName,
+            applicantEmail: app.applicantEmail,
+            applicantPhone: app.applicantPhone
+          });
+        }
+      });
+      
+      const extractedResumes = Array.from(resumesMap.values());
+      console.log('🔍 Extracted resumes:', extractedResumes);
+      
+      return extractedResumes;
+      
+    } catch (error) {
+      console.error('Error fetching resumes:', error);
+      return [];
+    }
+  }
+
   async updateJobStatus(jobId: string, status: string, reason?: string): Promise<void> {
     const response = await fetch(`${this.baseUrl}/jobs/${jobId}/status`, {
       method: 'PUT',

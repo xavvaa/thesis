@@ -13,7 +13,7 @@ import {
   SystemSettingsTab,
   AnalyticsTab,
   ReportsTab,
-  ApplicantsTab,
+  JobseekersTab,
   ComplianceTab,
   UserAnalyticsTab,
   SkillsAnalyticsTab
@@ -159,9 +159,9 @@ const SuperAdminDashboard: React.FC = () => {
         title: 'Job Postings',
         subtitle: 'Manage and monitor job listings'
       },
-      'applicants': {
-        title: 'Applicants',
-        subtitle: 'Job seeker applications and profiles'
+      'jobseekers': {
+        title: 'Jobseekers',
+        subtitle: 'Job seeker profiles and management'
       },
       'compliance': {
         title: 'Compliance',
@@ -264,8 +264,8 @@ const SuperAdminDashboard: React.FC = () => {
         )}
 
 
-        {activeTab === 'applicants' && (
-          <ApplicantsTab />
+        {activeTab === 'jobseekers' && (
+          <JobseekersTab />
         )}
 
         {activeTab === 'compliance' && (
