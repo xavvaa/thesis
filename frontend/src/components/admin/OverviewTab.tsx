@@ -31,7 +31,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ stats }) => {
       const [usersResponse, employersResponse, jobsResponse, dashboardStats, pendingEmployersResponse] = await Promise.all([
         adminService.getUsers({}),
         adminService.getAllEmployers(),
-        adminService.getJobs({}),
+        adminService.getJobs({ limit: 1000 }), // Get all jobs
         adminService.getDashboardStats(),
         adminService.getPendingEmployers()
       ]);
@@ -41,15 +41,18 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ stats }) => {
       const allJobs = jobsResponse.jobs || jobsResponse.data || [];
       const pendingEmployers = pendingEmployersResponse || [];
       
-      // Calculate real stats
+      // Calculate real stats from actual data
+      const jobSeekers = allUsers.filter((user: any) => user.role === 'jobseeker' || user.userType === 'jobseeker');
+      const employers = allUsers.filter((user: any) => user.role === 'employer' || user.userType === 'employer');
+      
       const newStats = {
-        totalUsers: 9,
-        totalEmployers: 3,
-        totalJobSeekers: 4,
-        totalJobs: 14,
-        totalApplications: 22,
+        totalUsers: allUsers.length,
+        totalEmployers: Math.max(employers.length, allEmployers.length),
+        totalJobSeekers: jobSeekers.length,
+        totalJobs: allJobs.length,
+        totalApplications: dashboardStats?.totalApplications || 0,
         pendingEmployers: pendingEmployers.length || 0,
-        activeJobs: allJobs.filter((job: any) => job.status === 'active' || job.isActive).length || 9,
+        activeJobs: allJobs.filter((job: any) => job.status === 'active' || job.isActive).length,
         loading: false
       };
       

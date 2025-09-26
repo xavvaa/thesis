@@ -212,19 +212,6 @@ const SkillsAnalyticsTab: React.FC = () => {
 
   return (
     <div className="tab-content">
-      <div className="tab-header">
-        <div className="tab-title">
-          <FiStar className="tab-icon" />
-          <h2>Skills Analytics</h2>
-        </div>
-        <div className="tab-actions">
-          <button className="btn btn-secondary" onClick={exportSkillsData}>
-            <FiDownload />
-            Export Data
-          </button>
-        </div>
-      </div>
-
       <div className="stats-grid">
         <StatsCard
           icon={FiUsers}
@@ -332,6 +319,13 @@ const SkillsAnalyticsTab: React.FC = () => {
             <option value="growth">Growth Rate</option>
             <option value="salary">Average Salary</option>
           </select>
+        </div>
+
+        <div className="filter-actions">
+          <button className="btn btn-secondary" onClick={exportSkillsData}>
+            <FiDownload />
+            Export Data
+          </button>
         </div>
       </div>
 

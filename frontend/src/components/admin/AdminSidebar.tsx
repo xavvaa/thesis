@@ -36,7 +36,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     { id: 'job-postings' as AdminTab, icon: FiFileText, label: 'Job Postings' },
     { id: 'jobseekers' as AdminTab, icon: FiUsers, label: 'Jobseekers' },
     { id: 'compliance' as AdminTab, icon: FiAlertCircle, label: 'Compliance' },
-    { id: 'skills-analytics' as AdminTab, icon: FiStar, label: 'Skills Analytics' },
+    { id: 'skills-analytics' as AdminTab, icon: FiStar, label: 'Job Demand Analytics' },
     { id: 'generate-reports' as AdminTab, icon: FiDownload, label: 'Generate Reports' },
   ];
 

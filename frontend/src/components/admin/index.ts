@@ -15,3 +15,4 @@ export { default as ReportsTab } from './ReportsTab';
 export { default as JobseekersTab } from './JobseekersTab';
 export { default as ComplianceTab } from './ComplianceTab';
 export { default as SkillsAnalyticsTab } from './SkillsAnalyticsTab';
+export { default as JobDemandTab } from './JobDemandTab';

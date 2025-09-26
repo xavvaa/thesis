@@ -249,6 +249,31 @@
   vertical-align: top;
 }
 
+/* Number column specific styles */
+.number-column {
+  width: 50px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.number-cell {
+  width: 50px;
+  text-align: center;
+  vertical-align: middle;
+  padding: 0.5rem 0.25rem;
+}
+
+.row-number {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+  display: inline-block;
+  width: 100%;
+  text-align: center;
+}
+
 /* Cell-specific styling - auto-fit content */
 .name-cell {
   padding: 1rem 0.75rem;
@@ -592,7 +617,12 @@
   }
   
   .admin-jobseekers-table {
-    min-width: 900px;
+    min-width: 950px;
+  }
+  
+  .number-column,
+  .number-cell {
+    width: 40px;
   }
 }
 

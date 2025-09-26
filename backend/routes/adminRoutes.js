@@ -1592,4 +1592,193 @@ router.get('/resumes/all', verifyToken, adminMiddleware, async (req, res) => {
   }
 });
 
+// Get job demand analytics
+router.get('/job-demand-analytics', verifyToken, adminMiddleware, async (req, res) => {
+  try {
+    console.log('🔍 Fetching job demand analytics...');
+
+    // Get all jobs with their application counts
+    const jobs = await Job.aggregate([
+      {
+        $match: {
+          status: { $in: ['active', 'paused', 'closed'] }
+        }
+      },
+      {
+        $lookup: {
+          from: 'applications',
+          localField: '_id',
+          foreignField: 'jobId',
+          as: 'applications'
+        }
+      },
+      {
+        $addFields: {
+          totalApplicants: { $size: '$applications' },
+          activeJobs: {
+            $cond: [{ $eq: ['$status', 'active'] }, 1, 0]
+          },
+          filledJobs: {
+            $cond: [{ $eq: ['$status', 'closed'] }, 1, 0]
+          }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            title: '$title',
+            department: { $ifNull: ['$department', 'other'] }
+          },
+          totalPostings: { $sum: 1 },
+          totalApplicants: { $sum: '$totalApplicants' },
+          activeJobs: { $sum: '$activeJobs' },
+          filledJobs: { $sum: '$filledJobs' },
+          averageSalary: { $avg: '$salaryMin' },
+          postedDates: { $push: '$postedDate' },
+          viewCounts: { $push: '$viewCount' }
+        }
+      },
+      {
+        $addFields: {
+          averageApplicantsPerJob: {
+            $cond: [
+              { $eq: ['$totalPostings', 0] },
+              0,
+              { $divide: ['$totalApplicants', '$totalPostings'] }
+            ]
+          },
+          // Calculate time to fill (simplified - average days since posting for filled jobs)
+          timeToFill: {
+            $cond: [
+              { $eq: ['$filledJobs', 0] },
+              30, // Default 30 days if no filled jobs
+              {
+                $divide: [
+                  {
+                    $reduce: {
+                      input: '$postedDates',
+                      initialValue: 0,
+                      in: {
+                        $add: [
+                          '$$value',
+                          {
+                            $divide: [
+                              { $subtract: [new Date(), '$$this'] },
+                              1000 * 60 * 60 * 24 // Convert to days
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  { $size: '$postedDates' }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        $project: {
+          jobTitle: '$_id.title',
+          category: {
+            $switch: {
+              branches: [
+                { case: { $regexMatch: { input: '$_id.title', regex: /software|developer|programming|web|app|tech|IT|data|analyst|engineer/i } }, then: 'technology' },
+                { case: { $regexMatch: { input: '$_id.title', regex: /nurse|doctor|medical|health|care|hospital|clinic/i } }, then: 'healthcare' },
+                { case: { $regexMatch: { input: '$_id.title', regex: /accountant|finance|banking|audit|financial/i } }, then: 'finance' },
+                { case: { $regexMatch: { input: '$_id.title', regex: /teacher|education|instructor|professor|tutor/i } }, then: 'education' },
+                { case: { $regexMatch: { input: '$_id.title', regex: /marketing|digital|social media|seo|content|brand/i } }, then: 'marketing' },
+                { case: { $regexMatch: { input: '$_id.title', regex: /sales|representative|agent|business development/i } }, then: 'sales' },
+                { case: { $regexMatch: { input: '$_id.title', regex: /engineer|mechanical|electrical|civil|chemical/i } }, then: 'engineering' }
+              ],
+              default: 'other'
+            }
+          },
+          totalPostings: 1,
+          totalApplicants: 1,
+          averageApplicantsPerJob: { $round: ['$averageApplicantsPerJob', 1] },
+          activeJobs: 1,
+          filledJobs: 1,
+          averageSalary: { $round: ['$averageSalary', 0] },
+          timeToFill: { $round: ['$timeToFill', 0] }
+        }
+      },
+      {
+        $addFields: {
+          // Calculate demand level based on applicants per job ratio
+          demandLevel: {
+            $switch: {
+              branches: [
+                { case: { $lt: ['$averageApplicantsPerJob', 3] }, then: 'very-high' },
+                { case: { $lt: ['$averageApplicantsPerJob', 5] }, then: 'high' },
+                { case: { $lt: ['$averageApplicantsPerJob', 7] }, then: 'moderate' },
+                { case: { $lt: ['$averageApplicantsPerJob', 10] }, then: 'low' }
+              ],
+              default: 'very-low'
+            }
+          },
+          // Calculate growth rate (simplified - based on recent posting activity)
+          growthRate: {
+            $multiply: [
+              {
+                $subtract: [
+                  { $divide: ['$totalPostings', 30] }, // Posts per day
+                  0.5 // Baseline
+                ]
+              },
+              20 // Scale factor
+            ]
+          }
+        }
+      },
+      {
+        $sort: { totalPostings: -1 }
+      }
+    ]);
+
+    console.log(`✅ Found ${jobs.length} job categories for analytics`);
+
+    // Get actual total job count (not grouped)
+    const actualTotalJobs = await Job.countDocuments({
+      status: { $in: ['active', 'paused', 'closed'] }
+    });
+
+    // Calculate overall statistics
+    const totalJobsByCategory = jobs.reduce((sum, job) => sum + job.totalPostings, 0);
+    const totalApplicants = jobs.reduce((sum, job) => sum + job.totalApplicants, 0);
+    const averageTimeToFill = Math.round(
+      jobs.reduce((sum, job) => sum + job.timeToFill, 0) / (jobs.length || 1)
+    );
+    const highDemandCount = jobs.filter(job => 
+      job.demandLevel === 'very-high' || job.demandLevel === 'high'
+    ).length;
+
+    const analytics = {
+      jobDemandData: jobs,
+      summary: {
+        totalJobs: actualTotalJobs, // Use actual job count, not grouped count
+        totalJobsByCategory: totalJobsByCategory, // Keep grouped count for reference
+        totalApplicants,
+        averageTimeToFill,
+        highDemandCount,
+        totalCategories: jobs.length
+      }
+    };
+
+    res.json({
+      success: true,
+      data: analytics
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching job demand analytics:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching job demand analytics',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

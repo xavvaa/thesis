@@ -289,6 +289,9 @@ Flagged jobs will be temporarily hidden from jobseekers while under review. The 
       };
 
       const response = await adminService.getJobs(params);
+      
+      // Also get all jobs for accurate stats calculation
+      const allJobsResponse = await adminService.getJobs({ limit: 1000 });
 
       if (response.success && response.jobs) {
         // Fetch all applications to count by jobId (client-side counting)
@@ -406,15 +409,16 @@ Flagged jobs will be temporarily hidden from jobseekers while under review. The 
           ...job,
           department: job.department || 'Not specified'
         }))); // Store all jobs for department filter options
-        setTotalJobs(convertedJobs.length); // Use filtered count for display
+        setTotalJobs(response.pagination?.total || convertedJobs.length); // Use total count from backend
 
-        // Calculate stats
-        const activeJobs = convertedJobs.filter((job: Job) => job.status === 'active').length;
-        const pendingJobs = convertedJobs.filter((job: Job) => job.status === 'pending').length;
-        const totalViews = convertedJobs.reduce((sum: number, job: Job) => sum + (job.views || 0), 0);
+        // Calculate stats from all jobs, not just paginated results
+        const allJobsData = allJobsResponse.jobs || [];
+        const activeJobs = allJobsData.filter((job: any) => job.status === 'active').length;
+        const pendingJobs = allJobsData.filter((job: any) => job.status === 'pending').length;
+        const totalViews = allJobsData.reduce((sum: number, job: any) => sum + (job.viewCount || job.views || 0), 0);
 
         setStats({
-          totalJobs: response.total || convertedJobs.length,
+          totalJobs: allJobsData.length, // Use actual count of all jobs
           activeJobs,
           pendingJobs,
           totalViews
@@ -567,6 +571,7 @@ Flagged jobs will be temporarily hidden from jobseekers while under review. The 
               <table className="admin-jobs-table">
                 <thead>
                   <tr>
+                    <th className="number-column">#</th>
                     <th>JOB TITLE</th>
                     <th>COMPANY</th>
                     <th>STATUS</th>
@@ -610,11 +615,15 @@ Flagged jobs will be temporarily hidden from jobseekers while under review. The 
                   </tr>
                 </thead>
                 <tbody>
-                  {jobs.map((job) => {
+                  {jobs.map((job, index) => {
                     const { timeString, dateStr, daysActive } = formatDateTime(job.postedDate || new Date().toISOString());
+                    const rowNumber = (currentPage - 1) * jobsPerPage + index + 1;
                     
                     return (
                       <tr key={job.id} className="job-row">
+                        <td className="number-cell">
+                          <span className="row-number">{rowNumber}</span>
+                        </td>
                         <td className="job-title-cell">
                           <div className="job-title-info">
                             <span className="job-title">{job.title}</span>

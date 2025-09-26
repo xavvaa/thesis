@@ -15,7 +15,7 @@ import {
   ReportsTab,
   JobseekersTab,
   ComplianceTab,
-  SkillsAnalyticsTab
+  JobDemandTab
 } from '../../components/admin';
 import adminService from '../../services/adminService';
 import './SuperAdminDashboard.css';
@@ -167,8 +167,8 @@ const SuperAdminDashboard: React.FC = () => {
         subtitle: 'System compliance and regulatory oversight'
       },
       'skills-analytics': {
-        title: 'Skills Analytics',
-        subtitle: 'Skills demand and market trends'
+        title: 'Job Demand Analytics',
+        subtitle: 'Job market demand and competition analysis'
       },
       'generate-reports': {
         title: 'Reports',
@@ -268,7 +268,7 @@ const SuperAdminDashboard: React.FC = () => {
         )}
 
         {activeTab === 'skills-analytics' && (
-          <SkillsAnalyticsTab />
+          <JobDemandTab />
         )}
 
         {activeTab === 'generate-reports' && (

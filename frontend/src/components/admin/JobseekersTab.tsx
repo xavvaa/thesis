@@ -515,6 +515,7 @@ jobSeekerUsers.forEach((user: any) => {
               <table className="admin-jobseekers-table">
               <thead>
                 <tr>
+                  <th className="number-column">#</th>
                   <th className="sortable-header" onClick={() => handleSort('name')}>
                     <div className="header-content">
                       <span>NAME</span>
@@ -568,12 +569,16 @@ jobSeekerUsers.forEach((user: any) => {
                 </tr>
               </thead>
               <tbody>
-                {currentJobseekers.map((jobseeker) => {
+                {currentJobseekers.map((jobseeker, index) => {
                   const { timeString, dateStr, daysAgo } = formatDateTime(jobseeker.createdAt || new Date().toISOString());
                   const lastActiveInfo = jobseeker.lastActive ? formatDateTime(jobseeker.lastActive) : null;
+                  const rowNumber = (currentPage - 1) * jobseekersPerPage + index + 1;
                   
                   return (
                     <tr key={jobseeker._id} className="jobseeker-row">
+                      <td className="number-cell">
+                        <span className="row-number">{rowNumber}</span>
+                      </td>
                       <td className="name-cell">
                         <div className="name-info">
                           <span className="jobseeker-name">{jobseeker.firstName} {jobseeker.lastName}</span>

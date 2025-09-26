@@ -513,6 +513,21 @@ class AdminService {
 
     return data;
   }
+
+  // Job Demand Analytics
+  async getJobDemandAnalytics(): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/job-demand-analytics`, {
+      headers: this.getAuthHeaders()
+    });
+    
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to fetch job demand analytics');
+    }
+
+    return data.data;
+  }
 }
 
 export default new AdminService();
