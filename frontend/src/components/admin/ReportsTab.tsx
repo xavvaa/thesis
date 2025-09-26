@@ -15,11 +15,11 @@ import adminService from '../../services/adminService';
 import './ReportsTab.css';
 
 interface ReportFilter {
-  reportType: string;
+  reportTypes: string[];
   dateRange: string;
   startDate: string;
   endDate: string;
-  format: 'pdf' | 'csv' | 'json';
+  format: 'pdf' | 'csv' | 'json' | 'xlsx';
   includeDetails: boolean;
 }
 
@@ -28,7 +28,7 @@ interface ReportData {
   name: string;
   description: string;
   icon: React.ComponentType;
-  category: 'users' | 'jobs' | 'applications' | 'system' | 'analytics';
+  category: 'overview' | 'employers' | 'jobs' | 'jobseekers' | 'compliance' | 'admin' | 'system';
 }
 
 // Helper functions for report formatting
@@ -103,7 +103,7 @@ const formatReportForPDF = (reportData: any, reportName?: string): string => {
 
 const ReportsTab: React.FC = () => {
   const [filters, setFilters] = useState<ReportFilter>({
-    reportType: '',
+    reportTypes: [],
     dateRange: 'last30days',
     startDate: '',
     endDate: '',
@@ -120,30 +120,32 @@ const ReportsTab: React.FC = () => {
   const [bulkProgress, setBulkProgress] = useState<{current: number, total: number, currentReport: string}>({current: 0, total: 0, currentReport: ''});
 
   const reportTypes: ReportData[] = [
-    // User Reports
+    // Overview Dashboard Reports
     {
-      id: 'user-summary',
-      name: 'User Summary Report',
-      description: 'Overview of all registered users, roles, and activity status',
-      icon: FiUsers,
-      category: 'users'
-    },
-    {
-      id: 'user-registration',
-      name: 'User Registration Report',
-      description: 'New user registrations over time with demographic breakdown',
+      id: 'dashboard-overview',
+      name: 'Dashboard Overview Report',
+      description: 'Complete overview with key metrics, user counts, and system status',
       icon: FiTrendingUp,
-      category: 'users'
-    },
-    {
-      id: 'user-activity',
-      name: 'User Activity Report',
-      description: 'User login patterns, session duration, and engagement metrics',
-      icon: FiBarChart2,
-      category: 'users'
+      category: 'overview'
     },
     
-    // Job Reports
+    // Employer Verification Reports
+    {
+      id: 'employer-verification',
+      name: 'Employer Verification Report',
+      description: 'Employer verification status, pending approvals, and document compliance',
+      icon: FiFileText,
+      category: 'employers'
+    },
+    {
+      id: 'employer-documents',
+      name: 'Employer Documents Report',
+      description: 'Document verification status, approval rates, and compliance tracking',
+      icon: FiFile,
+      category: 'employers'
+    },
+    
+    // Job Postings Reports
     {
       id: 'job-postings',
       name: 'Job Postings Report',
@@ -152,37 +154,55 @@ const ReportsTab: React.FC = () => {
       category: 'jobs'
     },
     {
-      id: 'job-performance',
-      name: 'Job Performance Report',
-      description: 'Job posting views, applications received, and conversion rates',
-      icon: FiTrendingUp,
+      id: 'job-demand-analytics',
+      name: 'Job Demand Analytics Report',
+      description: 'Job market demand, skills analytics, and competition analysis',
+      icon: FiBarChart2,
       category: 'jobs'
     },
+    
+    // Jobseekers Reports
     {
-      id: 'employer-activity',
-      name: 'Employer Activity Report',
-      description: 'Employer engagement, job posting frequency, and hiring metrics',
+      id: 'jobseekers-summary',
+      name: 'Jobseekers Summary Report',
+      description: 'Job seeker profiles, activity, and application patterns',
       icon: FiUsers,
-      category: 'jobs'
-    },
-    
-    // Application Reports
-    {
-      id: 'application-summary',
-      name: 'Application Summary Report',
-      description: 'Overview of all job applications with status and outcomes',
-      icon: FiFile,
-      category: 'applications'
+      category: 'jobseekers'
     },
     {
-      id: 'application-trends',
-      name: 'Application Trends Report',
-      description: 'Application patterns, success rates, and seasonal trends',
-      icon: FiTrendingUp,
-      category: 'applications'
+      id: 'jobseeker-resumes',
+      name: 'Resume Analytics Report',
+      description: 'Resume submissions, skills distribution, and profile completeness',
+      icon: FiFileText,
+      category: 'jobseekers'
     },
     
-    // System Reports
+    // Compliance Reports
+    {
+      id: 'compliance-overview',
+      name: 'Compliance Overview Report',
+      description: 'System compliance status, regulatory adherence, and audit trails',
+      icon: FiFileText,
+      category: 'compliance'
+    },
+    
+    // Admin Management Reports (Super Admin Only)
+    {
+      id: 'admin-activity',
+      name: 'Admin Activity Report',
+      description: 'Administrator actions, login patterns, and system access logs',
+      icon: FiUsers,
+      category: 'admin'
+    },
+    {
+      id: 'admin-permissions',
+      name: 'Admin Permissions Report',
+      description: 'Administrator roles, permissions, and access control audit',
+      icon: FiFileText,
+      category: 'admin'
+    },
+    
+    // System Settings & Health Reports
     {
       id: 'system-health',
       name: 'System Health Report',
@@ -191,27 +211,11 @@ const ReportsTab: React.FC = () => {
       category: 'system'
     },
     {
-      id: 'verification-report',
-      name: 'Verification Report',
-      description: 'Employer verification status, pending documents, and approval rates',
+      id: 'system-settings',
+      name: 'System Configuration Report',
+      description: 'Current system settings, configurations, and security status',
       icon: FiFileText,
       category: 'system'
-    },
-    
-    // Analytics Reports
-    {
-      id: 'platform-analytics',
-      name: 'Platform Analytics Report',
-      description: 'Comprehensive platform usage, growth metrics, and KPIs',
-      icon: FiBarChart2,
-      category: 'analytics'
-    },
-    {
-      id: 'revenue-analytics',
-      name: 'Revenue Analytics Report',
-      description: 'Revenue streams, subscription metrics, and financial performance',
-      icon: FiTrendingUp,
-      category: 'analytics'
     }
   ];
 
@@ -247,6 +251,7 @@ const ReportsTab: React.FC = () => {
   const formatOptions = [
     { value: 'pdf', label: 'PDF Document' },
     { value: 'csv', label: 'CSV Spreadsheet' },
+    { value: 'xlsx', label: 'Excel Spreadsheet' },
     { value: 'json', label: 'JSON Data' }
   ];
 
@@ -401,73 +406,117 @@ const ReportsTab: React.FC = () => {
   }, [filters.dateRange]);
 
   const handleGenerateReport = async () => {
-    if (!filters.reportType) {
-      setNotification({type: 'error', message: 'Please select a report type first'});
+    if (filters.reportTypes.length === 0) {
+      setNotification({type: 'error', message: 'Please select at least one report type'});
       return;
     }
 
     setLoading(true);
     try {
-      console.log('Generating report with filters:', filters);
+      console.log('Generating reports with filters:', filters);
       
-      // Call the admin service to generate the report
-      const reportData = await adminService.generateReport({
-        reportType: filters.reportType,
-        startDate: filters.startDate,
-        endDate: filters.endDate,
-        format: filters.format,
-        includeDetails: filters.includeDetails
-      });
+      if (filters.reportTypes.length === 1) {
+        // Single report generation
+        const reportType = filters.reportTypes[0];
+        const selectedReport = reportTypes.find(r => r.id === reportType);
+        const fileName = `${selectedReport?.name || 'Report'}_${filters.startDate}_to_${filters.endDate}.${filters.format}`;
+        
+        if (filters.format === 'pdf' || filters.format === 'xlsx') {
+          // For PDF/XLSX, make a direct request to get the binary data
+          const response = await fetch('http://localhost:3001/api/admin/reports/generate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+            },
+            body: JSON.stringify({
+              reportType: reportType,
+              startDate: filters.startDate,
+              endDate: filters.endDate,
+              format: filters.format,
+              includeDetails: filters.includeDetails
+            })
+          });
 
-      // Create download link
-      const selectedReport = reportTypes.find(r => r.id === filters.reportType);
-      const fileName = `${selectedReport?.name || 'Report'}_${filters.startDate}_to_${filters.endDate}.${filters.format}`;
-      
-      if (filters.format === 'json') {
-        // For JSON, create a downloadable file with the report data
-        const blob = new Blob([JSON.stringify(reportData.report, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        a.click();
-        URL.revokeObjectURL(url);
-      } else if (filters.format === 'csv') {
-        // Convert report data to CSV format
-        const csvContent = convertToCSV(reportData.report);
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        a.click();
-        URL.revokeObjectURL(url);
+          if (!response.ok) {
+            throw new Error(`Failed to generate ${filters.format.toUpperCase()} report`);
+          }
+
+          // Check if response is binary or JSON (fallback)
+          const contentType = response.headers.get('Content-Type');
+          
+          if (contentType && (contentType.includes('application/pdf') || contentType.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'))) {
+            // Handle binary response (PDF/XLSX)
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.click();
+            URL.revokeObjectURL(url);
+          } else {
+            // Handle JSON fallback
+            const data = await response.json();
+            if (data.pdfError || data.xlsxError) {
+              console.warn(`${filters.format.toUpperCase()} generation failed, falling back to text format:`, data.pdfError || data.xlsxError);
+              const textContent = formatReportForPDF(data.report, selectedReport?.name);
+              const blob = new Blob([textContent], { type: 'text/plain' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = fileName.replace(/\.(pdf|xlsx)$/, '.txt');
+              a.click();
+              URL.revokeObjectURL(url);
+            }
+          }
+        } else {
+          // For JSON and CSV, use the existing service method
+          const reportData = await adminService.generateReport({
+            reportType: reportType,
+            startDate: filters.startDate,
+            endDate: filters.endDate,
+            format: filters.format,
+            includeDetails: filters.includeDetails
+          });
+
+          if (filters.format === 'json') {
+            const blob = new Blob([JSON.stringify(reportData.report, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.click();
+            URL.revokeObjectURL(url);
+          } else if (filters.format === 'csv') {
+            const csvContent = convertToCSV(reportData.report);
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.click();
+            URL.revokeObjectURL(url);
+          }
+        }
+
+        // Add to generated reports list
+        const newReport = {
+          id: Date.now().toString(),
+          name: selectedReport?.name || 'Report',
+          type: reportType,
+          dateRange: `${filters.startDate} to ${filters.endDate}`,
+          format: filters.format,
+          generatedAt: new Date().toISOString(),
+          size: '2.3 MB'
+        };
+        
+        setGeneratedReports(prev => [newReport, ...prev]);
+        setNotification({type: 'success', message: `${selectedReport?.name} generated successfully!`});
       } else {
-        // For PDF, create a formatted text version for now
-        const pdfContent = formatReportForPDF(reportData.report, selectedReport?.name);
-        const blob = new Blob([pdfContent], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName.replace('.pdf', '.txt');
-        a.click();
-        URL.revokeObjectURL(url);
+        // Multiple reports generation - use bulk generation
+        await handleGenerateSelectedReports();
+        return;
       }
-
-      // Add to generated reports list
-      const newReport = {
-        id: Date.now().toString(),
-        name: selectedReport?.name || 'Report',
-        type: filters.reportType,
-        dateRange: `${filters.startDate} to ${filters.endDate}`,
-        format: filters.format,
-        generatedAt: new Date().toISOString(),
-        size: '2.3 MB' // This would come from the actual file
-      };
-      
-      setGeneratedReports(prev => [newReport, ...prev]);
-      
-      setNotification({type: 'success', message: `${selectedReport?.name} generated successfully!`});
       
       // Auto-hide notification after 3 seconds
       setTimeout(() => setNotification(null), 3000);
@@ -482,37 +531,127 @@ const ReportsTab: React.FC = () => {
     }
   };
 
+  const handleGenerateSelectedReports = async () => {
+    setBulkGenerating(true);
+    setBulkProgress({current: 0, total: filters.reportTypes.length, currentReport: 'Initializing...'});
+    
+    try {
+      setNotification({type: 'info', message: `Starting generation of ${filters.reportTypes.length} selected reports...`});
+      
+      // Generate reports for selected types only
+      const fileName = `Selected_Reports_${filters.startDate}_to_${filters.endDate}.${filters.format}`;
+      
+      if (filters.format === 'pdf' || filters.format === 'xlsx') {
+        // For PDF/XLSX, make a direct request to get the binary data
+        const response = await fetch('http://localhost:3001/api/admin/reports/generate-selected', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          },
+          body: JSON.stringify({
+            reportTypes: filters.reportTypes,
+            startDate: filters.startDate,
+            endDate: filters.endDate,
+            format: filters.format,
+            includeDetails: filters.includeDetails
+          })
+        });
+
+        setBulkProgress({current: filters.reportTypes.length, total: filters.reportTypes.length, currentReport: 'Completing...'});
+
+        if (!response.ok) {
+          throw new Error(`Failed to generate selected ${filters.format.toUpperCase()} reports`);
+        }
+
+        // Check if response is binary or JSON (fallback)
+        const contentType = response.headers.get('Content-Type');
+        
+        if (contentType && (contentType.includes('application/pdf') || contentType.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'))) {
+          // Handle binary response (PDF/XLSX)
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileName;
+          a.click();
+          URL.revokeObjectURL(url);
+        } else {
+          // Handle JSON fallback
+          const data = await response.json();
+          if (data.pdfError || data.xlsxError) {
+            console.warn(`Selected ${filters.format.toUpperCase()} generation failed, falling back to text format:`, data.pdfError || data.xlsxError);
+            let textContent = `SELECTED REPORTS SUMMARY\n${'='.repeat(50)}\n\n`;
+            textContent += `Generated: ${new Date().toLocaleString()}\n`;
+            textContent += `Selected Reports: ${filters.reportTypes.length}\n\n`;
+            
+            const blob = new Blob([textContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName.replace(/\.(pdf|xlsx)$/, '.txt');
+            a.click();
+            URL.revokeObjectURL(url);
+          }
+        }
+      }
+
+      setNotification({type: 'success', message: `${filters.reportTypes.length} selected reports generated successfully! 🎉`});
+      setTimeout(() => setNotification(null), 5000);
+
+    } catch (error) {
+      console.error('Selected reports generation error:', error);
+      setNotification({type: 'error', message: `Selected reports generation failed: ${error.message}`});
+      setTimeout(() => setNotification(null), 5000);
+    } finally {
+      setBulkGenerating(false);
+      setBulkProgress({current: 0, total: 0, currentReport: ''});
+    }
+  };
+
   const getCategoryReports = (category: string) => {
     return reportTypes.filter(report => report.category === category);
   };
 
   const categories = [
-    { id: 'users', name: 'User Reports', icon: FiUsers },
-    { id: 'jobs', name: 'Job Reports', icon: FiBriefcase },
-    { id: 'applications', name: 'Application Reports', icon: FiFile },
-    { id: 'system', name: 'System Reports', icon: FiBarChart2 },
-    { id: 'analytics', name: 'Analytics Reports', icon: FiTrendingUp }
+    { id: 'overview', name: 'Dashboard Overview', icon: FiTrendingUp },
+    { id: 'employers', name: 'Employer Reports', icon: FiBriefcase },
+    { id: 'jobs', name: 'Job Reports', icon: FiFile },
+    { id: 'jobseekers', name: 'Jobseeker Reports', icon: FiUsers },
+    { id: 'compliance', name: 'Compliance Reports', icon: FiFileText },
+    { id: 'admin', name: 'Admin Reports', icon: FiBarChart2 },
+    { id: 'system', name: 'System Reports', icon: FiBarChart2 }
   ];
 
   const handlePreviewReport = async () => {
-    if (!filters.reportType) {
-      setNotification({type: 'error', message: 'Please select a report type first'});
+    if (filters.reportTypes.length === 0) {
+      setNotification({type: 'error', message: 'Please select at least one report type first'});
       return;
     }
 
     setLoading(true);
     try {
-      // Generate a preview with limited data
+      // For preview, use the first selected report
+      const firstReportType = filters.reportTypes[0];
       const previewFilters = {
-        ...filters,
+        reportType: firstReportType,
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+        format: filters.format,
         includeDetails: false // Preview without detailed data
       };
       
       const reportData = await adminService.generateReport(previewFilters);
       setPreviewData(reportData.report);
       setShowPreview(true);
-      setNotification({type: 'info', message: 'Report preview generated'});
-      setTimeout(() => setNotification(null), 2000);
+      
+      const selectedReport = reportTypes.find(r => r.id === firstReportType);
+      const message = filters.reportTypes.length > 1 
+        ? `Preview generated for "${selectedReport?.name}" (first of ${filters.reportTypes.length} selected reports)`
+        : `Preview generated for "${selectedReport?.name}"`;
+      
+      setNotification({type: 'info', message});
+      setTimeout(() => setNotification(null), 3000);
     } catch (error) {
       console.error('Error generating preview:', error);
       setNotification({type: 'error', message: `Failed to generate preview: ${error.message}`});
@@ -523,7 +662,24 @@ const ReportsTab: React.FC = () => {
   };
 
   const isFormValid = () => {
-    return filters.reportType && filters.startDate && filters.endDate;
+    return filters.reportTypes.length > 0 && filters.startDate && filters.endDate;
+  };
+
+  const handleSelectAll = () => {
+    setFilters(prev => ({ ...prev, reportTypes: reportTypes.map(r => r.id) }));
+  };
+
+  const handleClearAll = () => {
+    setFilters(prev => ({ ...prev, reportTypes: [] }));
+  };
+
+  const handleToggleReport = (reportId: string) => {
+    setFilters(prev => ({
+      ...prev,
+      reportTypes: prev.reportTypes.includes(reportId)
+        ? prev.reportTypes.filter(id => id !== reportId)
+        : [...prev.reportTypes, reportId]
+    }));
   };
 
   const handleGenerateAllReports = async () => {
@@ -553,93 +709,145 @@ const ReportsTab: React.FC = () => {
         });
       }, 800);
 
-      // Call the bulk generation endpoint
-      const response = await adminService.generateAllReports({
-        startDate: filters.startDate,
-        endDate: filters.endDate,
-        format: filters.format,
-        includeDetails: filters.includeDetails
-      });
-
-      clearInterval(progressInterval);
-      setBulkProgress({current: reportTypes.length, total: reportTypes.length, currentReport: 'Completing...'});
-
-      const { data } = response;
-      
-      // Add all reports to the generated reports list
-      const newReports = data.reports.map((report: any, index: number) => ({
-        id: `${Date.now()}-${index}`,
-        name: reportTypes.find(r => r.id === report.reportType)?.name || report.reportType,
-        type: report.reportType,
-        dateRange: `${filters.startDate} to ${filters.endDate}`,
-        format: filters.format,
-        generatedAt: new Date().toISOString(),
-        size: '2.3 MB'
-      }));
-      
-      setGeneratedReports(prev => [...newReports, ...prev]);
-
-      // Create download file
       const fileName = `All_Reports_${filters.startDate}_to_${filters.endDate}.${filters.format}`;
       
-      if (filters.format === 'json') {
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        a.click();
-        URL.revokeObjectURL(url);
-      } else if (filters.format === 'csv') {
-        // Convert all reports to CSV
-        let csvContent = `All Reports - ${data.metadata.dateRange}\n`;
-        csvContent += `Generated: ${new Date(data.metadata.generatedAt).toLocaleString()}\n\n`;
-        
-        data.reports.forEach((report: any) => {
-          csvContent += `\n=== ${report.reportType.toUpperCase()} ===\n`;
-          if (report.data.summary) {
-            Object.entries(report.data.summary).forEach(([key, value]) => {
-              csvContent += `${key},${value}\n`;
-            });
-          }
+      if (filters.format === 'pdf' || filters.format === 'xlsx') {
+        // For PDF/XLSX, make a direct request to get the binary data
+        const response = await fetch('http://localhost:3001/api/admin/reports/generate-all', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          },
+          body: JSON.stringify({
+            startDate: filters.startDate,
+            endDate: filters.endDate,
+            format: filters.format,
+            includeDetails: filters.includeDetails
+          })
         });
+
+        clearInterval(progressInterval);
+        setBulkProgress({current: reportTypes.length, total: reportTypes.length, currentReport: 'Completing...'});
+
+        if (!response.ok) {
+          throw new Error(`Failed to generate bulk ${filters.format.toUpperCase()} reports`);
+        }
+
+        // Check if response is binary or JSON (fallback)
+        const contentType = response.headers.get('Content-Type');
         
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        a.click();
-        URL.revokeObjectURL(url);
+        if (contentType && (contentType.includes('application/pdf') || contentType.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'))) {
+          // Handle binary response (PDF/XLSX)
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileName;
+          a.click();
+          URL.revokeObjectURL(url);
+        } else {
+          // Handle JSON fallback
+          const data = await response.json();
+          if (data.pdfError || data.xlsxError) {
+            console.warn(`Bulk ${filters.format.toUpperCase()} generation failed, falling back to text format:`, data.pdfError || data.xlsxError);
+            let textContent = `ALL REPORTS SUMMARY\n${'='.repeat(50)}\n\n`;
+            textContent += `Generated: ${new Date(data.data.metadata.generatedAt).toLocaleString()}\n`;
+            textContent += `Date Range: ${data.data.metadata.dateRange}\n`;
+            textContent += `Total Reports: ${data.data.metadata.totalReports}\n\n`;
+            
+            data.data.reports.forEach((report: any) => {
+              textContent += `\n${report.reportType.toUpperCase()}\n${'-'.repeat(30)}\n`;
+              if (report.data.summary) {
+                Object.entries(report.data.summary).forEach(([key, value]) => {
+                  textContent += `${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}: ${value}\n`;
+                });
+              }
+              textContent += '\n';
+            });
+            
+            const blob = new Blob([textContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName.replace('.pdf', '.txt');
+            a.click();
+            URL.revokeObjectURL(url);
+          }
+        }
       } else {
-        // Create formatted text for PDF
-        let textContent = `ALL REPORTS SUMMARY\n${'='.repeat(50)}\n\n`;
-        textContent += `Generated: ${new Date(data.metadata.generatedAt).toLocaleString()}\n`;
-        textContent += `Date Range: ${data.metadata.dateRange}\n`;
-        textContent += `Total Reports: ${data.metadata.totalReports}\n\n`;
-        
-        data.reports.forEach((report: any) => {
-          textContent += `\n${report.reportType.toUpperCase()}\n${'-'.repeat(30)}\n`;
-          if (report.data.summary) {
-            Object.entries(report.data.summary).forEach(([key, value]) => {
-              textContent += `${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}: ${value}\n`;
-            });
-          }
-          textContent += '\n';
+        // For JSON and CSV, use the existing service method
+        const response = await adminService.generateAllReports({
+          startDate: filters.startDate,
+          endDate: filters.endDate,
+          format: filters.format,
+          includeDetails: filters.includeDetails
         });
+
+        clearInterval(progressInterval);
+        setBulkProgress({current: reportTypes.length, total: reportTypes.length, currentReport: 'Completing...'});
+
+        const { data } = response;
         
-        const blob = new Blob([textContent], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName.replace('.pdf', '.txt');
-        a.click();
-        URL.revokeObjectURL(url);
+        if (filters.format === 'json') {
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileName;
+          a.click();
+          URL.revokeObjectURL(url);
+        } else if (filters.format === 'csv') {
+          // Convert all reports to CSV
+          let csvContent = `All Reports - ${data.metadata.dateRange}\n`;
+          csvContent += `Generated: ${new Date(data.metadata.generatedAt).toLocaleString()}\n\n`;
+          
+          data.reports.forEach((report: any) => {
+            csvContent += `\n=== ${report.reportType.toUpperCase()} ===\n`;
+            if (report.data.summary) {
+              Object.entries(report.data.summary).forEach(([key, value]) => {
+                csvContent += `${key},${value}\n`;
+              });
+            }
+          });
+          
+          const blob = new Blob([csvContent], { type: 'text/csv' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileName;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
       }
 
-      const successMessage = data.failedReports?.length > 0 
-        ? `Generated ${data.metadata.totalReports} reports successfully. ${data.failedReports.length} failed.`
-        : `All ${data.metadata.totalReports} reports generated successfully! 🎉`;
+      // Add all reports to the generated reports list (for non-binary formats)
+      let successMessage = 'All reports generated successfully! 🎉';
+      
+      if (filters.format !== 'pdf' && filters.format !== 'xlsx') {
+        const metadataResponse = await adminService.generateAllReports({
+          startDate: filters.startDate,
+          endDate: filters.endDate,
+          format: 'json', // Get metadata
+          includeDetails: false
+        });
+        
+        const newReports = metadataResponse.data.reports.map((report: any, index: number) => ({
+          id: `${Date.now()}-${index}`,
+          name: reportTypes.find(r => r.id === report.reportType)?.name || report.reportType,
+          type: report.reportType,
+          dateRange: `${filters.startDate} to ${filters.endDate}`,
+          format: filters.format,
+          generatedAt: new Date().toISOString(),
+          size: '2.3 MB'
+        }));
+        
+        setGeneratedReports(prev => [...newReports, ...prev]);
+        
+        successMessage = metadataResponse.data.failedReports?.length > 0 
+          ? `Generated ${metadataResponse.data.metadata.totalReports} reports successfully. ${metadataResponse.data.failedReports.length} failed.`
+          : `All ${metadataResponse.data.metadata.totalReports} reports generated successfully! 🎉`;
+      }
       
       setNotification({type: 'success', message: successMessage});
       setTimeout(() => setNotification(null), 5000);
@@ -655,7 +863,7 @@ const ReportsTab: React.FC = () => {
   };
 
   return (
-    <div className="reports-page">
+    <>
       {/* Notification System */}
       {notification && (
         <div className={`notification ${notification.type}`}>
@@ -671,237 +879,224 @@ const ReportsTab: React.FC = () => {
         </div>
       )}
 
-      {/* Page Header */}
-      <div className="page-header">
-        <div className="header-content">
-          <div className="header-text">
-            <h1 className="page-title">Report Generation</h1>
-            <p className="page-description">
-              Generate comprehensive reports with custom filters and export options. 
-              Select a report type, configure your parameters, and download in your preferred format.
-            </p>
+      {/* Bulk Generation Progress */}
+      {bulkGenerating && (
+        <div className="bulk-progress">
+          <h3>Generating Reports...</h3>
+          <div className="progress-bar">
+            <div 
+              className="progress-fill"
+              style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
+            ></div>
           </div>
-          <div className="header-actions">
-            <button 
-              onClick={handleGenerateAllReports}
-              disabled={bulkGenerating || !filters.startDate || !filters.endDate}
-              className="btn btn-primary btn-generate-all"
-            >
-              {bulkGenerating ? <FiClock className="spinning" /> : <FiDownload />}
-              {bulkGenerating ? 'Generating All...' : 'Generate All Reports'}
-            </button>
-          </div>
+          <p className="current-report">
+            {bulkProgress.currentReport && `Currently generating: ${bulkProgress.currentReport}`}
+          </p>
         </div>
-        
-        {/* Bulk Generation Progress */}
-        {bulkGenerating && (
-          <div className="bulk-progress-card">
-            <div className="progress-header">
-              <h3>Generating All Reports</h3>
-              <span className="progress-counter">
-                {bulkProgress.current} of {bulkProgress.total} completed
-              </span>
-            </div>
-            <div className="progress-bar">
-              <div 
-                className="progress-fill"
-                style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
-              ></div>
-            </div>
-            <p className="current-report">
-              {bulkProgress.currentReport && `Currently generating: ${bulkProgress.currentReport}`}
-            </p>
+      )}
+
+      {/* Reports Management Container - Exactly Like Jobseekers */}
+      <div className="reports-management-container">
+        {/* Header Container */}
+        <div className="reports-header-container">
+          <div className="header-left">
+            <h2 className="section-title">Reports ({reportTypes.length} total)</h2>
+            <p className="view-info">Showing 1-{reportTypes.length} of {reportTypes.length} reports • {filters.reportTypes.length} selected</p>
           </div>
-        )}
-      </div>
-
-      {/* Main Content */}
-      <div className="reports-layout">
-        {/* Configuration Sidebar */}
-        <div className="config-sidebar">
-          <div className="config-card">
-            <div className="card-header">
-              <h2 className="card-title">
-                <FiFilter className="card-icon" />
-                Configuration
-              </h2>
-              <p className="card-description">Set your report parameters</p>
-            </div>
-            
-            <div className="card-content">
-              {/* Date Range Section */}
-              <div className="config-group">
-                <h3 className="group-title">Date Range</h3>
-                <div className="form-field">
-                  <label className="field-label">Time Period</label>
-                  <select 
-                    value={filters.dateRange} 
-                    onChange={(e) => setFilters(prev => ({ ...prev, dateRange: e.target.value }))}
-                    className="form-select"
-                  >
-                    {dateRangeOptions.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {filters.dateRange === 'custom' && (
-                  <div className="date-range-inputs">
-                    <div className="form-field">
-                      <label className="field-label">Start Date</label>
-                      <input
-                        type="date"
-                        value={filters.startDate}
-                        onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
-                        className="form-input"
-                      />
-                    </div>
-                    <div className="form-field">
-                      <label className="field-label">End Date</label>
-                      <input
-                        type="date"
-                        value={filters.endDate}
-                        onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
-                        className="form-input"
-                      />
-                    </div>
-                  </div>
-                )}
+          
+          <div className="reports-controls">
+              {/* Date Range Controls */}
+              <div className="control-group">
+                <select 
+                  value={filters.dateRange} 
+                  onChange={(e) => setFilters(prev => ({ ...prev, dateRange: e.target.value }))}
+                  className="control-select"
+                >
+                  {dateRangeOptions.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              {/* Export Options Section */}
-              <div className="config-group">
-                <h3 className="group-title">Export Options</h3>
-                <div className="form-field">
-                  <label className="field-label">Format</label>
-                  <select 
-                    value={filters.format} 
-                    onChange={(e) => setFilters(prev => ({ ...prev, format: e.target.value as 'pdf' | 'csv' | 'json' }))}
-                    className="form-select"
-                  >
-                    {formatOptions.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-field">
-                  <label className="checkbox-field">
+              {filters.dateRange === 'custom' && (
+                <>
+                  <div className="control-group">
                     <input
-                      type="checkbox"
-                      checked={filters.includeDetails}
-                      onChange={(e) => setFilters(prev => ({ ...prev, includeDetails: e.target.checked }))}
-                      className="checkbox-input"
+                      type="date"
+                      value={filters.startDate}
+                      onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                      className="control-input"
+                      placeholder="Start Date"
                     />
-                    <span className="checkbox-label">Include detailed data</span>
-                  </label>
-                </div>
+                  </div>
+                  <div className="control-group">
+                    <input
+                      type="date"
+                      value={filters.endDate}
+                      onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+                      className="control-input"
+                      placeholder="End Date"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Format Controls */}
+              <div className="control-group">
+                <select 
+                  value={filters.format} 
+                  onChange={(e) => setFilters(prev => ({ ...prev, format: e.target.value as 'pdf' | 'csv' | 'json' | 'xlsx' }))}
+                  className="control-select"
+                >
+                  {formatOptions.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Details Toggle */}
+              <div className="control-group">
+                <label className="control-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={filters.includeDetails}
+                    onChange={(e) => setFilters(prev => ({ ...prev, includeDetails: e.target.checked }))}
+                  />
+                  <span>Include Details</span>
+                </label>
               </div>
 
               {/* Action Buttons */}
-              <div className="action-section">
+              <div className="control-group">
+                <button 
+                  onClick={handleSelectAll}
+                  className="control-btn control-btn-outline"
+                  disabled={filters.reportTypes.length === reportTypes.length}
+                >
+                  Select All
+                </button>
+              </div>
+
+              <div className="control-group">
+                <button 
+                  onClick={handleClearAll}
+                  className="control-btn control-btn-outline"
+                  disabled={filters.reportTypes.length === 0}
+                >
+                  Clear All
+                </button>
+              </div>
+
+              <div className="control-group">
                 <button 
                   onClick={handlePreviewReport}
                   disabled={loading || !isFormValid()}
-                  className="btn btn-secondary btn-full"
+                  className="control-btn control-btn-secondary"
                 >
                   {loading ? <FiClock className="spinning" /> : <FiFileText />}
-                  {loading ? 'Loading...' : 'Preview Report'}
+                  Preview
                 </button>
-                
+              </div>
+              
+              <div className="control-group">
                 <button 
                   onClick={handleGenerateReport}
                   disabled={loading || !isFormValid()}
-                  className="btn btn-primary btn-full"
+                  className="control-btn control-btn-primary"
                 >
                   {loading ? <FiClock className="spinning" /> : <FiDownload />}
-                  {loading ? 'Generating...' : 'Generate & Download'}
+                  Generate
                 </button>
               </div>
-
-              {/* Status Summary */}
-              <div className="status-summary">
-                <h3 className="group-title">Summary</h3>
-                <div className="status-grid">
-                  <div className="status-item">
-                    <span className="status-label">Report Type</span>
-                    <span className="status-value">
-                      {filters.reportType ? reportTypes.find(r => r.id === filters.reportType)?.name : 'Not selected'}
-                    </span>
-                  </div>
-                  <div className="status-item">
-                    <span className="status-label">Date Range</span>
-                    <span className="status-value">
-                      {filters.startDate && filters.endDate 
-                        ? `${filters.startDate} to ${filters.endDate}` 
-                        : 'Not set'
-                      }
-                    </span>
-                  </div>
-                  <div className="status-item">
-                    <span className="status-label">Format</span>
-                    <span className="status-value">{filters.format.toUpperCase()}</span>
-                  </div>
-                </div>
-              </div>
             </div>
-          </div>
         </div>
 
-        {/* Report Selection Area */}
-        <div className="reports-main">
-          <div className="reports-card">
-            <div className="card-header">
-              <h2 className="card-title">
-                <FiFileText className="card-icon" />
-                Available Reports
-              </h2>
-              <p className="card-description">Choose the type of report you want to generate</p>
-            </div>
-            
-            <div className="card-content">
+        {/* Table Section */}
+        {reportTypes.length > 0 ? (
+          <div className="admin-reports-table-container">
+            <div className="admin-reports-table-wrapper">
+              <table className="admin-reports-table">
+            <thead>
+              <tr>
+                <th className="checkbox-column">
+                  <input
+                    type="checkbox"
+                    checked={filters.reportTypes.length === reportTypes.length}
+                    onChange={filters.reportTypes.length === reportTypes.length ? handleClearAll : handleSelectAll}
+                    className="header-checkbox"
+                  />
+                </th>
+                <th>CATEGORY</th>
+                <th>REPORT NAME</th>
+                <th>DESCRIPTION</th>
+              </tr>
+            </thead>
+            <tbody>
               {categories.map(category => {
                 const categoryReports = getCategoryReports(category.id);
                 const CategoryIcon = category.icon;
                 
-                return (
-                  <div key={category.id} className="report-section">
-                    <div className="section-header">
-                      <h3 className="section-title">
-                        <CategoryIcon className="section-icon" />
-                        {category.name}
-                      </h3>
-                    </div>
-                    <div className="reports-grid">
-                      {categoryReports.map(report => {
-                        const ReportIcon = report.icon;
-                        return (
-                          <div 
-                            key={report.id}
-                            className={`report-card ${filters.reportType === report.id ? 'selected' : ''}`}
-                            onClick={() => setFilters(prev => ({ ...prev, reportType: report.id }))}
-                          >
-                            <div className="report-card-header">
-                              <div className="report-icon">
-                                <ReportIcon />
-                              </div>
-                              <h4 className="report-title">{report.name}</h4>
-                            </div>
-                            <p className="report-description">{report.description}</p>
+                return categoryReports.map((report, index) => {
+                  const ReportIcon = report.icon;
+                  const isSelected = filters.reportTypes.includes(report.id);
+                  
+                  return (
+                    <tr 
+                      key={report.id}
+                      className={`report-row ${isSelected ? 'selected' : ''}`}
+                    >
+                      <td className="checkbox-cell">
+                        <label className="checkbox-wrapper">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleToggleReport(report.id)}
+                            className="row-checkbox"
+                          />
+                          <span className="checkbox-clickarea"></span>
+                        </label>
+                      </td>
+                      {index === 0 && (
+                        <td 
+                          className="category-cell"
+                          rowSpan={categoryReports.length}
+                        >
+                          <div className="category-info">
+                            <span className="category-name">{category.name}</span>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
+                        </td>
+                      )}
+                      <td 
+                        className="report-name-cell"
+                        onClick={() => handleToggleReport(report.id)}
+                      >
+                        <div className="report-name-info">
+                          <span className="report-name">{report.name}</span>
+                        </div>
+                      </td>
+                      <td 
+                        className="report-description-cell"
+                        onClick={() => handleToggleReport(report.id)}
+                      >
+                        <span className="report-description">{report.description}</span>
+                      </td>
+                    </tr>
+                  );
+                });
               })}
-            </div>
+            </tbody>
+            </table>
           </div>
         </div>
+        ) : (
+          <div className="no-reports">
+            <p>No reports available</p>
+          </div>
+        )}
       </div>
 
       {/* Report Preview Modal */}
@@ -978,7 +1173,7 @@ const ReportsTab: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

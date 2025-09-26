@@ -1124,3 +1124,348 @@
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
 }
+
+/* Admin Table Layout Styles - Consistent with other tabs */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  gap: 2rem;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.section-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.view-info {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Table Container - Bottom part of unified container */
+.admin-reports-table-container {
+  background: white;
+  border-radius: 0 0 12px 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Table Wrapper - Exactly Like Jobseekers */
+.admin-reports-table-wrapper {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.admin-reports-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  table-layout: auto;
+}
+
+.admin-reports-table thead {
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.admin-reports-table th {
+  padding: 1rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+  font-weight: 600;
+  color: #374151;
+}
+
+.admin-reports-table tbody tr {
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.2s;
+  cursor: pointer;
+}
+
+.admin-reports-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.admin-reports-table tbody tr.selected {
+  background-color: #eff6ff;
+}
+
+.admin-reports-table td {
+  padding: 1rem 0.75rem;
+  vertical-align: top;
+}
+
+.checkbox-cell {
+  text-align: center;
+  width: 60px;
+  padding: 0.5rem;
+  vertical-align: middle;
+}
+
+.checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 2.5rem;
+  cursor: pointer;
+  position: relative;
+}
+
+.checkbox-clickarea {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  cursor: pointer;
+}
+
+.header-checkbox,
+.row-checkbox {
+  width: 1.2rem;
+  height: 1.2rem;
+  accent-color: #3b82f6;
+  cursor: pointer;
+  margin: 0;
+  z-index: 1;
+  position: relative;
+}
+
+.category-cell {
+  background-color: #f8fafc;
+  border-right: 1px solid #e5e7eb;
+  font-weight: 600;
+  width: 180px;
+  min-width: 180px;
+}
+
+.category-info {
+  display: flex;
+  align-items: center;
+  color: #475569;
+}
+
+.category-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.report-name-cell {
+  font-weight: 500;
+  min-width: 200px;
+}
+
+.report-name-info {
+  display: flex;
+  align-items: center;
+}
+
+.report-name {
+  color: #1e293b;
+  font-weight: 600;
+  line-height: 1.4;
+  font-size: 0.875rem;
+}
+
+.report-description-cell {
+  color: #64748b;
+  line-height: 1.5;
+  max-width: 300px;
+}
+
+.report-description {
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+
+/* Reports Management Container - Exactly Like Jobseekers */
+.reports-management-container {
+  margin-bottom: 1.5rem;
+}
+
+/* Header Container - Top part of unified container */
+.reports-header-container {
+  background: white;
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 0;
+  overflow: hidden;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1.5rem;
+  gap: 2rem;
+}
+
+.reports-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+}
+
+.control-select,
+.control-input {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  background: white;
+  color: #374151;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.control-select:focus,
+.control-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.control-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.control-checkbox input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #3b82f6;
+}
+
+.control-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
+  white-space: nowrap;
+}
+
+.control-btn-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.control-btn-primary:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.control-btn-secondary {
+  background: #6b7280;
+  color: white;
+}
+
+.control-btn-secondary:hover:not(:disabled) {
+  background: #4b5563;
+}
+
+.control-btn-outline {
+  background: white;
+  color: #3b82f6;
+  border: 1px solid #3b82f6;
+}
+
+.control-btn-outline:hover:not(:disabled) {
+  background: #3b82f6;
+  color: white;
+}
+
+.control-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Reports Content */
+.reports-content {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+/* Checkbox in table */
+.report-checkbox {
+  width: 1.125rem;
+  height: 1.125rem;
+  accent-color: #6366f1;
+  margin-right: 0.5rem;
+}
+
+.report-name-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .config-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .reports-layout {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .reports-table th:nth-child(3),
+  .reports-table td:nth-child(3) {
+    display: none;
+  }
+  
+  .reports-table th:nth-child(2) {
+    width: 60%;
+  }
+  
+  .reports-table th:last-child {
+    width: 25%;
+  }
+}

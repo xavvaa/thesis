@@ -461,7 +461,7 @@ class AdminService {
     reportType: string;
     startDate: string;
     endDate: string;
-    format: 'pdf' | 'csv' | 'json';
+    format: 'pdf' | 'csv' | 'json' | 'xlsx';
     includeDetails: boolean;
   }): Promise<any> {
     const response = await fetch(`${this.baseUrl}/reports/generate`, {
@@ -496,7 +496,7 @@ class AdminService {
   async generateAllReports(params: {
     startDate: string;
     endDate: string;
-    format: 'pdf' | 'csv' | 'json';
+    format: 'pdf' | 'csv' | 'json' | 'xlsx';
     includeDetails: boolean;
   }): Promise<any> {
     const response = await fetch(`${this.baseUrl}/reports/generate-all`, {
