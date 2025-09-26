@@ -631,26 +631,81 @@ const ReportsTab: React.FC = () => {
 
     setLoading(true);
     try {
-      // For preview, use the first selected report
-      const firstReportType = filters.reportTypes[0];
-      const previewFilters = {
-        reportType: firstReportType,
-        startDate: filters.startDate,
-        endDate: filters.endDate,
-        format: filters.format,
-        includeDetails: false // Preview without detailed data
-      };
+      if (filters.reportTypes.length === 1) {
+        // Single report preview
+        const reportType = filters.reportTypes[0];
+        const previewFilters = {
+          reportType: reportType,
+          startDate: filters.startDate,
+          endDate: filters.endDate,
+          format: 'json' as 'json', // Always use JSON format for preview to ensure parseable response
+          includeDetails: false // Preview without detailed data
+        };
+        
+        const reportData = await adminService.generateReport(previewFilters);
+        setPreviewData(reportData.report);
+        setShowPreview(true);
+        
+        const selectedReport = reportTypes.find(r => r.id === reportType);
+        setNotification({type: 'info', message: `Preview generated for "${selectedReport?.name}"`});
+      } else {
+        // Multiple reports preview - generate all and combine
+        const previewPromises = filters.reportTypes.map(async (reportType) => {
+          const previewFilters = {
+            reportType: reportType,
+            startDate: filters.startDate,
+            endDate: filters.endDate,
+            format: 'json' as 'json',
+            includeDetails: false
+          };
+          
+          try {
+            const reportData = await adminService.generateReport(previewFilters);
+            const reportInfo = reportTypes.find(r => r.id === reportType);
+            return {
+              reportType: reportType,
+              reportName: reportInfo?.name || reportType,
+              data: reportData.report
+            };
+          } catch (error) {
+            console.error(`Error generating preview for ${reportType}:`, error);
+            return {
+              reportType: reportType,
+              reportName: reportTypes.find(r => r.id === reportType)?.name || reportType,
+              error: error.message
+            };
+          }
+        });
+
+        const allReports = await Promise.all(previewPromises);
+        
+        // Create combined preview data
+        const combinedPreview = {
+          reportMetadata: {
+            reportType: `Multiple Reports (${filters.reportTypes.length})`,
+            startDate: filters.startDate,
+            endDate: filters.endDate,
+            generatedAt: new Date().toISOString(),
+            selectedReports: filters.reportTypes.length
+          },
+          data: {
+            summary: {
+              totalReportsSelected: filters.reportTypes.length,
+              successfulPreviews: allReports.filter(r => !r.error).length,
+              failedPreviews: allReports.filter(r => r.error).length
+            }
+          },
+          multipleReports: allReports
+        };
+
+        setPreviewData(combinedPreview);
+        setShowPreview(true);
+        
+        const successCount = allReports.filter(r => !r.error).length;
+        const message = `Preview generated for ${successCount} of ${filters.reportTypes.length} selected reports`;
+        setNotification({type: 'info', message});
+      }
       
-      const reportData = await adminService.generateReport(previewFilters);
-      setPreviewData(reportData.report);
-      setShowPreview(true);
-      
-      const selectedReport = reportTypes.find(r => r.id === firstReportType);
-      const message = filters.reportTypes.length > 1 
-        ? `Preview generated for "${selectedReport?.name}" (first of ${filters.reportTypes.length} selected reports)`
-        : `Preview generated for "${selectedReport?.name}"`;
-      
-      setNotification({type: 'info', message});
       setTimeout(() => setNotification(null), 3000);
     } catch (error) {
       console.error('Error generating preview:', error);
@@ -1118,6 +1173,9 @@ const ReportsTab: React.FC = () => {
                 <p><strong>Type:</strong> {previewData.reportMetadata?.reportType}</p>
                 <p><strong>Date Range:</strong> {previewData.reportMetadata?.startDate} to {previewData.reportMetadata?.endDate}</p>
                 <p><strong>Generated:</strong> {new Date(previewData.reportMetadata?.generatedAt).toLocaleString()}</p>
+                {previewData.reportMetadata?.selectedReports && (
+                  <p><strong>Selected Reports:</strong> {previewData.reportMetadata.selectedReports}</p>
+                )}
               </div>
               
               {previewData.data?.summary && (
@@ -1133,6 +1191,45 @@ const ReportsTab: React.FC = () => {
                   </div>
                 </div>
               )}
+
+              {/* Multiple Reports Display */}
+              {previewData.multipleReports && (
+                <div className="multiple-reports-preview">
+                  <h4>Individual Report Previews</h4>
+                  <div className="reports-accordion">
+                    {previewData.multipleReports.map((report: any, index: number) => (
+                      <div key={report.reportType} className="report-accordion-item">
+                        <div className="report-accordion-header">
+                          <h5>
+                            {index + 1}. {report.reportName}
+                            {report.error && <span className="error-badge">Failed</span>}
+                          </h5>
+                        </div>
+                        <div className="report-accordion-content">
+                          {report.error ? (
+                            <div className="error-message">
+                              <p><strong>Error:</strong> {report.error}</p>
+                            </div>
+                          ) : (
+                            report.data?.data?.summary && (
+                              <div className="individual-summary">
+                                <div className="summary-grid">
+                                  {Object.entries(report.data.data.summary).map(([key, value]) => (
+                                    <div key={key} className="summary-item">
+                                      <span className="summary-label">{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:</span>
+                                      <span className="summary-value">{String(value)}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               
               <div className="preview-actions">
                 <button 
@@ -1142,7 +1239,7 @@ const ReportsTab: React.FC = () => {
                   }}
                   className="generate-from-preview-btn"
                 >
-                  <FiDownload /> Generate Full Report
+                  <FiDownload /> Generate Full Report{previewData.multipleReports ? 's' : ''}
                 </button>
               </div>
             </div>

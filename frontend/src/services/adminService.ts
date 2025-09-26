@@ -298,21 +298,12 @@ class AdminService {
       }
       
       // Fallback: Extract resume data from applications
-      console.log('🔍 Fallback: Extracting resumes from applications...');
       const applications = await this.getAllApplications();
-      console.log('🔍 Applications for resume extraction:', applications);
       
       // Extract unique resumes from applications
       const resumesMap = new Map();
       
       applications.forEach((app: any) => {
-        console.log('🔍 Processing application:', {
-          hasResumeData: !!app.resumeData,
-          jobSeekerUid: app.jobSeekerUid,
-          applicantName: app.applicantName,
-          resumePersonalInfo: app.resumeData?.personalInfo,
-          resumeSkills: app.resumeData?.skills
-        });
         
         if (app.resumeData && app.jobSeekerUid) {
           resumesMap.set(app.jobSeekerUid, {
@@ -347,7 +338,6 @@ class AdminService {
       });
       
       const extractedResumes = Array.from(resumesMap.values());
-      console.log('🔍 Extracted resumes:', extractedResumes);
       
       return extractedResumes;
       
