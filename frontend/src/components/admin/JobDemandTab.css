@@ -1,0 +1,1243 @@
+/* JobDemandTab Enhanced Styling - Based on JobseekersTab */
+
+/* Main Container - Ultra high specificity to override all conflicts */
+.superadmin-dashboard .admin-content .job-demand-main-container,
+.admin-dashboard .admin-content .job-demand-main-container,
+.admin-content .job-demand-main-container {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1.5rem !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 1.5rem !important;
+  margin: 0 !important;
+  background: white !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Header Container (Search and Filters) */
+.superadmin-dashboard .admin-content .job-demand-main-container .job-demand-header-container,
+.admin-dashboard .admin-content .job-demand-main-container .job-demand-header-container,
+.admin-content .job-demand-main-container .job-demand-header-container {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  padding: 1.5rem !important;
+  background: white !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  gap: 2rem !important;
+  margin-bottom: 0 !important;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.section-subtitle {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.job-demand-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.search-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.75rem;
+  color: #9ca3af;
+  width: 1rem;
+  height: 1rem;
+  z-index: 1;
+}
+
+.search-input-modern {
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  width: 250px;
+  transition: all 0.2s ease;
+}
+
+.search-input-modern:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.filter-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.filter-select-modern {
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background: white;
+  min-width: 150px;
+  transition: all 0.2s ease;
+}
+
+.filter-select-modern:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.btn-secondary:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+/* Table Container */
+.superadmin-dashboard .admin-content .job-demand-main-container .admin-job-demand-table-container,
+.admin-dashboard .admin-content .job-demand-main-container .admin-job-demand-table-container,
+.admin-content .job-demand-main-container .admin-job-demand-table-container {
+  background: white !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  overflow: hidden !important;
+  width: 100% !important;
+  margin-top: 0 !important;
+}
+
+.admin-job-demand-table-wrapper {
+  overflow-x: visible;
+  max-width: 100%;
+}
+
+.admin-job-demand-table {
+  width: 100%;
+  min-width: auto;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  table-layout: fixed;
+}
+
+.admin-job-demand-table thead {
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.admin-job-demand-table th {
+  padding: 1rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+  overflow: hidden;
+  height: 60px;
+}
+
+/* Sortable Header Styles */
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s ease;
+}
+
+.sortable-header:hover {
+  background-color: #f9fafb;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.two-line-header {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.sort-icon-inactive {
+  opacity: 0.3;
+}
+
+/* Fixed column widths for no-scroll layout */
+.admin-job-demand-table th:nth-child(1) { width: 40px; } /* # */
+.admin-job-demand-table th:nth-child(2) { width: 20%; } /* Job Title */
+.admin-job-demand-table th:nth-child(3) { width: 14%; } /* Category */
+.admin-job-demand-table th:nth-child(4) { width: 12%; } /* Applicants */
+.admin-job-demand-table th:nth-child(5) { width: 14%; } /* Avg Competition */
+.admin-job-demand-table th:nth-child(6) { width: 14%; } /* Demand Level */
+.admin-job-demand-table th:nth-child(7) { width: 12%; } /* Growth Rate */
+.admin-job-demand-table th:nth-child(8) { width: 12%; } /* Avg Salary */
+.admin-job-demand-table th:nth-child(9) { width: 10%; } /* Time to Fill */
+
+.admin-job-demand-table tbody tr {
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.2s;
+}
+
+.admin-job-demand-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.admin-job-demand-table td {
+  padding: 1rem 0.75rem;
+  vertical-align: top;
+  word-wrap: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.empty-icon {
+  width: 3rem;
+  height: 3rem;
+  color: #9ca3af;
+  margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+  color: #374151;
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+}
+
+.empty-state p {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+/* Number column specific styles */
+.number-column {
+  width: 50px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+  padding: 0.75rem 0.5rem;
+}
+
+.number-cell {
+  width: 50px;
+  text-align: center;
+  vertical-align: middle;
+  padding: 0.75rem 0.5rem;
+}
+
+.row-number {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+  display: inline-block;
+  width: 100%;
+  text-align: center;
+}
+
+/* Adjust table layout for number column */
+.data-table {
+  table-layout: auto;
+}
+
+.data-table .number-column {
+  min-width: 50px;
+  max-width: 50px;
+}
+
+.data-table .number-cell {
+  min-width: 50px;
+  max-width: 50px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .job-demand-header-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.5rem;
+  }
+  
+  .job-demand-controls {
+    justify-content: flex-start;
+  }
+  
+  .search-input-modern {
+    min-width: 200px;
+  }
+  
+  .admin-job-demand-table {
+    min-width: auto;
+  }
+  
+  .number-column,
+  .number-cell {
+    width: 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  .job-demand-header-container {
+    padding: 1rem;
+  }
+  
+  .section-title {
+    font-size: 1.25rem;
+  }
+  
+  .job-demand-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .admin-job-demand-table th,
+  .admin-job-demand-table td {
+    padding: 0.75rem 0.5rem;
+  }
+  
+  .number-column,
+  .number-cell {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    padding: 0.5rem 0.25rem;
+  }
+  
+  .row-number {
+    font-size: 0.7rem;
+  }
+  
+  .filter-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  
+  .filter-select-modern {
+    min-width: auto;
+    width: 100%;
+  }
+  
+  .search-input-modern {
+    width: 100%;
+    min-width: auto;
+  }
+}
+
+/* Enhanced High Demand Jobs Styles */
+.enhanced-high-demand {
+  background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+  border-left: 4px solid #3b82f6;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.card-header h3 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.jobs-count {
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.job-item.enhanced {
+  padding: 1rem;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.job-item.enhanced:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.job-metrics {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+}
+
+.metric-value {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.metric-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.demand-badge {
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: capitalize;
+  margin-left: auto;
+}
+
+/* Chart Styles */
+.chart-card {
+  background: linear-gradient(135deg, #fff 0%, #fafafa 100%);
+}
+
+/* Remove ALL hover effects from analytics card container */
+.analytics-card:hover,
+.chart-card:hover,
+.full-width-charts:hover,
+.analytics-card.chart-card.full-width-charts:hover,
+.analytics-card.chart-card:hover,
+.analytics-card.full-width-charts:hover,
+.chart-card.full-width-charts:hover {
+  transform: none !important;
+  box-shadow: inherit !important;
+  border-color: inherit !important;
+  background: inherit !important;
+  transition: none !important;
+}
+
+/* Override any parent section hover effects */
+.section .analytics-card:hover,
+.section .chart-card:hover,
+.section .full-width-charts:hover,
+.section .analytics-card.chart-card.full-width-charts:hover {
+  transform: none !important;
+  box-shadow: inherit !important;
+  transition: none !important;
+}
+
+/* Remove any inherited transitions */
+.analytics-card,
+.chart-card,
+.full-width-charts,
+.analytics-card.chart-card.full-width-charts {
+  transition: none !important;
+}
+
+/* Target admin-content wrapper specifically */
+.admin-content .analytics-card:hover,
+.admin-content .chart-card:hover,
+.admin-content .full-width-charts:hover,
+.admin-content .analytics-card.chart-card.full-width-charts:hover {
+  transform: none !important;
+  box-shadow: inherit !important;
+  border-color: inherit !important;
+  background: inherit !important;
+  transition: none !important;
+}
+
+/* Nuclear option - override everything */
+div.analytics-card.chart-card.full-width-charts:hover {
+  transform: none !important;
+  box-shadow: inherit !important;
+  transition: none !important;
+  animation: none !important;
+}
+
+/* Complete hover and focus override with maximum specificity */
+div.admin-content div.analytics-card.chart-card.full-width-charts.no-hover-effects,
+div.admin-content div.analytics-card.chart-card.full-width-charts.no-hover-effects:hover,
+div.admin-content div.analytics-card.chart-card.full-width-charts.no-hover-effects:focus,
+div.admin-content div.analytics-card.chart-card.full-width-charts.no-hover-effects:active,
+div.admin-content div.analytics-card.chart-card.full-width-charts.no-hover-effects:focus-visible,
+.no-hover-effects,
+.no-hover-effects:hover,
+.no-hover-effects:focus,
+.no-hover-effects:active,
+.no-hover-effects:focus-visible {
+  transform: none !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid #e5e7eb !important;
+  outline: none !important;
+  transition: none !important;
+  animation: none !important;
+  background: white !important;
+  border-radius: 12px !important;
+  padding: 1.5rem !important;
+  -webkit-transform: none !important;
+  -moz-transform: none !important;
+  -ms-transform: none !important;
+  -o-transform: none !important;
+}
+
+/* Override any parent hover effects completely */
+* .no-hover-effects:hover,
+* .no-hover-effects:focus,
+* .no-hover-effects:active {
+  transform: none !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  outline: none !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+/* Override specific AdminDashboard.css rules */
+.admin-content .section:hover .no-hover-effects,
+.admin-content .section .no-hover-effects:hover,
+.section:hover .no-hover-effects,
+.section .no-hover-effects:hover {
+  transform: none !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid #e5e7eb !important;
+  outline: none !important;
+}
+
+/* Force static appearance regardless of any parent */
+.no-hover-effects * {
+  pointer-events: auto !important;
+}
+
+.no-hover-effects {
+  pointer-events: auto !important;
+  cursor: default !important;
+}
+
+/* Demand Level badge styling */
+.demand-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.chart-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: normal;
+}
+
+.chart-container {
+  height: 300px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: end;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 1rem;
+}
+
+.chart-bar-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.chart-bars {
+  display: flex;
+  align-items: end;
+  gap: 2px;
+  height: 200px;
+  margin-bottom: 0.5rem;
+}
+
+.chart-bar {
+  width: 12px;
+  border-radius: 2px 2px 0 0;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  min-height: 4px;
+}
+
+.chart-bar:hover {
+  opacity: 0.8;
+  transform: scaleY(1.05);
+}
+
+.chart-bar.postings {
+  background: linear-gradient(to top, #3b82f6, #60a5fa);
+}
+
+.chart-bar.applicants {
+  background: linear-gradient(to top, #10b981, #34d399);
+}
+
+.chart-label {
+  text-align: center;
+  width: 100%;
+}
+
+.job-title-short {
+  font-size: 0.75rem;
+  color: #6b7280;
+  line-height: 1.2;
+  display: block;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.chart-legend {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.legend-color.postings {
+  background: linear-gradient(to bottom, #3b82f6, #60a5fa);
+}
+
+.legend-color.applicants {
+  background: linear-gradient(to bottom, #10b981, #34d399);
+}
+
+/* Four Chart Visualizations Styles */
+.full-width-charts {
+  width: 100%;
+  margin-bottom: 2rem;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1.5fr;
+  gap: 1.5rem;
+  height: 900px;
+  margin-bottom: 2rem;
+}
+
+.chart-section {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden; /* Prevent content overflow */
+}
+
+.chart-section.full-width {
+  grid-column: 1 / -1;
+}
+
+
+.chart-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 1rem 0;
+  padding-bottom: 0;
+  border-bottom: none;
+  flex-shrink: 0; /* Don't shrink the title */
+}
+
+/* 1. Bar Chart Styles - Horizontal Bars */
+.bar-chart-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  flex: 1;
+  justify-content: space-around;
+  overflow: hidden;
+}
+
+.bar-chart-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-height: 0;
+}
+
+.bar-chart-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+}
+
+.job-title {
+  color: #374151;
+  font-weight: 500;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.demand-score {
+  color: #6b7280;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.bar-chart-track {
+  height: 8px;
+  background: #f3f4f6;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.bar-chart-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.bar-chart-fill:hover {
+  background: linear-gradient(90deg, #2563eb, #1e40af);
+  transform: scaleX(1.02);
+}
+
+/* 2. Donut Chart Styles */
+.pie-chart-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 1rem;
+  overflow: hidden;
+}
+
+.pie-chart {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: transparent;
+}
+
+.pie-slice {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.pie-slice:hover {
+  transform: scale(1.02);
+}
+
+.pie-legend {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  width: 100%;
+  max-height: 60px;
+  overflow: hidden;
+}
+
+.pie-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  padding: 0.125rem 0;
+}
+
+.pie-legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pie-legend-text {
+  color: #374151;
+  font-weight: 500;
+}
+
+/* 3. Line Chart Styles */
+.line-chart-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex: 1;
+  overflow: hidden;
+}
+
+.line-chart {
+  position: relative;
+  flex: 1;
+  min-height: 120px;
+  max-height: 200px;
+  padding: 0.75rem;
+  background: linear-gradient(to bottom, #f8fafc 0%, #ffffff 100%);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.line-chart-labels {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  height: 20px;
+}
+
+.no-data-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Simple Chart Implementations */
+.simple-line-chart {
+  height: 100%;
+  padding: 1rem;
+}
+
+.chart-bars-container {
+  display: flex;
+  align-items: end;
+  gap: 1rem;
+  height: 120px;
+  margin-bottom: 1rem;
+}
+
+.chart-month-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.chart-bars {
+  display: flex;
+  align-items: end;
+  gap: 3px;
+  height: 100px;
+  margin-bottom: 0.5rem;
+}
+
+.chart-bar {
+  width: 8px;
+  border-radius: 2px 2px 0 0;
+  min-height: 4px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.jobs-bar {
+  background: linear-gradient(to top, #3b82f6, #60a5fa);
+}
+
+.apps-bar {
+  background: linear-gradient(to top, #10b981, #34d399);
+}
+
+.month-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-align: center;
+  font-weight: 500;
+}
+
+/* Line Graph Chart */
+.line-graph-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 0.5rem;
+  overflow: hidden;
+  padding: 0.5rem;
+  height: 100%;
+  max-height: 100%;
+}
+
+.line-graph {
+  width: 100%;
+  height: 250px;
+  background: white;
+  border-radius: 8px;
+  padding: 0.5rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.line-legend {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.5rem;
+  background: #f9fafb;
+  border-radius: 6px;
+}
+
+.line-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.line-legend .legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+/* Simple Pie Chart */
+.simple-pie-chart {
+  padding: 1rem;
+}
+
+.pie-chart-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.pie-bar {
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.pie-bar:hover {
+  opacity: 0.8;
+  transform: scaleX(1.02);
+}
+
+/* Simple Stacked Chart */
+.simple-stacked-chart {
+  height: 100%;
+  padding: 1rem;
+}
+
+.stacked-bars-container {
+  display: flex;
+  align-items: end;
+  gap: 0.5rem;
+  height: 120px;
+  margin-bottom: 1rem;
+}
+
+.stacked-month-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.stacked-bars {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100px;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.stacked-segment {
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.stacked-segment:hover {
+  opacity: 0.8;
+}
+
+.stacked-segment:last-child {
+  border-bottom: none;
+}
+
+.line-chart-point {
+  position: absolute;
+  bottom: 40px;
+  width: 8px;
+  height: 8px;
+  background: #3b82f6;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.line-chart-bars {
+  display: none; /* Hide the old bar implementation */
+}
+
+.line-bar {
+  display: none; /* Hide the old bar implementation */
+}
+
+.line-chart-label {
+  position: absolute;
+  bottom: 10px;
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-align: center;
+  font-weight: 500;
+  transform: translateX(-50%);
+}
+
+.line-chart-legend {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* 4. Stacked Area Chart Styles */
+.stacked-chart-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex: 1;
+  overflow: hidden;
+}
+
+.stacked-chart {
+  position: relative;
+  flex: 1;
+  min-height: 120px;
+  max-height: 200px;
+  padding: 0.75rem;
+  background: linear-gradient(to bottom, #f8fafc 0%, #ffffff 100%);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.stacked-chart-labels {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  height: 20px;
+}
+
+.stacked-bar {
+  display: none; /* Hide old implementation */
+}
+
+.stacked-segment {
+  display: none; /* Hide old implementation */
+}
+
+.stacked-label {
+  position: absolute;
+  bottom: 10px;
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.stacked-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 0.5rem;
+  flex-shrink: 0;
+}
+
+.stacked-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #374151;
+}
+
+.stacked-legend .legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+/* Responsive Design for Charts */
+@media (max-width: 1200px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(3, auto);
+    height: auto;
+    gap: 1.5rem;
+  }
+  
+  .chart-section.full-width {
+    grid-column: 1;
+  }
+  
+  .chart-section {
+    min-height: 400px;
+  }
+  
+  .chart-section.full-width {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .pie-chart-container {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .pie-chart {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .line-chart {
+    gap: 0.5rem;
+  }
+  
+  .line-bar {
+    width: 6px;
+  }
+  
+  .stacked-chart {
+    gap: 0.25rem;
+  }
+  
+  .bar-chart-label {
+    font-size: 0.75rem;
+  }
+  
+  .job-title {
+    max-width: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chart-section {
+    padding: 1rem;
+  }
+  
+  .charts-grid {
+    gap: 0.75rem;
+  }
+  
+  .line-chart-legend,
+  .stacked-legend {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
