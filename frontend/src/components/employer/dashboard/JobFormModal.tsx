@@ -351,13 +351,153 @@ export const JobFormModal: React.FC<JobFormModalProps> = ({
 
                   <div className={styles.compactGroup}>
                     <label className={styles.compactLabel}>Department</label>
-                    <input
-                      type="text"
+                    <select
                       className={styles.compactInput}
                       value={formData.department}
                       onChange={(e) => handleInputChange('department', e.target.value)}
-                      placeholder="e.g. Engineering"
-                    />
+                    >
+                      <option value="">Select Department</option>
+                      
+                      <optgroup label="Technology & Engineering">
+                        <option value="Engineering">Engineering</option>
+                        <option value="Software Development">Software Development</option>
+                        <option value="Data Science">Data Science</option>
+                        <option value="DevOps">DevOps</option>
+                        <option value="Quality Assurance">Quality Assurance</option>
+                        <option value="Information Technology">Information Technology</option>
+                        <option value="Security">Security</option>
+                        <option value="Cybersecurity">Cybersecurity</option>
+                        <option value="Artificial Intelligence">Artificial Intelligence</option>
+                        <option value="Blockchain">Blockchain</option>
+                      </optgroup>
+
+                      <optgroup label="Business & Sales">
+                        <option value="Marketing">Marketing</option>
+                        <option value="Digital Marketing">Digital Marketing</option>
+                        <option value="Content Marketing">Content Marketing</option>
+                        <option value="Sales">Sales</option>
+                        <option value="Business Development">Business Development</option>
+                        <option value="Account Management">Account Management</option>
+                        <option value="Consulting">Consulting</option>
+                      </optgroup>
+
+                      <optgroup label="Human Resources & Admin">
+                        <option value="HR">Human Resources</option>
+                        <option value="Talent Acquisition">Talent Acquisition</option>
+                        <option value="Administration">Administration</option>
+                        <option value="Executive">Executive</option>
+                        <option value="Training & Development">Training & Development</option>
+                      </optgroup>
+
+                      <optgroup label="Finance & Legal">
+                        <option value="Finance">Finance</option>
+                        <option value="Accounting">Accounting</option>
+                        <option value="Banking">Banking</option>
+                        <option value="Insurance">Insurance</option>
+                        <option value="Investment">Investment</option>
+                        <option value="Legal">Legal</option>
+                        <option value="Compliance">Compliance</option>
+                      </optgroup>
+
+                      <optgroup label="Operations & Management">
+                        <option value="Operations">Operations</option>
+                        <option value="Supply Chain">Supply Chain</option>
+                        <option value="Project Management">Project Management</option>
+                        <option value="Logistics">Logistics</option>
+                        <option value="Transportation">Transportation</option>
+                        <option value="Warehouse">Warehouse</option>
+                      </optgroup>
+
+                      <optgroup label="Design & Creative">
+                        <option value="Design">Design</option>
+                        <option value="UX/UI Design">UX/UI Design</option>
+                        <option value="Graphic Design">Graphic Design</option>
+                        <option value="Fashion">Fashion</option>
+                        <option value="Media & Communications">Media & Communications</option>
+                        <option value="Public Relations">Public Relations</option>
+                        <option value="Journalism">Journalism</option>
+                        <option value="Broadcasting">Broadcasting</option>
+                      </optgroup>
+
+                      <optgroup label="Product & Customer">
+                        <option value="Product">Product</option>
+                        <option value="Product Management">Product Management</option>
+                        <option value="Customer Success">Customer Success</option>
+                        <option value="Customer Support">Customer Support</option>
+                        <option value="Research & Development">Research & Development</option>
+                      </optgroup>
+
+                      <optgroup label="Healthcare & Medical">
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Medical">Medical</option>
+                        <option value="Nursing">Nursing</option>
+                        <option value="Pharmacy">Pharmacy</option>
+                      </optgroup>
+
+                      <optgroup label="Education & Training">
+                        <option value="Education">Education</option>
+                        <option value="Teaching">Teaching</option>
+                      </optgroup>
+
+                      <optgroup label="Manufacturing & Production">
+                        <option value="Manufacturing">Manufacturing</option>
+                        <option value="Production">Production</option>
+                        <option value="Quality Control">Quality Control</option>
+                        <option value="Automotive">Automotive</option>
+                        <option value="Aerospace">Aerospace</option>
+                        <option value="Chemical">Chemical</option>
+                        <option value="Textiles">Textiles</option>
+                      </optgroup>
+
+                      <optgroup label="Real Estate & Construction">
+                        <option value="Real Estate">Real Estate</option>
+                        <option value="Property Management">Property Management</option>
+                        <option value="Construction">Construction</option>
+                        <option value="Architecture">Architecture</option>
+                      </optgroup>
+
+                      <optgroup label="Retail & E-commerce">
+                        <option value="Retail">Retail</option>
+                        <option value="E-commerce">E-commerce</option>
+                      </optgroup>
+
+                      <optgroup label="Hospitality & Tourism">
+                        <option value="Hospitality">Hospitality</option>
+                        <option value="Food & Beverage">Food & Beverage</option>
+                        <option value="Tourism">Tourism</option>
+                      </optgroup>
+
+                      <optgroup label="Energy & Environment">
+                        <option value="Energy">Energy</option>
+                        <option value="Oil & Gas">Oil & Gas</option>
+                        <option value="Renewable Energy">Renewable Energy</option>
+                        <option value="Environmental">Environmental</option>
+                        <option value="Mining">Mining</option>
+                      </optgroup>
+
+                      <optgroup label="Entertainment & Media">
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Gaming">Gaming</option>
+                        <option value="Sports & Recreation">Sports & Recreation</option>
+                        <option value="Publishing">Publishing</option>
+                      </optgroup>
+
+                      <optgroup label="Science & Research">
+                        <option value="Biotechnology">Biotechnology</option>
+                        <option value="Pharmaceuticals">Pharmaceuticals</option>
+                        <option value="Beauty & Cosmetics">Beauty & Cosmetics</option>
+                      </optgroup>
+
+                      <optgroup label="Public & Non-Profit">
+                        <option value="Government">Government</option>
+                        <option value="Non-Profit">Non-Profit</option>
+                      </optgroup>
+
+                      <optgroup label="Telecommunications & Other">
+                        <option value="Telecommunications">Telecommunications</option>
+                        <option value="Agriculture">Agriculture</option>
+                      </optgroup>
+                    </select>
                   </div>
 
                   <div className={styles.compactGroup}>
