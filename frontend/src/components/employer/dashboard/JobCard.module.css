@@ -3,15 +3,20 @@
   background: #ffffff;
   border-radius: 16px;
   border: 1px solid #f1f5f9;
-  padding: 28px;
+  padding: clamp(20px, 3vw, 28px);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   display: grid;
   grid-template-rows: auto auto 1fr auto;
-  height: 450px; /* Fixed height for uniform cards */
+  min-height: clamp(400px, 50vh, 450px);
+  height: auto;
   position: relative;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.04);
-  padding-bottom: 85px;
+  padding-bottom: clamp(75px, 10vh, 85px);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  container-type: inline-size;
 }
 
 .jobCard:hover {
@@ -38,16 +43,18 @@
 }
 
 .jobTitle {
-  font-size: 22px;
+  font-size: clamp(18px, 2.5vw, 22px);
   font-weight: 700;
   color: #0f172a;
   margin: 0 0 8px 0;
   line-height: 1.2;
   letter-spacing: -0.025em;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .companyName {
-  font-size: 15px;
+  font-size: clamp(13px, 1.8vw, 15px);
   color: #64748b;
   font-weight: 500;
   margin: 0 0 4px 0;
@@ -67,23 +74,63 @@
 /* Job Meta Tags */
 .jobMeta {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-bottom: 20px;
-  height: 110px; /* keeps description start aligned across cards */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr));
+  gap: clamp(8px, 1.5vw, 10px);
+  margin-bottom: clamp(16px, 2.5vw, 20px);
+  min-height: clamp(80px, 12vh, 110px);
   align-content: start;
 }
 
-@media (max-width: 1024px) {
+/* Container queries for meta items */
+@container (max-width: 350px) {
+  .jobMeta {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+}
+
+@container (min-width: 351px) and (max-width: 500px) {
   .jobMeta {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 640px) {
+/* Fallback media queries */
+@media (max-width: 500px) {
+  .jobMeta {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 350px) {
   .jobMeta {
     grid-template-columns: 1fr;
-    height: auto; /* allow wrapping on small screens */
+    min-height: auto;
+  }
+  
+  .jobActions {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    margin-top: clamp(16px, 2.5vw, 20px);
+    flex-direction: column;
+    gap: clamp(6px, 1vw, 8px);
+  }
+  
+  .actionGroup {
+    margin-left: 0;
+    justify-content: center;
+    width: 100%;
+  }
+  
+  .deleteButton {
+    align-self: flex-start;
+  }
+  
+  .jobActions button {
+    flex: 1;
+    min-width: 80px;
   }
 }
 
@@ -91,18 +138,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: clamp(4px, 0.8vw, 6px);
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  padding: 8px 12px;
-  border-radius: 9999px; /* pill */
-  font-size: 13px;
+  padding: clamp(6px, 1vw, 8px) clamp(10px, 1.5vw, 12px);
+  border-radius: 9999px;
+  font-size: clamp(11px, 1.6vw, 13px);
   font-weight: 500;
   color: #475569;
   transition: all 0.2s ease;
   text-align: center;
-  height: 40px; /* uniform chip height */
-  white-space: nowrap; /* prevent line breaks inside chip */
+  min-height: clamp(32px, 5vh, 40px);
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .metaItem:hover {
@@ -220,16 +270,15 @@
 
 .descriptionText {
   color: #64748b;
-  font-size: 14px;
+  font-size: clamp(12px, 1.8vw, 14px);
   line-height: 1.5;
   margin: 0;
-  padding: 16px;
+  padding: clamp(12px, 2vw, 16px);
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  border-radius: clamp(8px, 1.5vw, 12px);
   font-weight: 400;
   vertical-align: top;
-  /* Multi-line ellipsis */
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -238,7 +287,7 @@
   text-overflow: ellipsis;
   word-wrap: break-word;
   white-space: normal;
-  max-height: 4.5em; /* 3 lines * 1.5 line-height */
+  max-height: calc(3 * 1.5em);
 }
 
 /* Fallback for browsers that don't support line-clamp */
@@ -265,21 +314,24 @@
 /* Action Buttons Section */
 .jobActions {
   position: absolute;
-  bottom: 28px;
-  left: 28px;
-  right: 28px;
+  bottom: clamp(20px, 3vw, 28px);
+  left: clamp(20px, 3vw, 28px);
+  right: clamp(20px, 3vw, 28px);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  padding-top: 20px;
+  gap: clamp(8px, 1.5vw, 12px);
+  padding-top: clamp(16px, 2.5vw, 20px);
   border-top: 1px solid #f1f5f9;
+  flex-wrap: wrap;
 }
 
 .actionGroup {
   display: flex;
-  gap: 12px;
+  gap: clamp(8px, 1.5vw, 12px);
   margin-left: auto;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .deleteButton {
@@ -318,17 +370,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 8px 16px;
-  height: 36px;
-  font-size: 13px;
+  gap: clamp(4px, 0.8vw, 6px);
+  padding: clamp(6px, 1vw, 8px) clamp(12px, 2vw, 16px);
+  min-height: clamp(32px, 4vh, 36px);
+  font-size: clamp(11px, 1.6vw, 13px);
   font-weight: 500;
-  border-radius: 10px;
+  border-radius: clamp(8px, 1.2vw, 10px);
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid #e2e8f0;
   background: white;
   color: #475569;
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .jobActions button:hover {

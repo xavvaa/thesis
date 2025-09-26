@@ -73,7 +73,19 @@ const Dashboard: React.FC = () => {
   const [showResumeUpload, setShowResumeUpload] = useState(false)
   const [resume, setResume] = useState<ParsedResume | null>(null)
   const [applications, setApplications] = useState<Application[]>([])
-  const [savedJobs, setSavedJobs] = useState<Set<string | number>>(new Set())
+  const [savedJobs, setSavedJobs] = useState<Set<string | number>>(() => {
+    // Load saved jobs from localStorage on initialization
+    try {
+      const saved = localStorage.getItem('savedJobs');
+      if (saved) {
+        const savedArray = JSON.parse(saved);
+        return new Set(savedArray);
+      }
+    } catch (error) {
+      console.error('Error loading saved jobs from localStorage:', error);
+    }
+    return new Set();
+  })
   const [notifications, setNotifications] = useState<number>(3)
   const [error, setError] = useState<string | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -458,6 +470,14 @@ const Dashboard: React.FC = () => {
       }
       
       console.log('New savedJobs:', Array.from(newSet));
+      
+      // Persist to localStorage
+      try {
+        localStorage.setItem('savedJobs', JSON.stringify(Array.from(newSet)));
+      } catch (error) {
+        console.error('Error saving jobs to localStorage:', error);
+      }
+      
       return newSet
     })
   }

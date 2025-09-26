@@ -130,8 +130,8 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', shortLabel: 'Dashboard', icon: <DashboardIcon /> },
-    { id: 'create-resume', label: 'Create Resume', shortLabel: 'Create\nResume', icon: <CreateResumeIcon /> },
     { id: 'jobs', label: 'Find Jobs', shortLabel: 'Find Jobs', icon: <JobsIcon /> },
+    { id: 'create-resume', label: 'Create Resume', shortLabel: 'Create\nResume', icon: <CreateResumeIcon /> },
     { id: 'applications', label: 'Applications', shortLabel: 'Applications', icon: <ApplicationsIcon />, hasNotification: notifications > 0 },
     { id: 'saved', label: 'Saved Jobs', shortLabel: 'Saved\nJobs', icon: <SavedJobsIcon /> },
     { id: 'profile', label: 'Settings', shortLabel: 'Settings', icon: <ProfileIcon /> },
