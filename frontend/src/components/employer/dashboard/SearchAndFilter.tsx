@@ -9,38 +9,25 @@ interface SearchAndFilterProps {
   onFilterChange?: (filterType: string, value: string) => void;
   filters?: {
     status: string;
-    department: string;
-    location: string;
+    jobId?: string;
   };
   onFilterClick?: () => void;
   showFilters?: boolean;
   onClearFilters?: () => void;
   activeFiltersCount?: number;
   placeholder?: string;
+  jobPostings?: Array<{ id: string | number; title: string; }>;
 }
 
 const filterOptions = {
   status: [
     { value: '', label: 'All Status' },
     { value: 'pending', label: 'Pending' },
-    { value: 'reviewing', label: 'Reviewing' },
+    { value: 'interview', label: 'Interview' },
     { value: 'interviewed', label: 'Interviewed' },
     { value: 'accepted', label: 'Accepted' },
-    { value: 'rejected', label: 'Rejected' }
-  ],
-  department: [
-    { value: '', label: 'All Departments' },
-    { value: 'engineering', label: 'Engineering' },
-    { value: 'marketing', label: 'Marketing' },
-    { value: 'sales', label: 'Sales' },
-    { value: 'hr', label: 'Human Resources' },
-    { value: 'finance', label: 'Finance' }
-  ],
-  location: [
-    { value: '', label: 'All Locations' },
-    { value: 'remote', label: 'Remote' },
-    { value: 'onsite', label: 'On-site' },
-    { value: 'hybrid', label: 'Hybrid' }
+    { value: 'rejected', label: 'Rejected' },
+    { value: 'hired', label: 'Hired' }
   ]
 };
 
@@ -48,8 +35,9 @@ export const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
   searchTerm,
   onSearchChange,
   onFilterChange,
-  filters = { status: '', department: '', location: '' },
+  filters = { status: '', jobId: '' },
   placeholder = 'Search applicants...',
+  jobPostings = [],
 }) => {
 
   const activeFiltersCount = Object.values(filters).filter(value => value !== '').length;
@@ -63,10 +51,18 @@ export const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
   const clearAllFilters = () => {
     if (onFilterChange) {
       onFilterChange('status', '');
-      onFilterChange('department', '');
-      onFilterChange('location', '');
+      onFilterChange('jobId', '');
     }
   };
+
+  // Generate job options from job postings
+  const jobOptions = [
+    { value: '', label: 'All Job Posts' },
+    ...jobPostings.map(job => ({
+      value: job.id.toString(),
+      label: job.title
+    }))
+  ];
 
   return (
     <div className={styles.searchAndFilter}>
@@ -102,29 +98,14 @@ export const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
           </select>
         </div>
 
-        {/* Department Filter */}
+        {/* Job Posts Filter */}
         <div className={styles.filterDropdown}>
           <select
-            className={`${styles.filterSelect} ${filters.department ? styles.hasValue : ''}`}
-            value={filters.department}
-            onChange={(e) => handleFilterChange('department', e.target.value)}
+            className={`${styles.filterSelect} ${filters.jobId ? styles.hasValue : ''}`}
+            value={filters.jobId || ''}
+            onChange={(e) => handleFilterChange('jobId', e.target.value)}
           >
-            {filterOptions.department.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Location Filter */}
-        <div className={styles.filterDropdown}>
-          <select
-            className={`${styles.filterSelect} ${filters.location ? styles.hasValue : ''}`}
-            value={filters.location}
-            onChange={(e) => handleFilterChange('location', e.target.value)}
-          >
-            {filterOptions.location.map(option => (
+            {jobOptions.map(option => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>

@@ -4,14 +4,14 @@ import { SearchAndFilter } from './SearchAndFilter';
 import Button from '../ui/Button';
 import { FiDownload } from 'react-icons/fi';
 import { Applicant } from '@/types/dashboard';
+import { Job } from '@/types/Job';
 
 interface ApplicantsTabProps {
   applicants: Applicant[];
   searchTerm: string;
   filters: {
     status: string;
-    department: string;
-    location: string;
+    jobId?: string;
   };
   onSearchChange: (term: string) => void;
   onFilterChange: (filterType: string, value: string) => void;
@@ -20,6 +20,7 @@ interface ApplicantsTabProps {
   onViewResume: (resumeUrl: string) => void;
   onViewDetails: (applicant: Applicant) => void;
   onExport?: () => void;
+  jobPostings?: Job[];
 }
 
 export const ApplicantsTab: React.FC<ApplicantsTabProps> = ({
@@ -33,6 +34,7 @@ export const ApplicantsTab: React.FC<ApplicantsTabProps> = ({
   onViewResume,
   onViewDetails,
   onExport,
+  jobPostings = [],
 }) => {
   return (
     <div className="p-8">
@@ -50,6 +52,7 @@ export const ApplicantsTab: React.FC<ApplicantsTabProps> = ({
             onSearchChange={onSearchChange}
             onFilterChange={onFilterChange}
             filters={filters}
+            jobPostings={jobPostings}
           />
         </div>
 
