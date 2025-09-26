@@ -14,10 +14,12 @@ interface SuperAdminJobsTabProps {
 
 const SuperAdminJobsTab: React.FC<SuperAdminJobsTabProps> = ({ onJobStatusChange }) => {
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [allJobs, setAllJobs] = useState<Job[]>([]); // Store all jobs for department options
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [departmentFilter, setDepartmentFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('date');
   const [sortOrder, setSortOrder] = useState<string>('desc');
   const [currentPage, setCurrentPage] = useState(1);
@@ -235,19 +237,33 @@ Flagged jobs will be temporarily hidden from jobseekers while under review. The 
     setCurrentPage(1);
   };
 
+  const handleDepartmentFilter = (department: string) => {
+    setDepartmentFilter(department);
+    setCurrentPage(1);
+  };
+
   const clearSearch = () => {
     setSearchQuery('');
+  };
+
+  // Get unique departments from all jobs for filter dropdown
+  const getUniqueDepartments = () => {
+    const departments = allJobs
+      .map(job => job.department)
+      .filter((dept, index, arr) => dept && dept !== 'Not specified' && arr.indexOf(dept) === index)
+      .sort();
+    return departments;
   };
 
   useEffect(() => {
     fetchJobs();
   }, [currentPage, sortBy, sortOrder]);
 
-  // Trigger re-filtering when status filter changes
+  // Trigger re-filtering when status or department filter changes
   useEffect(() => {
     setCurrentPage(1);
     fetchJobs();
-  }, [statusFilter]);
+  }, [statusFilter, departmentFilter]);
 
   // Debounced search effect
   useEffect(() => {
@@ -320,7 +336,8 @@ Flagged jobs will be temporarily hidden from jobseekers while under review. The 
             description: job.description || job.jobDescription || '',
             requirements: job.requirements || [],
             benefits: job.benefits || [],
-            salary: job.salary || job.salaryRange || 'Competitive'
+            salary: job.salary || job.salaryRange || 'Competitive',
+            department: job.department || 'Not specified'
           };
         });
 
@@ -332,11 +349,13 @@ Flagged jobs will be temporarily hidden from jobseekers while under review. The 
             const company = (job.company || '').toLowerCase();
             const location = (job.location || '').toLowerCase();
             const type = (job.type || '').toLowerCase();
+            const department = (job.department || '').toLowerCase();
             
             return title.includes(query) || 
                    company.includes(query) || 
                    location.includes(query) || 
-                   type.includes(query);
+                   type.includes(query) ||
+                   department.includes(query);
           });
         }
 
@@ -344,6 +363,13 @@ Flagged jobs will be temporarily hidden from jobseekers while under review. The 
         if (statusFilter !== 'all') {
           convertedJobs = convertedJobs.filter((job: Job) => {
             return job.status === statusFilter;
+          });
+        }
+
+        // Apply client-side department filtering
+        if (departmentFilter !== 'all') {
+          convertedJobs = convertedJobs.filter((job: Job) => {
+            return job.department === departmentFilter;
           });
         }
 
@@ -376,6 +402,10 @@ Flagged jobs will be temporarily hidden from jobseekers while under review. The 
         });
 
         setJobs(convertedJobs);
+        setAllJobs(response.jobs.map((job: any) => ({
+          ...job,
+          department: job.department || 'Not specified'
+        }))); // Store all jobs for department filter options
         setTotalJobs(convertedJobs.length); // Use filtered count for display
 
         // Calculate stats
@@ -512,6 +542,19 @@ Flagged jobs will be temporarily hidden from jobseekers while under review. The 
               <option value="closed">Closed</option>
               <option value="paused">Paused</option>
               <option value="flagged">Flagged</option>
+            </select>
+
+            <select
+              value={departmentFilter}
+              onChange={(e) => handleDepartmentFilter(e.target.value)}
+              className="department-filter-control"
+            >
+              <option value="all">All Departments</option>
+              {getUniqueDepartments().map((department) => (
+                <option key={department} value={department}>
+                  {department}
+                </option>
+              ))}
             </select>
 
           </div>

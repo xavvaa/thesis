@@ -79,7 +79,8 @@
   position: relative;
 }
 
-.status-filter-control {
+.status-filter-control,
+.department-filter-control {
   padding: 0.5rem 0.75rem;
   border: 1px solid #d1d5db;
   border-radius: 6px;
@@ -88,10 +89,12 @@
   color: #374151;
   cursor: pointer;
   font-weight: 500;
+  width: 160px;
   min-width: 120px;
 }
 
-.status-filter-control:focus {
+.status-filter-control:focus,
+.department-filter-control:focus {
   outline: none;
   border-color: #3b82f6;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
@@ -444,6 +447,20 @@
 .job-location {
   color: #6b7280;
   font-size: 0.75rem;
+}
+
+.department-cell {
+  min-width: 140px;
+}
+
+.department-name {
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.85rem;
+  padding: 0.25rem 0.5rem;
+  background: #f3f4f6;
+  border-radius: 4px;
+  display: inline-block;
 }
 
 .status-cell {
