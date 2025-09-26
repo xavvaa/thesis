@@ -14,5 +14,4 @@ export { default as AnalyticsTab } from './AnalyticsTab';
 export { default as ReportsTab } from './ReportsTab';
 export { default as JobseekersTab } from './JobseekersTab';
 export { default as ComplianceTab } from './ComplianceTab';
-export { default as UserAnalyticsTab } from './UserAnalyticsTab';
 export { default as SkillsAnalyticsTab } from './SkillsAnalyticsTab';

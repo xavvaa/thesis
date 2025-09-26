@@ -15,7 +15,6 @@ import {
   ReportsTab,
   JobseekersTab,
   ComplianceTab,
-  UserAnalyticsTab,
   SkillsAnalyticsTab
 } from '../../components/admin';
 import adminService from '../../services/adminService';
@@ -167,10 +166,6 @@ const SuperAdminDashboard: React.FC = () => {
         title: 'Compliance',
         subtitle: 'System compliance and regulatory oversight'
       },
-      'user-analytics': {
-        title: 'User Analytics',
-        subtitle: 'User behavior and engagement insights'
-      },
       'skills-analytics': {
         title: 'Skills Analytics',
         subtitle: 'Skills demand and market trends'
@@ -270,10 +265,6 @@ const SuperAdminDashboard: React.FC = () => {
 
         {activeTab === 'compliance' && (
           <ComplianceTab />
-        )}
-
-        {activeTab === 'user-analytics' && (
-          <UserAnalyticsTab />
         )}
 
         {activeTab === 'skills-analytics' && (
