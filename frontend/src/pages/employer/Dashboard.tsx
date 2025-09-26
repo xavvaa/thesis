@@ -109,7 +109,7 @@ const EmployerDashboard: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [jobPostings, setJobPostings] = useState<Job[]>([]);
   const [isLoadingJobs, setIsLoadingJobs] = useState(true);
-  const [applicantFilters, setApplicantFilters] = useState<{ status: string; sortBy: string; jobId: string; department: string; location: string }>({ status: '', sortBy: 'newest', jobId: '', department: '', location: '' });
+  const [applicantFilters, setApplicantFilters] = useState<{ status: string; sortBy: string; jobId: string }>({ status: '', sortBy: 'newest', jobId: '' });
   const [selectedApplicant, setSelectedApplicant] = useState<Applicant | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAuthReady, setIsAuthReady] = useState(false);
@@ -1058,8 +1058,7 @@ const EmployerDashboard: React.FC = () => {
               searchTerm={searchQuery}
               filters={{
                 status: applicantFilters.status,
-                department: applicantFilters.department,
-                location: applicantFilters.location
+                jobId: applicantFilters.jobId
               }}
               onSearchChange={setSearchQuery}
               onFilterChange={(filterType, value) => {
@@ -1079,6 +1078,7 @@ const EmployerDashboard: React.FC = () => {
               onExport={() => {
                 console.log('Export applicants');
               }}
+              jobPostings={enhancedJobPostings}
             />
           )}
 
