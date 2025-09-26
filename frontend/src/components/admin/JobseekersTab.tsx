@@ -1,20 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { FiUsers, FiSearch, FiFilter, FiDownload, FiFileText, FiBriefcase, FiTrendingUp, FiEye, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { createPortal } from 'react-dom';
+import { FiUsers, FiSearch, FiFilter, FiFileText, FiBriefcase, FiTrendingUp, FiEye, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import adminService from '../../services/adminService';
 import StatsCard from './StatsCard';
 import './JobseekersTab.css';
-
 interface Jobseeker {
   _id: string;
   firstName: string;
   lastName: string;
   email: string;
+  phone?: string;
   skills: string[];
-  experience: string;
   applications: number;
   status: 'active' | 'inactive';
   createdAt: string;
   lastActive?: string;
+  resume?: {
+    personalInfo?: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      address?: string;
+      age?: string;
+      birthday?: string;
+    };
+  };
 }
 
 const JobseekersTab: React.FC = () => {
@@ -31,6 +41,43 @@ const JobseekersTab: React.FC = () => {
   const [jobseekersPerPage] = useState(10);
   const [sortBy, setSortBy] = useState<string>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  
+  // Modal states
+  const [confirmModal, setConfirmModal] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    action: () => void;
+    actionText: string;
+    icon: string;
+  }>({
+    show: false,
+    title: '',
+    message: '',
+    action: () => {},
+    actionText: '',
+    icon: ''
+  });
+  const [successModal, setSuccessModal] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    icon: string;
+  }>({
+    show: false,
+    title: '',
+    message: '',
+    icon: ''
+  });
+  const [viewModal, setViewModal] = useState<{
+    show: boolean;
+    jobseeker: Jobseeker | null;
+    loading: boolean;
+  }>({
+    show: false,
+    jobseeker: null,
+    loading: false
+  });
   const [totalJobseekers, setTotalJobseekers] = useState(0);
 
   useEffect(() => {
@@ -50,6 +97,125 @@ const JobseekersTab: React.FC = () => {
   const handleStatusFilter = (status: string) => {
     setFilterStatus(status as 'all' | 'active' | 'inactive');
     setCurrentPage(1);
+  };
+
+  // Admin action handlers
+  const handleRemoveJobseeker = (jobseekerId: string) => {
+    setConfirmModal({
+      show: true,
+      title: 'Remove Jobseeker',
+      message: `This action will permanently remove the jobseeker from the system. This is typically done when:
+
+• The account has been inactive for an extended period and has not responded to reactivation requests.
+• The account shows clear evidence of fraudulent, misleading, or suspicious activity.
+• The account repeatedly violates platform policies despite prior warnings.
+• The account was identified as a duplicate and merged or removed for consistency.
+
+Once removed, the jobseeker account cannot be recovered and all associated data will be lost. The user will be notified of this action.`,
+      action: async () => {
+        try {
+          await adminService.updateUser(jobseekerId, { status: 'removed' });
+          await fetchAllData();
+          setConfirmModal(prev => ({ ...prev, show: false }));
+          
+          // Show success message
+          setSuccessModal({
+            show: true,
+            title: 'Jobseeker Removed Successfully',
+            message: 'The jobseeker has been permanently removed from the system. The user has been notified of this action.',
+            icon: '✅'
+          });
+        } catch (error) {
+          console.error('Error removing jobseeker:', error);
+          alert('❌ Failed to remove jobseeker. Please try again.');
+        }
+      },
+      actionText: 'Remove Permanently',
+      icon: '🗑️'
+    });
+  };
+
+  const handleSuspendJobseeker = (jobseekerId: string) => {
+    setConfirmModal({
+      show: true,
+      title: 'Suspend Jobseeker Account',
+      message: `This action will temporarily suspend the jobseeker's account and notify them to reactivate. This is typically done when:
+
+• The account has been inactive for an extended period and requires reactivation
+• The account shows suspicious or fraudulent activity and needs review
+• The account needs to be reviewed for policy compliance
+• The profile requires verification of information or credentials
+
+The jobseeker will receive an email notification with instructions to reactivate their account. They will have 30 days to reactivate before the account is permanently removed.`,
+      action: async () => {
+        try {
+          await adminService.updateUser(jobseekerId, { status: 'inactive' });
+          await fetchAllData();
+          setConfirmModal(prev => ({ ...prev, show: false }));
+          
+          // Show success message
+          setSuccessModal({
+            show: true,
+            title: 'Account Suspended Successfully',
+            message: 'The jobseeker account has been suspended. The user will receive notification with reactivation instructions.',
+            icon: '⏸️'
+          });
+        } catch (error) {
+          console.error('Error suspending jobseeker:', error);
+          alert('❌ Failed to suspend jobseeker account. Please try again.');
+        }
+      },
+      actionText: 'Suspend Account',
+      icon: '⏸️'
+    });
+  };
+
+  const handleViewJobseeker = async (jobseeker: Jobseeker) => {
+    setViewModal({
+      show: true,
+      jobseeker: jobseeker,
+      loading: true
+    });
+
+    try {
+      // Try different API endpoints to fetch resume data
+      let enhancedJobseeker = { ...jobseeker };
+      
+      // Try the resume API endpoint
+      try {
+        const response = await fetch(`/api/resumes/user/${jobseeker._id}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (response.ok) {
+          const resumeData = await response.json();
+          
+          if (resumeData.success && resumeData.resume) {
+            enhancedJobseeker.resume = resumeData.resume;
+          } else if (resumeData.personalInfo) {
+            // Maybe the structure is different
+            enhancedJobseeker.resume = { personalInfo: resumeData.personalInfo };
+          }
+        }
+      } catch (resumeError) {
+        // Resume API not available, use existing data
+      }
+      
+      setViewModal({
+        show: true,
+        jobseeker: enhancedJobseeker,
+        loading: false
+      });
+    } catch (error) {
+      console.error('Error fetching jobseeker details:', error);
+      setViewModal({
+        show: true,
+        jobseeker: jobseeker,
+        loading: false
+      });
+    }
   };
 
   const formatDateTime = (dateString: string) => {
@@ -129,7 +295,9 @@ const jobSeekerUsers = allUsers.filter((user: any) =>
 );
 
 // Transform jobseekers by merging user data with resume and jobseeker data
-const transformedJobseekers = jobSeekerUsers.map((user: any) => {
+const transformedJobseekers: Jobseeker[] = [];
+
+jobSeekerUsers.forEach((user: any) => {
   const resume = resumeMap.get(user.uid);
   const jobSeekerProfile = jobSeekerMap.get(user.uid);
   
@@ -143,49 +311,19 @@ const transformedJobseekers = jobSeekerUsers.map((user: any) => {
   }
   
   const finalResume = resume || fallbackResume;
-  
-  // Determine the best name source
-  let fullName = 'Unknown';
-  let dataSource = 'user_only';
-  
-  if (finalResume?.personalInfo?.fullName) {
-    // Priority 1: Resume collection fullName
-    fullName = finalResume.personalInfo.fullName;
-    dataSource = 'resume';
-  } else if (jobSeekerProfile?.fullName) {
-    // Priority 2: JobSeeker collection fullName
-    fullName = jobSeekerProfile.fullName;
-    dataSource = 'jobseeker_profile';
-  } else if (jobSeekerProfile?.firstName && jobSeekerProfile?.lastName) {
-    // Priority 3: JobSeeker firstName + lastName
-    fullName = `${jobSeekerProfile.firstName} ${jobSeekerProfile.lastName}`;
-    dataSource = 'jobseeker_profile';
-  } else if (user.firstName || user.name) {
-    // Priority 4: User data fallback
-    fullName = user.firstName || user.name || 'Unknown';
-    dataSource = 'user_only';
-  }
 
-  return {
-    _id: user._id,
-    // Use the determined fullName
-    firstName: fullName,
-    lastName: '', // Keep empty since we're using fullName in firstName
-    // Get email - Resume first, then JobSeeker, then User
+  const jobseekerData: Jobseeker = {
+    _id: user.uid || user._id,
+    firstName: jobSeekerProfile?.firstName || user.firstName || 'Unknown',
+    lastName: jobSeekerProfile?.lastName || user.lastName || '',
     email: finalResume?.personalInfo?.email || 
            jobSeekerProfile?.email || 
            user.email,
-    // Get skills - Resume first, then JobSeeker
+    phone: finalResume?.personalInfo?.phone || jobSeekerProfile?.phone || user.phone,
     skills: finalResume?.skills || jobSeekerProfile?.skills || [],
-    // Get experience - Resume first, then JobSeeker
-    experience: finalResume?.workExperience?.[0]?.position || 
-               finalResume?.workExperience?.[0]?.jobTitle ||
-               jobSeekerProfile?.experience ||
-               'Not specified',
     applications: allApplications.filter((app: any) => app.jobSeekerUid === user.uid).length,
-    status: user.status || (user.isActive ? 'active' : 'inactive'),
-    createdAt: user.createdAt || user.dateRegistered,
-    // Try multiple sources for lastActive
+    status: user.disabled ? 'inactive' : (user.status || 'active'),
+    createdAt: user.createdAt || user.dateRegistered || user.metadata?.creationTime,
     lastActive: finalResume?.updatedAt || 
                jobSeekerProfile?.updatedAt || 
                jobSeekerProfile?.lastActive ||
@@ -193,91 +331,19 @@ const transformedJobseekers = jobSeekerUsers.map((user: any) => {
                user.updatedAt || 
                user.lastLogin ||
                user.lastLoginAt,
-    // Debug info
-    hasResume: !!finalResume,
-    hasJobSeekerProfile: !!jobSeekerProfile,
-    dataSource: dataSource,
-    nameSource: finalResume?.personalInfo?.fullName ? 'resume_fullName' : 
-                (jobSeekerProfile?.fullName ? 'jobseeker_fullName' : 
-                (jobSeekerProfile?.firstName ? 'jobseeker_firstName_lastName' : 'user_fallback')),
-    // Debug lastActive sources
-    lastActiveDebug: {
-      resumeUpdatedAt: finalResume?.updatedAt,
-      jobSeekerUpdatedAt: jobSeekerProfile?.updatedAt,
-      jobSeekerLastActive: jobSeekerProfile?.lastActive,
-      userLastActive: user.lastActive,
-      userUpdatedAt: user.updatedAt,
-      userLastLogin: user.lastLogin,
-      userLastLoginAt: user.lastLoginAt,
-      allUserFields: Object.keys(user)
-    }
+    resume: finalResume ? {
+      personalInfo: {
+        phone: finalResume.personalInfo?.phone,
+        birthday: finalResume.personalInfo?.birthday,
+        age: finalResume.personalInfo?.age,
+        name: finalResume.personalInfo?.name,
+        email: finalResume.personalInfo?.email,
+        address: finalResume.personalInfo?.address
+      }
+    } : undefined
   };
-});
-
-// Debug all resume data structure
-allResumes.forEach((resume: any, index: number) => {
-  console.log(`🔍 DEBUG - Resume ${index}:`, {
-    jobSeekerUid: resume.jobSeekerUid,
-    personalInfo: resume.personalInfo,
-    fullName: resume.personalInfo?.fullName,
-    skills: resume.skills,
-    applicantName: resume.applicantName
-  });
-});
-
-// Debug each jobseeker transformation with clear priority
-jobSeekerUsers.forEach((user: any, index: number) => {
-  const resume = resumeMap.get(user.uid);
-  const jobSeekerProfile = jobSeekerMap.get(user.uid);
   
-  // Determine name source priority
-  let nameSource = 'none';
-  let finalName = 'Unknown';
-  
-  if (resume?.personalInfo?.fullName) {
-    nameSource = '1_RESUME_FULLNAME';
-    finalName = resume.personalInfo.fullName;
-  } else if (jobSeekerProfile?.fullName) {
-    nameSource = '2_JOBSEEKER_FULLNAME';
-    finalName = jobSeekerProfile.fullName;
-  } else if (jobSeekerProfile?.firstName && jobSeekerProfile?.lastName) {
-    nameSource = '3_JOBSEEKER_FIRST_LAST';
-    finalName = `${jobSeekerProfile.firstName} ${jobSeekerProfile.lastName}`;
-  } else {
-    nameSource = '4_USER_FALLBACK';
-    finalName = user.firstName || user.name || 'Unknown';
-  }
-  
-  console.log(`🔍 DEBUG - User ${index} (${user.uid}):`, {
-    nameSource: nameSource,
-    finalName: finalName,
-    resumeExists: !!resume,
-    resumeFullName: resume?.personalInfo?.fullName,
-    jobSeekerExists: !!jobSeekerProfile,
-    jobSeekerFullName: jobSeekerProfile?.fullName,
-    jobSeekerFirstLast: jobSeekerProfile?.firstName && jobSeekerProfile?.lastName ? 
-                        `${jobSeekerProfile.firstName} ${jobSeekerProfile.lastName}` : null,
-    skillsSource: resume?.skills ? 'RESUME' : (jobSeekerProfile?.skills ? 'JOBSEEKER' : 'NONE'),
-    finalSkills: resume?.skills || jobSeekerProfile?.skills || [],
-    // LastActive debugging
-    lastActiveSources: {
-      resumeUpdatedAt: resume?.updatedAt,
-      jobSeekerUpdatedAt: jobSeekerProfile?.updatedAt,
-      jobSeekerLastActive: jobSeekerProfile?.lastActive,
-      userLastActive: user.lastActive,
-      userUpdatedAt: user.updatedAt,
-      userLastLogin: user.lastLogin,
-      userLastLoginAt: user.lastLoginAt
-    },
-    finalLastActive: resume?.updatedAt || 
-                    jobSeekerProfile?.updatedAt || 
-                    jobSeekerProfile?.lastActive ||
-                    user.lastActive || 
-                    user.updatedAt || 
-                    user.lastLogin ||
-                    user.lastLoginAt,
-    userFields: Object.keys(user)
-  });
+  transformedJobseekers.push(jobseekerData);
 });
       
       // Set individual stats using real API data
@@ -367,29 +433,6 @@ jobSeekerUsers.forEach((user: any, index: number) => {
     setCurrentPage(1);
   }, [searchTerm, filterStatus, sortBy, sortOrder]);
 
-  const exportJobseekers = () => {
-    const csvContent = [
-      ['Name', 'Email', 'Phone', 'Skills', 'Experience', 'Applications', 'Status', 'Created At'],
-      ...currentJobseekers.map(jobseeker => [
-        `${jobseeker.firstName} ${jobseeker.lastName}`,
-        jobseeker.email,
-        '', // Phone removed
-        jobseeker.skills.join('; '),
-        jobseeker.experience,
-        jobseeker.applications.toString(),
-        jobseeker.status,
-        jobseeker.createdAt
-      ])
-    ].map(row => row.join(',')).join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `jobseekers-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
   if (loading) {
     return (
@@ -427,51 +470,49 @@ jobSeekerUsers.forEach((user: any, index: number) => {
         />
       </div>
 
-      <div className="tab-actions" style={{ marginBottom: '24px', display: 'flex', justifyContent: 'flex-end' }}>
-        <button className="btn btn-secondary" onClick={exportJobseekers}>
-          <FiDownload />
-          Export CSV
-        </button>
-      </div>
 
-      {/* Section Header with Controls */}
-      <div className="section-header">
-        <div className="header-left">
-          <h2 className="section-title">Jobseekers Management</h2>
-          <p className="view-info">Showing {currentJobseekers.length} of {totalJobseekers} jobseekers</p>
-        </div>
-        
-        <div className="jobseekers-controls">
-          <div className="search-controls">
-            <div className="search-input-wrapper">
-              <FiSearch className="search-icon" />
-              <input
-                type="text"
-                placeholder="Search jobseekers..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="search-input-modern"
-              />
-            </div>
+      {/* Jobseekers Management Container */}
+      <div className="jobseekers-management-container">
+        {/* Header Container */}
+        <div className="jobseekers-header-container">
+          <div className="jobseekers-header">
+          <div className="header-left">
+            <h2 className="section-title">Jobseekers ({totalJobseekers} total)</h2>
+            <p className="view-info">Showing {indexOfFirstJobseeker + 1}-{Math.min(indexOfLastJobseeker, filteredJobseekers.length)} of {filteredJobseekers.length} jobseekers</p>
           </div>
           
-          <select
-            value={filterStatus}
-            onChange={(e) => handleStatusFilter(e.target.value)}
-            className="status-filter-control"
-          >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
+          <div className="jobseekers-controls">
+            <div className="search-controls">
+              <div className="search-input-wrapper">
+                <FiSearch className="search-icon" />
+                <input
+                  type="text"
+                  placeholder="Search jobseekers and companies..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="search-input-modern"
+                />
+              </div>
+            </div>
+            
+            <select
+              value={filterStatus}
+              onChange={(e) => handleStatusFilter(e.target.value)}
+              className="status-filter-control"
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+          </div>
         </div>
-      </div>
 
-      {/* Enhanced Jobseekers Table */}
-      {jobseekers.length > 0 ? (
-        <>
+        {/* Table Section */}
+        {jobseekers.length > 0 ? (
           <div className="admin-jobseekers-table-container">
-            <table className="admin-jobseekers-table">
+            <div className="admin-jobseekers-table-wrapper">
+              <table className="admin-jobseekers-table">
               <thead>
                 <tr>
                   <th className="sortable-header" onClick={() => handleSort('name')}>
@@ -592,7 +633,24 @@ jobSeekerUsers.forEach((user: any, index: number) => {
                       <td className="actions-cell">
                         <div className="action-buttons">
                           <button 
-                            onClick={() => console.log('View jobseeker:', jobseeker._id)}
+                            onClick={() => handleRemoveJobseeker(jobseeker._id)}
+                            className="action-btn remove-btn"
+                            title="Remove Jobseeker"
+                          >
+                            Remove
+                          </button>
+                          
+                          <button 
+                            onClick={() => handleSuspendJobseeker(jobseeker._id)}
+                            className="action-btn pause-btn"
+                            title="Suspend Jobseeker"
+                            disabled={jobseeker.status === 'inactive'}
+                          >
+                            Suspend
+                          </button>
+                          
+                          <button 
+                            onClick={() => handleViewJobseeker(jobseeker)}
                             className="action-btn view-btn"
                             title="View Details"
                           >
@@ -605,41 +663,255 @@ jobSeekerUsers.forEach((user: any, index: number) => {
                 })}
               </tbody>
             </table>
-          </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="pagination">
-              <button
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="pagination-button"
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="pagination">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="pagination-button"
+                  >
+                    Previous
+                  </button>
+                  
+                  <div className="pagination-info">
+                    Page {currentPage} of {totalPages}
+                  </div>
+                  
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="pagination-button"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          !loading && (
+            <div className="empty-state">
+              <FiUsers className="empty-icon" size={48} />
+              <h3>No jobseekers found</h3>
+              <p>No jobseekers match your current filters.</p>
+            </div>
+          )
+        )}
+      </div>
+
+      {/* Custom Confirmation Modal */}
+      {confirmModal.show && createPortal(
+        <div className="confirm-modal-overlay" onClick={() => setConfirmModal(prev => ({ ...prev, show: false }))}>
+          <div className="confirm-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="confirm-modal-header">
+              <div className="confirm-modal-icon">{confirmModal.icon}</div>
+              <h2 className="confirm-modal-title">{confirmModal.title}</h2>
+            </div>
+            
+            <div className="confirm-modal-body">
+              <p className="confirm-modal-message">{confirmModal.message}</p>
+            </div>
+            
+            <div className="confirm-modal-footer">
+              <button 
+                className="confirm-modal-btn secondary"
+                onClick={() => setConfirmModal(prev => ({ ...prev, show: false }))}
               >
-                Previous
+                Cancel
               </button>
-              
-              <div className="pagination-info">
-                Page {currentPage} of {totalPages}
-              </div>
-              
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="pagination-button"
+              <button 
+                className="confirm-modal-btn primary"
+                onClick={confirmModal.action}
               >
-                Next
+                {confirmModal.actionText}
               </button>
             </div>
-          )}
-        </>
-      ) : (
-        !loading && (
-          <div className="empty-state">
-            <FiUsers className="empty-icon" size={48} />
-            <h3>No jobseekers found</h3>
-            <p>No jobseekers match your current filters.</p>
           </div>
-        )
+        </div>,
+        document.body
+      )}
+
+      {/* Custom Success Modal */}
+      {successModal.show && createPortal(
+        <div className="success-modal-overlay" onClick={() => setSuccessModal(prev => ({ ...prev, show: false }))}>
+          <div className="success-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="success-modal-header">
+              <div className="success-modal-icon">{successModal.icon}</div>
+              <h2 className="success-modal-title">{successModal.title}</h2>
+            </div>
+            
+            <div className="success-modal-body">
+              <p className="success-modal-message">{successModal.message}</p>
+            </div>
+            
+            <div className="success-modal-footer">
+              <button 
+                className="success-modal-btn"
+                onClick={() => setSuccessModal(prev => ({ ...prev, show: false }))}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* View Jobseeker Modal */}
+      {viewModal.show && viewModal.jobseeker && createPortal(
+        <div className="view-modal-overlay" onClick={() => setViewModal({ show: false, jobseeker: null, loading: false })}>
+          <div className="view-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="view-modal-header">
+              <h2 className="view-modal-title">Jobseeker Details</h2>
+              <button 
+                className="view-modal-close"
+                onClick={() => setViewModal({ show: false, jobseeker: null, loading: false })}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="view-modal-body">
+              {viewModal.loading ? (
+                <div className="loading-state">
+                  <div className="loading-spinner"></div>
+                  <p>Loading jobseeker details...</p>
+                </div>
+              ) : (
+                <>
+                  {/* Top Row - Three Column Layout */}
+                  <div className="modal-row">
+                    <div className="modal-column">
+                      <h3 className="section-title-compact">Personal Details</h3>
+                      <div className="compact-details">
+                        <div className="compact-item">
+                          <strong>{viewModal.jobseeker.firstName} {viewModal.jobseeker.lastName}</strong>
+                        </div>
+                        <div className="compact-item">
+                          <strong>Email:</strong> {viewModal.jobseeker.email}
+                        </div>
+                        <div className="compact-item">
+                          <strong>Phone:</strong> {
+                            viewModal.jobseeker.resume?.personalInfo?.phone || 
+                            viewModal.jobseeker.phone || 
+                            'No phone provided'
+                          }
+                        </div>
+                        {viewModal.jobseeker.resume?.personalInfo?.birthday && (
+                          <div className="compact-item">
+                            <strong>Birthday:</strong> {viewModal.jobseeker.resume.personalInfo.birthday}
+                          </div>
+                        )}
+                        {viewModal.jobseeker.resume?.personalInfo?.age && (
+                          <div className="compact-item">
+                            <strong>Age:</strong> {viewModal.jobseeker.resume.personalInfo.age}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="modal-column">
+                      <h3 className="section-title-compact">Account Status</h3>
+                      <div className="compact-details">
+                        <div className="compact-item">
+                          <strong>Status:</strong> 
+                          <span className={`status-badge ${viewModal.jobseeker.status}`} style={{marginLeft: '0.5rem'}}>
+                            {viewModal.jobseeker.status === 'active' ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                        <div className="compact-item">
+                          <strong>Applications:</strong> {viewModal.jobseeker.applications || 0}
+                        </div>
+                        <div className="compact-item">
+                          <strong>Skills:</strong> {viewModal.jobseeker.skills?.length || 0}
+                        </div>
+                        <div className="compact-item">
+                          <strong>Profile:</strong> 
+                          <span className={viewModal.jobseeker.skills && viewModal.jobseeker.skills.length > 0 ? 'complete' : 'incomplete'} style={{marginLeft: '0.5rem'}}>
+                            {viewModal.jobseeker.skills && viewModal.jobseeker.skills.length > 0 ? 'Complete' : 'Incomplete'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="modal-column">
+                      <h3 className="section-title-compact">Activity Timeline</h3>
+                      <div className="compact-details">
+                        <div className="compact-item">
+                          <strong>Registered:</strong> {formatDateTime(viewModal.jobseeker.createdAt).dateStr}
+                          <div className="compact-meta">({formatDateTime(viewModal.jobseeker.createdAt).daysAgo} days ago)</div>
+                        </div>
+                        <div className="compact-item">
+                          <strong>Last Activity:</strong> {viewModal.jobseeker.lastActive ? (
+                            <>
+                              {formatDateTime(viewModal.jobseeker.lastActive).dateStr}
+                              <div className="compact-meta">({formatDateTime(viewModal.jobseeker.lastActive).daysAgo} days ago)</div>
+                            </>
+                          ) : (
+                            <span className="inactive">Never active</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Skills Row */}
+              {!viewModal.loading && viewModal.jobseeker.skills && viewModal.jobseeker.skills.length > 0 && (
+                <div className="modal-row">
+                  <div className="modal-column-full">
+                    <h3 className="section-title-compact">Skills</h3>
+                    <div className="skills-display-compact">
+                      {viewModal.jobseeker.skills.slice(0, 12).map((skill, index) => (
+                        <span key={index} className="skill-badge-compact">{skill}</span>
+                      ))}
+                      {viewModal.jobseeker.skills.length > 12 && (
+                        <span className="skill-badge-compact more">+{viewModal.jobseeker.skills.length - 12} more</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </div>
+            
+            {/* Fixed Action Buttons Footer */}
+            <div className="view-modal-footer">
+              <p className="action-note">
+                <strong>Note:</strong> Suspended accounts will receive notification to reactivate. 
+                Users have 30 days to reactivate before permanent removal.
+              </p>
+              <div className="modal-action-buttons">
+                <button 
+                  onClick={() => {
+                    setViewModal({ show: false, jobseeker: null, loading: false });
+                    handleRemoveJobseeker(viewModal.jobseeker._id);
+                  }}
+                  className="modal-action-btn remove-btn"
+                  title="Permanently Remove Account"
+                >
+                  Remove Account
+                </button>
+                
+                <button 
+                  onClick={() => {
+                    setViewModal({ show: false, jobseeker: null, loading: false });
+                    handleSuspendJobseeker(viewModal.jobseeker._id);
+                  }}
+                  className="modal-action-btn suspend-btn"
+                  title="Suspend Account - User will be notified to reactivate"
+                  disabled={viewModal.jobseeker.status === 'inactive'}
+                >
+                  Suspend Account
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
     </div>
