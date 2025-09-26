@@ -165,7 +165,6 @@ router.post('/upload-documents', verifyToken, requireRole('employer'), upload.fi
 ]), async (req, res) => {
   const requestId = Math.random().toString(36).substr(2, 9);
   console.log(`📄 [${requestId}] Document upload request received`);
-  console.log(`👤 [${requestId}] User:`, req.user?.uid);
   console.log(`📁 [${requestId}] Files:`, Object.keys(req.files || {}));
   
   try {
@@ -209,23 +208,13 @@ router.post('/upload-documents', verifyToken, requireRole('employer'), upload.fi
       natureOfBusiness
     } = req.body;
 
-    console.log(`📋 [${requestId}] Company details received:`, {
-      contactPersonFirstName,
-      contactPersonLastName,
-      contactNumber: contactNumber ? '***' : 'not provided',
-      companyDescription: companyDescription ? `${companyDescription.substring(0, 50)}...` : 'not provided',
-      companyAddress: companyAddress ? 'provided' : 'not provided',
-      natureOfBusiness
-    });
 
     // Process documents into array format
     const documentsArray = [];
-    console.log(`📁 [${requestId}] Processing uploaded files:`, Object.keys(uploadedFiles));
     
     for (const [docType, files] of Object.entries(uploadedFiles)) {
       if (files && files.length > 0) {
         const file = files[0];
-        console.log(`📄 [${requestId}] Processing ${docType}:`, file.originalname);
         
         documentsArray.push({
           documentType: docType,
@@ -240,7 +229,6 @@ router.post('/upload-documents', verifyToken, requireRole('employer'), upload.fi
     }
     
     console.log(`📄 [${requestId}] Documents array to save:`, documentsArray.length, 'documents');
-    console.log(`📋 [${requestId}] Document details:`, documentsArray.map(d => ({ type: d.documentType, name: d.documentName })));
     
     // Update employer with company details
     if (contactPersonFirstName || contactPersonLastName) {
@@ -286,14 +274,12 @@ router.post('/upload-documents', verifyToken, requireRole('employer'), upload.fi
     employer.documentRejectionReason = undefined;
     employer.documentAdminNotes = undefined;
     
-    console.log(`💾 [${requestId}] Saving documents and company details to employer record:`, employer._id);
 
     // Update employer account status
     employer.accountStatus = 'pending';
     employer.verificationNotes = 'Documents and company information uploaded, pending review';
     
     await employer.save();
-    console.log(`✅ [${requestId}] Employer record updated with ${documentsArray.length} documents`);
 
     res.json({
       success: true,

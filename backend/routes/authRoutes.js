@@ -86,7 +86,6 @@ router.post('/employer/documents', upload.fields([
   const requestId = Math.random().toString(36).substr(2, 9);
   console.log(`📄 [${requestId}] Employer document upload request received (registration)`);
   console.log(`📁 [${requestId}] Files:`, Object.keys(req.files || {}));
-  console.log(`📋 [${requestId}] Body:`, req.body);
   
   try {
     const { email, companyName } = req.body;
@@ -164,7 +163,6 @@ router.post('/employer/documents', upload.fields([
     employer.verificationNotes = 'Documents uploaded during registration, pending review';
     
     await employer.save();
-    console.log(`✅ [${requestId}] Employer record updated with ${documentsArray.length} documents`);
 
     res.json({
       success: true,

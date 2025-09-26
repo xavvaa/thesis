@@ -51,19 +51,14 @@ class AdminService {
     if (params?.status) queryParams.append('status', params.status);
     if (params?.search) queryParams.append('search', params.search);
 
-    console.log('🔍 Fetching users with params:', params);
-    console.log('🔑 Auth headers:', this.getAuthHeaders());
     
     const response = await fetch(`${this.baseUrl}/users?${queryParams}`, {
       headers: this.getAuthHeaders()
     });
     
-    console.log('📡 Users response status:', response.status);
     const data = await response.json();
-    console.log('📄 Users response data:', data);
     
     if (!data.success) {
-      console.error('❌ Users API Error:', data.message);
       throw new Error(data.message || 'Failed to fetch users');
     }
 
@@ -116,9 +111,6 @@ class AdminService {
   }
 
   async getAllEmployers(status?: 'pending' | 'verified' | 'rejected'): Promise<PendingEmployer[]> {
-    console.log('🔍 Fetching all employers with status filter:', status);
-    console.log('🔑 Auth headers:', this.getAuthHeaders());
-    
     const url = status 
       ? `${this.baseUrl}/employers?status=${status}`
       : `${this.baseUrl}/employers`;
@@ -127,36 +119,26 @@ class AdminService {
       headers: this.getAuthHeaders()
     });
     
-    console.log('📡 Response status:', response.status);
     const data = await response.json();
-    console.log('📄 Response data:', data);
     
     if (!data.success) {
-      console.error('❌ API Error:', data.message || data.error);
       throw new Error(data.message || data.error || 'Failed to fetch employers');
     }
 
-    console.log('✅ Found employers:', data.employers?.length || 0);
     return data.employers || [];
   }
 
   async getPendingEmployers(): Promise<PendingEmployer[]> {
-    console.log('🔍 Fetching pending employers...');
-    console.log('🔑 Auth headers:', this.getAuthHeaders());
     const response = await fetch(`${this.baseUrl}/employers/pending`, {
       headers: this.getAuthHeaders()
     });
     
-    console.log('📡 Response status:', response.status);
     const data = await response.json();
-    console.log('📄 Response data:', data);
     
     if (!data.success) {
-      console.error('❌ API Error:', data.message || data.error);
       throw new Error(data.message || data.error || 'Failed to fetch pending employers');
     }
 
-    console.log('✅ Found employers:', data.employers?.length || 0);
     return data.employers;
   }
 
@@ -204,25 +186,17 @@ class AdminService {
   }
 
   async verifyEmployer(employerId: string, action: 'approve' | 'reject', reason?: string): Promise<void> {
-    console.log('🔄 Verifying employer:', { employerId, action, reason });
-    console.log('🔑 Auth headers:', this.getAuthHeaders());
-    
     const response = await fetch(`${this.baseUrl}/employers/${employerId}/verify`, {
       method: 'PUT',
       headers: this.getAuthHeaders(),
       body: JSON.stringify({ action, reason }),
     });
 
-    console.log('📡 Verify employer response status:', response.status);
     const data = await response.json();
-    console.log('📄 Verify employer response data:', data);
     
     if (!data.success) {
-      console.error('❌ Employer verification failed:', data.message);
       throw new Error(data.message || 'Failed to update employer status');
     }
-    
-    console.log('✅ Employer verification successful');
   }
 
   async getJobs(params?: { page?: number; limit?: number; status?: string; search?: string }) {
@@ -242,6 +216,145 @@ class AdminService {
     }
 
     return data;
+  }
+
+  async getJobApplicationCount(jobId: string): Promise<number> {
+    try {
+      const response = await fetch(`${this.baseUrl}/jobs/${jobId}/applications/count`, {
+        headers: this.getAuthHeaders()
+      });
+      
+      if (!response.ok) {
+        return 0;
+      }
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        return 0;
+      }
+
+      return data.count || 0;
+    } catch (error) {
+      return 0;
+    }
+  }
+
+  // Get all applications for admin (using the new admin endpoint)
+  async getAllApplications(): Promise<any[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/applications`, {
+        headers: this.getAuthHeaders()
+      });
+      
+      if (!response.ok) {
+        return [];
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.applications) {
+        return data.applications;
+      }
+      
+      return [];
+      
+    } catch (error) {
+      return [];
+    }
+  }
+
+  // Get all jobseekers for admin
+  async getAllJobSeekers(): Promise<any[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/jobseekers/all`, {
+        headers: this.getAuthHeaders()
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.jobseekers || [];
+      }
+      return [];
+    } catch (error) {
+      console.error('Error fetching jobseekers:', error);
+      return [];
+    }
+  }
+
+  // Get all resumes for admin - fetch directly from resumes endpoint
+  async getAllResumes(): Promise<any[]> {
+    try {
+      // Try to fetch from a direct resumes endpoint first
+      const response = await fetch(`${this.baseUrl}/resumes/all`, {
+        headers: this.getAuthHeaders()
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.resumes) {
+          return data.resumes;
+        }
+      }
+      
+      // Fallback: Extract resume data from applications
+      console.log('🔍 Fallback: Extracting resumes from applications...');
+      const applications = await this.getAllApplications();
+      console.log('🔍 Applications for resume extraction:', applications);
+      
+      // Extract unique resumes from applications
+      const resumesMap = new Map();
+      
+      applications.forEach((app: any) => {
+        console.log('🔍 Processing application:', {
+          hasResumeData: !!app.resumeData,
+          jobSeekerUid: app.jobSeekerUid,
+          applicantName: app.applicantName,
+          resumePersonalInfo: app.resumeData?.personalInfo,
+          resumeSkills: app.resumeData?.skills
+        });
+        
+        if (app.resumeData && app.jobSeekerUid) {
+          resumesMap.set(app.jobSeekerUid, {
+            jobSeekerUid: app.jobSeekerUid,
+            personalInfo: app.resumeData.personalInfo || {},
+            skills: app.resumeData.skills || [],
+            workExperience: app.resumeData.workExperience || [],
+            education: app.resumeData.education || [],
+            summary: app.resumeData.summary || '',
+            applicantName: app.applicantName,
+            applicantEmail: app.applicantEmail,
+            applicantPhone: app.applicantPhone
+          });
+        } else if (app.jobSeekerUid) {
+          // Even if no resumeData, create entry with basic info
+          resumesMap.set(app.jobSeekerUid, {
+            jobSeekerUid: app.jobSeekerUid,
+            personalInfo: { 
+              fullName: app.applicantName,
+              email: app.applicantEmail,
+              phone: app.applicantPhone
+            },
+            skills: [],
+            workExperience: [],
+            education: [],
+            summary: '',
+            applicantName: app.applicantName,
+            applicantEmail: app.applicantEmail,
+            applicantPhone: app.applicantPhone
+          });
+        }
+      });
+      
+      const extractedResumes = Array.from(resumesMap.values());
+      console.log('🔍 Extracted resumes:', extractedResumes);
+      
+      return extractedResumes;
+      
+    } catch (error) {
+      console.error('Error fetching resumes:', error);
+      return [];
+    }
   }
 
   async updateJobStatus(jobId: string, status: string, reason?: string): Promise<void> {
@@ -307,8 +420,6 @@ class AdminService {
     role: 'admin' | 'superadmin';
     password: string;
   }): Promise<AdminUser> {
-    console.log('🔄 Creating admin with data:', adminData);
-    
     const response = await fetch(`${this.baseUrl}/admins`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
@@ -316,27 +427,23 @@ class AdminService {
         email: adminData.email,
         adminName: adminData.adminName,
         department: adminData.department,
-        adminLevel: adminData.role,
+        role: adminData.role,
         password: adminData.password
       }),
     });
 
-    console.log('📡 Create admin response status:', response.status);
     const data = await response.json();
-    console.log('📄 Create admin response data:', data);
     
     if (!data.success) {
-      console.error('❌ Admin creation failed:', data.message);
       throw new Error(data.message || 'Failed to create admin user');
     }
 
-    console.log('✅ Admin created successfully');
     return data.admin;
   }
 
   // Authentication helpers
   isAuthenticated(): boolean {
-    return !!(localStorage.getItem('adminUser') && localStorage.getItem('adminToken'));
+    return localStorage.getItem('adminToken') !== null;
   }
 
   getCurrentAdmin(): AdminUser | null {
@@ -347,6 +454,79 @@ class AdminService {
   logout(): void {
     localStorage.removeItem('adminUser');
     localStorage.removeItem('adminToken');
+  }
+
+  // Report generation methods
+  async generateReport(params: {
+    reportType: string;
+    startDate: string;
+    endDate: string;
+    format: 'pdf' | 'csv' | 'json';
+    includeDetails: boolean;
+  }): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/reports/generate`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(params)
+    });
+    
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to generate report');
+    }
+
+    return data;
+  }
+
+  async getReportHistory(): Promise<any[]> {
+    const response = await fetch(`${this.baseUrl}/reports/history`, {
+      headers: this.getAuthHeaders()
+    });
+    
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to fetch report history');
+    }
+
+    return data.reports;
+  }
+
+  async generateAllReports(params: {
+    startDate: string;
+    endDate: string;
+    format: 'pdf' | 'csv' | 'json';
+    includeDetails: boolean;
+  }): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/reports/generate-all`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(params)
+    });
+    
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to generate all reports');
+    }
+
+    return data;
+  }
+
+  // Job Demand Analytics
+  async getJobDemandAnalytics(): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/job-demand-analytics`, {
+      headers: this.getAuthHeaders()
+    });
+    
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to fetch job demand analytics');
+    }
+
+    return data.data;
   }
 }
 
