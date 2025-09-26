@@ -1595,7 +1595,6 @@ router.get('/resumes/all', verifyToken, adminMiddleware, async (req, res) => {
 // Get job demand analytics
 router.get('/job-demand-analytics', verifyToken, adminMiddleware, async (req, res) => {
   try {
-    console.log('🔍 Fetching job demand analytics...');
 
     // Get all jobs with their application counts
     const jobs = await Job.aggregate([
@@ -1737,7 +1736,6 @@ router.get('/job-demand-analytics', verifyToken, adminMiddleware, async (req, re
       }
     ]);
 
-    console.log(`✅ Found ${jobs.length} job categories for analytics`);
 
     // Get actual total job count (not grouped)
     const actualTotalJobs = await Job.countDocuments({
@@ -1754,11 +1752,168 @@ router.get('/job-demand-analytics', verifyToken, adminMiddleware, async (req, re
       job.demandLevel === 'very-high' || job.demandLevel === 'high'
     ).length;
 
+    // Get time-series data for trend analysis (last 6 months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const monthlyTrends = await Job.aggregate([
+      {
+        $match: {
+          postedDate: { $gte: sixMonthsAgo },
+          status: { $in: ['active', 'paused', 'closed'] }
+        }
+      },
+      {
+        $lookup: {
+          from: 'applications',
+          localField: '_id',
+          foreignField: 'jobId',
+          as: 'applications'
+        }
+      },
+      {
+        $addFields: {
+          month: { $dateToString: { format: "%Y-%m", date: "$postedDate" } },
+          department: { $ifNull: ['$department', 'other'] },
+          applicantCount: { $size: '$applications' }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            month: '$month',
+            department: '$department'
+          },
+          jobCount: { $sum: 1 },
+          totalApplicants: { $sum: '$applicantCount' }
+        }
+      },
+      {
+        $group: {
+          _id: '$_id.month',
+          departments: {
+            $push: {
+              department: '$_id.department',
+              jobCount: '$jobCount',
+              applicantCount: '$totalApplicants'
+            }
+          },
+          totalJobs: { $sum: '$jobCount' },
+          totalApplicants: { $sum: '$totalApplicants' }
+        }
+      },
+      {
+        $sort: { '_id': 1 }
+      }
+    ]);
+
+    // Get category distribution for pie chart
+    const categoryDistribution = await Job.aggregate([
+      {
+        $match: {
+          status: { $in: ['active', 'paused', 'closed'] }
+        }
+      },
+      {
+        $lookup: {
+          from: 'applications',
+          localField: '_id',
+          foreignField: 'jobId',
+          as: 'applications'
+        }
+      },
+      {
+        $addFields: {
+          department: { $ifNull: ['$department', 'other'] },
+          applicantCount: { $size: '$applications' }
+        }
+      },
+      {
+        $group: {
+          _id: '$department',
+          jobCount: { $sum: 1 },
+          totalApplicants: { $sum: '$applicantCount' },
+          totalViews: { $sum: '$viewCount' },
+          avgSalary: { $avg: '$salaryMin' }
+        }
+      },
+      {
+        $addFields: {
+          // Use same demand calculation as individual jobs for consistency
+          demandScore: {
+            $add: [
+              { $multiply: ['$jobCount', 40] },        // More job postings = higher demand
+              { $multiply: ['$totalApplicants', 4] },  // More applicants = higher demand  
+              { $multiply: ['$totalViews', 0.2] }      // More views = higher interest
+            ]
+          }
+        }
+      },
+      {
+        $sort: { demandScore: -1 }
+      }
+    ]);
+
+    // Get top demanding jobs for bar chart
+    const topDemandingJobs = await Job.aggregate([
+      {
+        $match: {
+          status: { $in: ['active', 'paused', 'closed'] }
+        }
+      },
+      {
+        $lookup: {
+          from: 'applications',
+          localField: '_id',
+          foreignField: 'jobId',
+          as: 'applications'
+        }
+      },
+      {
+        $addFields: {
+          applicantCount: { $size: '$applications' }
+        }
+      },
+      {
+        $group: {
+          _id: '$title',
+          totalJobs: { $sum: 1 },
+          totalApplicants: { $sum: '$applicantCount' },
+          totalViews: { $sum: '$viewCount' },
+          avgSalary: { $avg: '$salaryMin' },
+          department: { $first: { $ifNull: ['$department', 'other'] } }
+        }
+      },
+      {
+        $addFields: {
+          // Calculate demand score: job postings (40%) + total applicants (40%) + total views (20%)
+          demandScore: {
+            $add: [
+              { $multiply: ['$totalJobs', 40] },        // More job postings = higher demand
+              { $multiply: ['$totalApplicants', 4] },   // More applicants = higher demand  
+              { $multiply: ['$totalViews', 0.2] }       // More views = higher interest
+            ]
+          }
+        }
+      },
+      {
+        $sort: { demandScore: -1 }
+      },
+      {
+        $limit: 10
+      }
+    ]);
+
     const analytics = {
       jobDemandData: jobs,
+      chartData: {
+        monthlyTrends,
+        categoryDistribution,
+        topDemandingJobs
+      },
       summary: {
-        totalJobs: actualTotalJobs, // Use actual job count, not grouped count
-        totalJobsByCategory: totalJobsByCategory, // Keep grouped count for reference
+        totalJobs: actualTotalJobs,
+        totalJobsByCategory: totalJobsByCategory,
         totalApplicants,
         averageTimeToFill,
         highDemandCount,
