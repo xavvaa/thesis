@@ -1,40 +1,82 @@
-import React from 'react';
-import { FiMenu, FiX, FiBell } from 'react-icons/fi';
-import layoutStyles from './Layout.module.css';
+import React from 'react'
+import { FiSliders, FiMenu, FiBell } from 'react-icons/fi'
+import styles from './MobileHeader.module.css'
 
 interface MobileHeaderProps {
-  sidebarOpen: boolean;
-  onToggleSidebar: () => void;
-  notificationCount?: number;
+  pageTitle: string
+  userName?: string
+  userInitial?: string
+  onFilterClick?: () => void
+  onMenuClick?: () => void
+  notifications?: number
+  showSearch?: boolean
+  searchComponent?: React.ReactNode
 }
 
-export const MobileHeader: React.FC<MobileHeaderProps> = ({
-  sidebarOpen,
-  onToggleSidebar,
-  notificationCount = 1
+const MobileHeader: React.FC<MobileHeaderProps> = ({
+  pageTitle,
+  userName = 'User',
+  userInitial = 'U',
+  onFilterClick,
+  onMenuClick,
+  notifications = 0,
+  showSearch = false,
+  searchComponent
 }) => {
   return (
-    <div className={layoutStyles.mobileHeaderContainer}>
-      <div className={layoutStyles.mobileHeader}>
-        <button 
-          className={layoutStyles.menuButton}
-          onClick={onToggleSidebar}
-        >
-          {sidebarOpen ? <FiX /> : <FiMenu />}
-        </button>
-        <h1 className={layoutStyles.pageTitle}>Dashboard</h1>
-        <div className={layoutStyles.headerRight}>
-          <button className={layoutStyles.notificationButton}>
-            <FiBell />
-            {notificationCount > 0 && (
-              <span className={layoutStyles.notificationBadge}>{notificationCount}</span>
-            )}
-          </button>
-          <div className={layoutStyles.profileAvatar}>
-            U
+    <>
+      <header className={styles.appHeader}>
+        <div className={styles.headerLeft}>
+          {onMenuClick && (
+            <button 
+              className={styles.menuButton}
+              onClick={onMenuClick}
+              aria-label="Toggle menu"
+            >
+              <FiMenu />
+            </button>
+          )}
+          <div className={styles.titleSection}>
+            <h1 className={styles.pageTitle}>{pageTitle}</h1>
           </div>
         </div>
-      </div>
-    </div>
-  );
-};
+        
+        <div className={styles.headerRight}>
+          {onFilterClick && (
+            <button 
+              className={styles.filterButton} 
+              onClick={onFilterClick}
+              aria-label="Open filters"
+            >
+              <FiSliders />
+            </button>
+          )}
+          
+          <button 
+            className={styles.notificationButton}
+            aria-label="Notifications"
+          >
+            <FiBell />
+            {notifications > 0 && (
+              <span className={styles.notificationBadge}>
+                {notifications > 9 ? '9+' : notifications}
+              </span>
+            )}
+          </button>
+          
+          <div className={styles.userAvatar} aria-label="User profile">
+            {userInitial}
+          </div>
+        </div>
+      </header>
+      
+      {showSearch && searchComponent && (
+        <div className={styles.mobileSearchContainer}>
+          {searchComponent}
+        </div>
+      )}
+    </>
+  )
+}
+
+export default MobileHeader

@@ -37,10 +37,10 @@ import { WelcomeSection } from '../../components/employer/dashboard/WelcomeSecti
 import { StatsGrid } from '../../components/employer/dashboard/StatsGrid';
 import { QuickActions } from '../../components/employer/dashboard/QuickActions';
 import { DashboardSidebar } from '../../components/employer/dashboard/DashboardSidebar';
-import { MobileHeader } from '../../components/employer/dashboard/MobileHeader';
 import { RecentApplicants } from '../../components/employer/dashboard/RecentApplicants';
 import { ActiveJobPosts } from '../../components/employer/dashboard/ActiveJobPosts';
 import { ApplicantsView } from '../../components/employer/dashboard/ApplicantsView';
+import MobileHeader from '../../components/employer/dashboard/MobileHeader';
 // Removed mock data imports - using real backend data only
 import { 
   Applicant
@@ -934,6 +934,22 @@ const EmployerDashboard: React.FC = () => {
     });
   };
 
+  // Function to get dynamic header title based on active tab
+  const getHeaderTitle = (tab: TabType): string => {
+    switch (tab) {
+      case 'overview':
+        return 'Dashboard';
+      case 'applicants':
+        return 'Applicants';
+      case 'jobs':
+        return 'Job Posts';
+      case 'settings':
+        return 'Settings';
+      default:
+        return 'Dashboard';
+    }
+  };
+
   // Navigation items
   const navigationItems = [
     { id: 'dashboard' as TabType, label: 'Dashboard', icon: FiHome, badge: null },
@@ -982,49 +998,87 @@ const EmployerDashboard: React.FC = () => {
         onClick={() => setSidebarOpen(false)}
       />
 
-      <div className={layoutStyles.mainContent}>
-        {/* Mobile Header */}
-        <MobileHeader 
-          sidebarOpen={sidebarOpen}
-          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-          notificationCount={1}
+      {/* Mobile Header */}
+      <div className={layoutStyles.mobileHeaderContainer}>
+        <MobileHeader
+          pageTitle={getHeaderTitle(activeTab)}
+          userInitial={companyProfileData?.companyName?.charAt(0) || 'E'}
+          onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+          notifications={1}
         />
+      </div>
 
-        <div className={layoutStyles.content}>
-          {activeTab === 'overview' && (
-            <>
-              {/* Welcome Section */}
-              <WelcomeSection 
-                userName="Employer"
-                subtitle="Here's what's happening with your hiring process today"
-              />
+      <div className={layoutStyles.mainContent}>
+        {/* Header */}
+        <header className={layoutStyles.desktopHeader}>
+          <div className={layoutStyles.headerLeft}>
+            <button 
+              className={layoutStyles.menuToggle}
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label="Toggle menu"
+            >
+              <FiMenu />
+            </button>
+            <h1 className={layoutStyles.pageTitle}>{getHeaderTitle(activeTab)}</h1>
+          </div>
+          
+          <div className={layoutStyles.headerActions}>
+            <button 
+              className={layoutStyles.notificationBtn}
+              aria-label="Notifications"
+            >
+              <FiBell />
+              {1 > 0 && (
+                <span className={layoutStyles.notificationBadge}>
+                  {1 > 9 ? '9+' : 1}
+                </span>
+              )}
+            </button>
+            <div 
+              className={layoutStyles.userAvatar}
+              aria-label="User profile"
+            >
+              {companyProfileData?.companyName?.charAt(0) || 'E'}
+            </div>
+          </div>
+        </header>
 
-              {/* Enhanced Stats Grid */}
-              <StatsGrid stats={realTimeStats} />
+        <div className={layoutStyles.fullWidthContent}>
+          <div className={layoutStyles.tabContent}>
+            {activeTab === 'overview' && (
+              <>
+                {/* Welcome Section */}
+                <WelcomeSection 
+                  userName="Employer"
+                  subtitle="Here's what's happening with your hiring process today"
+                />
 
-              {/* Quick Actions Section */}
-              <QuickActions 
-                onCreateJob={handleOpenJobForm}
-                onViewJobs={() => setActiveTab('jobs')}
-                onViewApplications={() => setActiveTab('applicants')}
-                onOpenSettings={() => setActiveTab('settings')}
-              />
+                {/* Enhanced Stats Grid */}
+                <StatsGrid stats={realTimeStats} />
 
-              {/* Recent Applicants Section */}
-              <RecentApplicants 
-                applicants={recentApplicants}
-                onViewAll={() => setActiveTab('applicants')}
-                onViewApplicantDetails={handleViewApplicantDetails}
-              />
+                {/* Quick Actions Section */}
+                <QuickActions 
+                  onCreateJob={handleOpenJobForm}
+                  onViewJobs={() => setActiveTab('jobs')}
+                  onViewApplications={() => setActiveTab('applicants')}
+                  onOpenSettings={() => setActiveTab('settings')}
+                />
 
-              {/* Job Posts Section */}
-              <ActiveJobPosts 
-                jobs={enhancedJobPostings}
-                onViewAll={() => setActiveTab('jobs')}
-                onJobClick={handleJobClick}
-              />
-            </>
-          )}
+                {/* Recent Applicants Section */}
+                <RecentApplicants 
+                  applicants={recentApplicants}
+                  onViewAll={() => setActiveTab('applicants')}
+                  onViewApplicantDetails={handleViewApplicantDetails}
+                />
+
+                {/* Job Posts Section */}
+                <ActiveJobPosts 
+                  jobs={enhancedJobPostings}
+                  onViewAll={() => setActiveTab('jobs')}
+                  onJobClick={handleJobClick}
+                />
+              </>
+            )}
 
           {activeTab === 'applicants' && (
             <ApplicantsTab
@@ -1091,6 +1145,7 @@ const EmployerDashboard: React.FC = () => {
               }}
             />
           )}
+          </div>
         </div>
       </div>
 
