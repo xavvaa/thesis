@@ -62,23 +62,7 @@ export const ApplicantListView: React.FC<ApplicantListViewProps> = ({
 
   return (
     <div className={styles.listContainer}>
-      {jobPostings.length > 0 && (
-        <div className={styles.infoBanner}>
-          <div className={styles.infoText}>
-            <strong>Info:</strong> TF-IDF scores calculated based on the specific job each applicant applied to.
-          </div>
-          <div className={styles.legend}>
-            <div className={styles.legendItem}>
-              <div className={styles.legendDot} style={{ backgroundColor: '#10b981' }}></div>
-              <span>Matching skills</span>
-            </div>
-            <div className={styles.legendItem}>
-              <div className={styles.legendDot} style={{ backgroundColor: '#f59e0b' }}></div>
-              <span>Required skills</span>
-            </div>
-          </div>
-        </div>
-      )}
+      
       <div className={styles.listHeader}>
         <div className={styles.headerCell}>#</div>
         <div className={styles.headerCell}>Applicant</div>
@@ -86,7 +70,7 @@ export const ApplicantListView: React.FC<ApplicantListViewProps> = ({
         <div className={styles.headerCell}>Applicant Skills</div>
         <div className={styles.headerCell}>Required Skills</div>
         <div className={styles.headerCell}>
-          TF-IDF Score
+          Match Score
           <span style={{ fontSize: '0.7em', color: '#666', fontWeight: 'normal' }}>
             (Job-specific match)
           </span>
@@ -141,22 +125,19 @@ export const ApplicantListView: React.FC<ApplicantListViewProps> = ({
                   const isSkillMatching = (skill: string) => lowerRequiredSkills.includes(skill.toLowerCase());
                   
                   return applicantSkills.length ? (
-                    <div className={styles.skillsList}>
+                    <div>
                       {applicantSkills.slice(0, 3).map((skill, i) => (
-                        <span 
-                          key={i} 
-                          className={`${styles.skillTag} ${isSkillMatching(skill) ? styles.matchingSkillTag : ''}`}
-                          title={isSkillMatching(skill) ? 'Matches job requirement' : ''}
-                        >
+                        <span key={i}>
                           {skill}
+                          {i < Math.min(applicantSkills.length, 3) - 1 ? ', ' : ''}
                         </span>
                       ))}
                       {applicantSkills.length > 3 && (
-                        <span className={styles.moreSkills}>+{applicantSkills.length - 3} more</span>
+                        <span> (+{applicantSkills.length - 3} more)</span>
                       )}
                     </div>
                   ) : (
-                    <span className={styles.noSkills}>No skills listed</span>
+                    <span>No skills listed</span>
                   );
                 })()}
               </div>
@@ -173,22 +154,19 @@ export const ApplicantListView: React.FC<ApplicantListViewProps> = ({
                   const isRequirementMet = (skill: string) => lowerApplicantSkills.includes(skill.toLowerCase());
                   
                   return requiredSkills.length ? (
-                    <div className={styles.skillsList}>
+                    <div>
                       {requiredSkills.slice(0, 3).map((skill, i) => (
-                        <span 
-                          key={i} 
-                          className={`${styles.skillTag} ${styles.requiredSkillTag} ${isRequirementMet(skill) ? styles.metRequirementTag : ''}`}
-                          title={isRequirementMet(skill) ? 'Applicant has this skill' : 'Applicant missing this skill'}
-                        >
+                        <span key={i}>
                           {skill}
+                          {i < Math.min(requiredSkills.length, 3) - 1 ? ', ' : ''}
                         </span>
                       ))}
                       {requiredSkills.length > 3 && (
-                        <span className={styles.moreSkills}>+{requiredSkills.length - 3} more</span>
+                        <span> (+{requiredSkills.length - 3} more)</span>
                       )}
                     </div>
                   ) : (
-                    <span className={styles.noSkills}>No requirements listed</span>
+                    <span>No requirements listed</span>
                   );
                 })()}
               </div>
