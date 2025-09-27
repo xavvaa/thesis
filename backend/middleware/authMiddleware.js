@@ -23,7 +23,15 @@ const verifyToken = async (req, res, next) => {
     }
 
     const decodedToken = await admin.auth().verifyIdToken(token.trim());
-    req.user = decodedToken;
+    
+    // Fetch user role from database
+    const User = require('../models/User');
+    const user = await User.findOne({ uid: decodedToken.uid });
+    
+    req.user = {
+      ...decodedToken,
+      role: user?.role || null
+    };
     next();
   } catch (error) {
     console.error('Error verifying token:', error);
