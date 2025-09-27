@@ -86,7 +86,7 @@ export const ApplicantListView: React.FC<ApplicantListViewProps> = ({
         <div className={styles.headerCell}>Applicant Skills</div>
         <div className={styles.headerCell}>Required Skills</div>
         <div className={styles.headerCell}>
-          TF-IDF Score
+          Match Score
           <span style={{ fontSize: '0.7em', color: '#666', fontWeight: 'normal' }}>
             (Job-specific match)
           </span>

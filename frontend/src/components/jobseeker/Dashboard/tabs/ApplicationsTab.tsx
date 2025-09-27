@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { auth } from '../../../../config/firebase';
 import styles from '../../../../pages/jobseeker/Dashboard.module.css';
 import JobsList from '../../JobsList/JobsList';
-import ApplicationDetailModal from '../../ApplicationDetailModal/ApplicationDetailModal';
+import ApplicationJobModal from '../../ApplicationJobModal/ApplicationJobModal';
 import { Job } from '../../../../types/Job';
 
 interface Application {
@@ -125,6 +125,34 @@ const ApplicationsTab: React.FC<any> = ({
     }
   };
 
+  const handleWithdrawApplication = async (applicationId: string) => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      const token = await user.getIdToken();
+      const response = await fetch(`http://localhost:3001/api/applications/${applicationId}/withdraw`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to withdraw application');
+      }
+
+      // Refresh applications list
+      await fetchApplications();
+    } catch (error) {
+      console.error('Error withdrawing application:', error);
+      throw error; // Re-throw to let the modal handle the error
+    }
+  };
+
   // Convert applications to Job format for JobsList component
   const convertApplicationsToJobs = (): Job[] => {
     return applications.map(app => {
@@ -143,7 +171,15 @@ const ApplicationsTab: React.FC<any> = ({
         applied: true, // All applications are already applied
         status: app.status,
         appliedDate: app.appliedDate,
-        postedDate: app.appliedDate // Use applied date as posted date for display
+        postedDate: app.appliedDate, // Use applied date as posted date for display
+        // Include additional job details from the fetched job data
+        requirements: jobDetail?.requirements || [],
+        benefits: jobDetail?.benefits || [],
+        applicantCount: jobDetail?.applicantCount,
+        salaryMin: jobDetail?.salaryMin,
+        salaryMax: jobDetail?.salaryMax,
+        // Include any other fields from the full job data
+        ...jobDetail
       };
     });
   };
@@ -189,14 +225,15 @@ const ApplicationsTab: React.FC<any> = ({
         title=""
         onSaveJob={onSaveJob}
         onApplyJob={onApplyJob}
-        onJobClick={onJobClick}
+        onJobClick={handleViewApplication}
         onViewApplication={handleViewApplication}
         savedJobs={savedJobs}
         onOpenFilters={onOpenFilters}
       />
       
       {selectedApplication && isModalOpen && createPortal(
-        <ApplicationDetailModal
+        <ApplicationJobModal
+          job={convertApplicationsToJobs().find(job => job.id === selectedApplication.jobId) || null}
           application={selectedApplication}
           isOpen={isModalOpen}
           onClose={() => {
@@ -207,13 +244,10 @@ const ApplicationsTab: React.FC<any> = ({
             // Close the application modal first
             setIsModalOpen(false);
             setSelectedApplication(null);
-            
-            // Find the job and trigger the job click handler
-            const job = convertApplicationsToJobs().find(j => j.id === jobId);
-            if (job && onJobClick) {
-              onJobClick(job);
-            }
+            // Navigate to job details
+            onJobClick?.(jobId);
           }}
+          onWithdrawApplication={handleWithdrawApplication}
         />,
         document.body
       )}

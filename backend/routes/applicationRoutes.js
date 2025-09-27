@@ -380,4 +380,53 @@ router.get('/:applicationId/resume', verifyToken, async (req, res) => {
   }
 });
 
+// ------------------ WITHDRAW APPLICATION ------------------
+router.patch('/:id/withdraw', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { uid } = req.user;
+
+    if (!uid) {
+      return res.status(401).json({ success: false, error: 'User authentication failed' });
+    }
+
+    // Find the application
+    const application = await Application.findById(id);
+    if (!application) {
+      return res.status(404).json({ success: false, error: 'Application not found' });
+    }
+
+    // Verify that the user owns this application
+    if (application.jobSeekerUid !== uid) {
+      return res.status(403).json({ success: false, error: 'Access denied. You can only withdraw your own applications.' });
+    }
+
+    // Check if application is in a state that can be withdrawn
+    if (application.status !== 'pending') {
+      return res.status(400).json({ 
+        success: false, 
+        error: `Cannot withdraw application with status: ${application.status}. Only pending applications can be withdrawn.` 
+      });
+    }
+
+    // Delete the application from the database
+    await Application.findByIdAndDelete(id);
+
+    console.log(`Application ${id} withdrawn and removed by user ${uid}`);
+
+    res.json({ 
+      success: true, 
+      message: 'Application withdrawn successfully and removed from database',
+      applicationId: id
+    });
+
+  } catch (error) {
+    console.error('Error withdrawing application:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error while withdrawing application' 
+    });
+  }
+});
+
 module.exports = router;
