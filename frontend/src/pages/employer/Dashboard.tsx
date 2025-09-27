@@ -123,6 +123,7 @@ const EmployerDashboard: React.FC = () => {
   const [isTeamManagementModalOpen, setIsTeamManagementModalOpen] = useState(false);
   const [isDocumentsModalOpen, setIsDocumentsModalOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isJobDetailsModalOpen, setIsJobDetailsModalOpen] = useState(false);
   const [applicantStatuses, setApplicantStatuses] = useState<Record<number, string>>({});
@@ -989,6 +990,8 @@ const EmployerDashboard: React.FC = () => {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         sidebarOpen={sidebarOpen}
+        sidebarCollapsed={sidebarCollapsed}
+        onToggleCollapse={setSidebarCollapsed}
         pendingReviews={realTimeStats.pendingReviews}
         openPositions={realTimeStats.openPositions}
       />
@@ -1008,7 +1011,7 @@ const EmployerDashboard: React.FC = () => {
         />
       </div>
 
-      <div className={layoutStyles.mainContent}>
+      <div className={`${layoutStyles.mainContent} ${sidebarCollapsed ? layoutStyles.sidebarCollapsed : layoutStyles.sidebarOpen}`}>
         {/* Header */}
         <header className={layoutStyles.desktopHeader}>
           <div className={layoutStyles.headerLeft}>

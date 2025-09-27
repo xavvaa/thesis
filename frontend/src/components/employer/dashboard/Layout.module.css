@@ -274,7 +274,7 @@ body {
 }
 
 .mainContent.sidebarCollapsed {
-  margin-left: calc(var(--sidebar-collapsed-width) + (var(--sidebar-width) - var(--sidebar-collapsed-width)) / 4);
+  margin-left: var(--sidebar-collapsed-width);
 }
 
 /* Mobile Header Container */
