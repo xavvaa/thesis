@@ -87,7 +87,7 @@ const Dashboard: React.FC = () => {
     }
     return new Set();
   })
-  const [notifications, setNotifications] = useState<number>(3)
+  const [notifications, setNotifications] = useState<number>(0)
   const [error, setError] = useState<string | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
@@ -356,6 +356,11 @@ const Dashboard: React.FC = () => {
 
     loadData()
   }, [])
+
+  // Update notifications count based on applications
+  useEffect(() => {
+    setNotifications(applications.length);
+  }, [applications]);
 
   const handleResumeUpload = async (file: File) => {
     try {
