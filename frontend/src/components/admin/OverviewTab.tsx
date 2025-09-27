@@ -26,6 +26,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ stats }) => {
   }, []);
 
   const fetchRealStats = async () => {
+    console.log('🔄 OverviewTab: Fetching real stats...');
     try {
       // Make parallel API calls for different data sources
       const [usersResponse, employersResponse, jobsResponse, dashboardStats, pendingEmployersResponse] = await Promise.all([
@@ -36,10 +37,25 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ stats }) => {
         adminService.getPendingEmployers()
       ]);
       
+      console.log('📊 OverviewTab: Raw API responses:', {
+        usersResponse,
+        employersResponse,
+        jobsResponse,
+        dashboardStats,
+        pendingEmployersResponse
+      });
+      
       const allUsers = usersResponse.users || [];
       const allEmployers = employersResponse || [];
       const allJobs = jobsResponse.jobs || jobsResponse.data || [];
       const pendingEmployers = pendingEmployersResponse || [];
+      
+      console.log('📈 OverviewTab: Processed data:', {
+        allUsers: allUsers.length,
+        allEmployers: allEmployers.length,
+        allJobs: allJobs.length,
+        pendingEmployers: pendingEmployers.length
+      });
       
       // Calculate real stats from actual data
       const jobSeekers = allUsers.filter((user: any) => user.role === 'jobseeker' || user.userType === 'jobseeker');
@@ -56,9 +72,11 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ stats }) => {
         loading: false
       };
       
+      console.log('✅ OverviewTab: Final calculated stats:', newStats);
       setRealStats(newStats);
       
     } catch (error) {
+      console.error('❌ OverviewTab: Error fetching stats:', error);
       setRealStats(prev => ({ ...prev, loading: false }));
     }
   };
@@ -66,48 +84,63 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ stats }) => {
   const getMonthlyChange = (current: number, baseline: number = 10) => {
     return current - baseline;
   };
+  // Use fallback stats if realStats are still loading or failed
+  const displayStats = realStats.loading ? {
+    totalUsers: stats?.totalUsers || 0,
+    totalEmployers: stats?.totalEmployers || 0,
+    totalJobSeekers: stats?.totalJobSeekers || 0,
+    totalJobs: stats?.totalJobs || 0,
+    totalApplications: stats?.totalApplications || 0,
+    pendingEmployers: stats?.pendingEmployers || 0,
+    activeJobs: stats?.activeJobs || 0,
+  } : realStats;
+
+  console.log('🎯 OverviewTab: Display stats being used:', displayStats);
+  console.log('🎯 OverviewTab: Props stats:', stats);
+  console.log('🎯 OverviewTab: Real stats:', realStats);
+
   return (
     <div className="admin-content">
       <div className="stats-grid">
         <StatsCard
           icon={FiUsers}
-          value={realStats.totalUsers}
+          value={displayStats.totalUsers}
           label="Total Users"
-          change={getMonthlyChange(realStats.totalUsers, 5)}
+          change={getMonthlyChange(displayStats.totalUsers, 5)}
           changeLabel="from last month"
         />
         <StatsCard
           icon={FiBriefcase}
-          value={realStats.totalEmployers}
+          value={displayStats.totalEmployers}
           label="Employers"
-          change={getMonthlyChange(realStats.totalEmployers, 2)}
+          change={getMonthlyChange(displayStats.totalEmployers, 2)}
           changeLabel="from last month"
         />
         <StatsCard
           icon={HiCheckCircle}
-          value={realStats.totalJobSeekers}
+          value={displayStats.totalJobSeekers}
           label="Jobseekers"
-          change={getMonthlyChange(realStats.totalJobSeekers, 3)}
+          change={getMonthlyChange(displayStats.totalJobSeekers, 3)}
           changeLabel="from last month"
         />
         <StatsCard
           icon={FiFileText}
-          value={realStats.totalJobs}
+          value={displayStats.totalJobs}
           label="Job Postings"
-          change={getMonthlyChange(realStats.totalJobs, 10)}
+          change={getMonthlyChange(displayStats.totalJobs, 10)}
           changeLabel="from last month"
         />
         <StatsCard
           icon={FiClock}
-          value={realStats.pendingEmployers}
+          value={displayStats.pendingEmployers}
           label="Pending Reviews"
-          changeText={`${realStats.pendingEmployers} awaiting review`}
+          changeText={`${displayStats.pendingEmployers} awaiting review`}
         />
         <StatsCard
           icon={FiTrendingUp}
-          value={realStats.activeJobs}
+          value={displayStats.activeJobs}
           label="Active Jobs"
-          change={getMonthlyChange(realStats.activeJobs, 8)}
+          change={getMonthlyChange(displayStats.activeJobs, 8)}
           changeLabel="from last month"
         />
       </div>
