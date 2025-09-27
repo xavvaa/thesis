@@ -45,7 +45,6 @@ const AdminDashboard: React.FC = () => {
   }, [navigate]);
 
   const fetchDashboardData = async () => {
-    console.log('🔄 Fetching dashboard data...');
     try {
       const [statsData, employersData, jobsData] = await Promise.all([
         adminService.getDashboardStats(),
@@ -53,12 +52,11 @@ const AdminDashboard: React.FC = () => {
         adminService.getJobs({ limit: 10 })
       ]);
 
-      console.log('✅ Dashboard data fetched successfully:', { statsData, employersData, jobsData });
       setStats(statsData);
       setPendingEmployers(employersData);
       setJobs(jobsData.jobs || []);
     } catch (error) {
-      console.error('❌ Error fetching dashboard data:', error);
+      console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }
@@ -66,14 +64,11 @@ const AdminDashboard: React.FC = () => {
 
   const handleEmployerAction = async (employerId: string, action: 'approve' | 'reject', reason?: string) => {
     try {
-      console.log('🚀 Admin handleEmployerAction called:', { employerId, action, reason });
       setLoading(true);
       await adminService.verifyEmployer(employerId, action, reason);
-      console.log('✅ Employer verification successful, refreshing data...');
-      await fetchDashboardData();
-      console.log('✅ Dashboard data refreshed');
+      await fetchDashboardData(); // Refresh data
     } catch (error) {
-      console.error('❌ Error updating employer status:', error);
+      console.error('Error handling employer action:', error);
     } finally {
       setLoading(false);
     }
@@ -175,17 +170,12 @@ const AdminDashboard: React.FC = () => {
   }
 
   if (!adminUser) {
-    console.log('❌ No admin user found, redirecting to auth...');
     return (
       <div className="admin-loading">
         <p>Redirecting to login...</p>
       </div>
     );
   }
-
-  console.log('✅ Admin dashboard rendering with user:', adminUser);
-  console.log('✅ Active tab:', activeTab);
-  console.log('✅ Stats:', stats);
 
   return (
     <div className="admin-dashboard">
@@ -224,7 +214,6 @@ const AdminDashboard: React.FC = () => {
         {activeTab === 'job-postings' && (
           <SuperAdminJobsTab 
             onJobStatusChange={(jobId, status) => {
-              console.log('Job status changed:', jobId, status);
               // Refresh dashboard data if needed
               fetchDashboardData();
             }}

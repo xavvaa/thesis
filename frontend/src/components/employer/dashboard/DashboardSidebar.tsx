@@ -74,6 +74,8 @@ interface DashboardSidebarProps {
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
   sidebarOpen: boolean;
+  sidebarCollapsed: boolean;
+  onToggleCollapse: (collapsed: boolean) => void;
   pendingReviews: number;
   openPositions: number;
 }
@@ -82,12 +84,13 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   activeTab,
   onTabChange,
   sidebarOpen,
+  sidebarCollapsed,
+  onToggleCollapse,
   pendingReviews,
   openPositions
 }) => {
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   // Check if we're on mobile
@@ -144,7 +147,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   };
 
   const handleToggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
+    onToggleCollapse(!sidebarCollapsed);
   };
 
   return (
@@ -154,11 +157,11 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         className={`${layoutStyles.sidebar} ${
           sidebarOpen ? layoutStyles.sidebarOpen : ''
         } ${
-          !isMobile && isCollapsed ? layoutStyles.sidebarCollapsed : ''
+          !isMobile && sidebarCollapsed ? layoutStyles.sidebarCollapsed : ''
         }`}
       >
         <div className={layoutStyles.sidebarHeader}>
-          {(!isCollapsed || isMobile) && (
+          {(!sidebarCollapsed || isMobile) && (
             <h2 className={layoutStyles.logo}>JobPortal</h2>
           )}
           
@@ -167,10 +170,10 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             <button 
               className={layoutStyles.collapseToggle}
               onClick={handleToggleCollapse}
-              aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
-              {isCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+              {sidebarCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
             </button>
           )}
           
@@ -194,7 +197,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             >
               <button
                 className={`${layoutStyles.navItem} ${activeTab === item.id ? layoutStyles.active : ''} ${
-                  isCollapsed && !isMobile ? layoutStyles.navItemCollapsed : ''
+                  sidebarCollapsed && !isMobile ? layoutStyles.navItemCollapsed : ''
                 }`}
                 onClick={() => handleItemClick(item.id)}
                 onMouseEnter={() => setHoveredItem(item.id)}
@@ -211,9 +214,9 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                 </span>
                 
                 <span className={`${layoutStyles.navLabel} ${
-                  isCollapsed && !isMobile ? layoutStyles.navLabelCollapsed : ''
+                  sidebarCollapsed && !isMobile ? layoutStyles.navLabelCollapsed : ''
                 }`}>
-                  {isCollapsed && !isMobile ? (
+                  {sidebarCollapsed && !isMobile ? (
                     item.shortLabel.split('\n').map((line, index) => (
                       <span key={index} className={layoutStyles.labelLine}>
                         {line}

@@ -26,58 +26,78 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ stats }) => {
   }, []);
 
   const fetchRealStats = async () => {
-    console.log('🔄 OverviewTab: Fetching real stats...');
     try {
-      // Make parallel API calls for different data sources
-      const [usersResponse, employersResponse, jobsResponse, dashboardStats, pendingEmployersResponse] = await Promise.all([
+      // Try to get dashboard stats first (this should work)
+      let dashboardStats = null;
+      try {
+        dashboardStats = await adminService.getDashboardStats();
+      } catch (error) {
+        console.error('Dashboard stats failed:', error);
+      }
+
+      // If dashboard stats worked, use them directly
+      if (dashboardStats && (dashboardStats.totalUsers > 0 || dashboardStats.totalJobs > 0)) {
+        setRealStats({
+          totalUsers: dashboardStats.totalUsers || 0,
+          totalEmployers: dashboardStats.totalEmployers || 0,
+          totalJobSeekers: dashboardStats.totalJobSeekers || 0,
+          totalJobs: dashboardStats.totalJobs || 0,
+          totalApplications: dashboardStats.totalApplications || 0,
+          pendingEmployers: dashboardStats.pendingEmployers || 0,
+          activeJobs: dashboardStats.activeJobs || 0,
+          loading: false
+        });
+        return;
+      }
+
+      // Fallback: Try individual API calls
+      const results = await Promise.allSettled([
         adminService.getUsers({}),
         adminService.getAllEmployers(),
-        adminService.getJobs({ limit: 1000 }), // Get all jobs
-        adminService.getDashboardStats(),
+        adminService.getJobs({ limit: 1000 }),
         adminService.getPendingEmployers()
       ]);
-      
-      console.log('📊 OverviewTab: Raw API responses:', {
-        usersResponse,
-        employersResponse,
-        jobsResponse,
-        dashboardStats,
-        pendingEmployersResponse
-      });
-      
-      const allUsers = usersResponse.users || [];
+
+      const usersResponse = results[0].status === 'fulfilled' ? results[0].value : null;
+      const employersResponse = results[1].status === 'fulfilled' ? results[1].value : [];
+      const jobsResponse = results[2].status === 'fulfilled' ? results[2].value : null;
+      const pendingEmployersResponse = results[3].status === 'fulfilled' ? results[3].value : [];
+
+      const allUsers = usersResponse?.users || usersResponse || [];
       const allEmployers = employersResponse || [];
-      const allJobs = jobsResponse.jobs || jobsResponse.data || [];
+      const allJobs = jobsResponse?.jobs || jobsResponse?.data || jobsResponse || [];
       const pendingEmployers = pendingEmployersResponse || [];
-      
-      console.log('📈 OverviewTab: Processed data:', {
-        allUsers: allUsers.length,
-        allEmployers: allEmployers.length,
-        allJobs: allJobs.length,
-        pendingEmployers: pendingEmployers.length
-      });
-      
-      // Calculate real stats from actual data
+
+      // Calculate stats
       const jobSeekers = allUsers.filter((user: any) => user.role === 'jobseeker' || user.userType === 'jobseeker');
       const employers = allUsers.filter((user: any) => user.role === 'employer' || user.userType === 'employer');
-      
+
       const newStats = {
         totalUsers: allUsers.length,
         totalEmployers: Math.max(employers.length, allEmployers.length),
         totalJobSeekers: jobSeekers.length,
         totalJobs: allJobs.length,
         totalApplications: dashboardStats?.totalApplications || 0,
-        pendingEmployers: pendingEmployers.length || 0,
+        pendingEmployers: pendingEmployers.length,
         activeJobs: allJobs.filter((job: any) => job.status === 'active' || job.isActive).length,
         loading: false
       };
-      
-      console.log('✅ OverviewTab: Final calculated stats:', newStats);
+
       setRealStats(newStats);
       
     } catch (error) {
-      console.error('❌ OverviewTab: Error fetching stats:', error);
-      setRealStats(prev => ({ ...prev, loading: false }));
+      console.error('Error fetching stats:', error);
+      // Set some default values so it's not all zeros
+      setRealStats({
+        totalUsers: 0,
+        totalEmployers: 0,
+        totalJobSeekers: 0,
+        totalJobs: 0,
+        totalApplications: 0,
+        pendingEmployers: 0,
+        activeJobs: 0,
+        loading: false
+      });
     }
   };
 
@@ -94,10 +114,6 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ stats }) => {
     pendingEmployers: stats?.pendingEmployers || 0,
     activeJobs: stats?.activeJobs || 0,
   } : realStats;
-
-  console.log('🎯 OverviewTab: Display stats being used:', displayStats);
-  console.log('🎯 OverviewTab: Props stats:', stats);
-  console.log('🎯 OverviewTab: Real stats:', realStats);
 
   return (
     <div className="admin-content">

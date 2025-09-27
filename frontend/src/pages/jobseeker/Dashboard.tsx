@@ -705,6 +705,9 @@ const Dashboard: React.FC = () => {
       onApplyJob: handleApplyJob,
       onJobClick: handleJobClick,
       onOpenFilters: () => setShowFilterModal(true),
+      onNavigate: setActiveTab,
+      onShowResumeUpload: () => setShowResumeUpload(true),
+      userProfile: resume?.personalInfo,
     };
 
     switch (activeTab) {

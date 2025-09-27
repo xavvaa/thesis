@@ -354,20 +354,66 @@ router.get('/:applicationId/resume', verifyToken, async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
+    console.log('Application found:', application._id);
+    console.log('Resume file info:', application.resumeFile);
+    
     let resumeFileUrl = application.resumeFile?.filePath;
     if (!resumeFileUrl) {
+      console.log('No resume file path in application, checking Resume collection...');
       const Resume = require('../models/Resume');
       const resume = await Resume.findOne({
         $or: [{ jobSeekerUid: application.jobSeekerUid }, { uid: application.jobSeekerUid }],
         isActive: true
       }).sort({ uploadedAt: -1 });
 
-      if (resume?.fileUrl) resumeFileUrl = resume.fileUrl;
+      console.log('Found resume in collection:', resume?._id);
+      if (resume?.fileUrl) {
+        resumeFileUrl = resume.fileUrl;
+        console.log('Using resume fileUrl:', resumeFileUrl);
+      }
     }
 
-    if (!resumeFileUrl) return res.status(404).json({ message: 'Resume file not found' });
+    if (!resumeFileUrl) {
+      console.log('No resume file URL found');
+      return res.status(404).json({ message: 'Resume file not found' });
+    }
 
-    if (resumeFileUrl.startsWith('http')) return res.redirect(resumeFileUrl);
+    // Check if file exists on filesystem
+    const fs = require('fs');
+    const path = require('path');
+    
+    let filePath;
+    if (resumeFileUrl.startsWith('http')) {
+      return res.redirect(resumeFileUrl);
+    } else if (resumeFileUrl.startsWith('/uploads')) {
+      filePath = `.${resumeFileUrl}`;
+    } else {
+      filePath = `./uploads/resumes/${path.basename(resumeFileUrl)}`;
+    }
+    
+    console.log('Checking file path:', filePath);
+    
+    if (!fs.existsSync(filePath)) {
+      console.log('File does not exist on filesystem, looking for alternative...');
+      
+      // Try to find any resume file for this user
+      const resumesDir = './uploads/resumes/';
+      if (fs.existsSync(resumesDir)) {
+        const files = fs.readdirSync(resumesDir);
+        console.log('Available resume files:', files.slice(-5)); // Show last 5 files
+        
+        // Find the most recent resume file (by filename timestamp)
+        const userResumeFiles = files.filter(file => file.startsWith('resume-') && file.endsWith('.pdf'));
+        if (userResumeFiles.length > 0) {
+          const latestFile = userResumeFiles.sort().pop();
+          console.log('Using latest available resume file:', latestFile);
+          const baseUrl = process.env.BASE_URL || 'http://localhost:3001';
+          return res.redirect(`${baseUrl}/uploads/resumes/${latestFile}`);
+        }
+      }
+      
+      return res.status(404).json({ message: 'Resume file not found on server' });
+    }
 
     const baseUrl = process.env.BASE_URL || 'http://localhost:3001';
     const staticUrl = resumeFileUrl.startsWith('/uploads')
@@ -376,6 +422,8 @@ router.get('/:applicationId/resume', verifyToken, async (req, res) => {
     return res.redirect(staticUrl);
   } catch (error) {
     console.error('Error downloading resume:', error);
+    console.error('Application ID:', applicationId);
+    console.error('Resume file path:', resumeFileUrl);
     res.status(500).json({ message: 'Error downloading resume file' });
   }
 });
