@@ -249,98 +249,16 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Load jobs from backend API
+        // Load jobs from backend API (public endpoint, no auth needed)
         const jobService = JobService.getInstance();
         const backendJobs = await jobService.getRecommendedJobs();
-        
-        // Load user's applications to mark applied jobs
-        try {
-          const applicationsResponse = await apiService.getUserApplications();
-          if (applicationsResponse.success && applicationsResponse.data) {
-            const userApplications = applicationsResponse.data;
-            setApplications(userApplications);
-            
-            // Mark jobs as applied based on user's applications
-            const appliedJobIds = new Set<string | number>(userApplications.map((app: any) => app.jobId as string | number));
-            setAppliedJobs(appliedJobIds);
-            const jobsWithAppliedState = backendJobs.map(job => ({
-              ...job,
-              applied: appliedJobIds.has(job.id)
-            }));
-            
-            setJobs(jobsWithAppliedState);
-          } else {
-            setJobs(backendJobs);
-            setApplications([]);
-          }
-        } catch (err) {
-          console.log('Failed to load applications, proceeding without applied state');
-          setJobs(backendJobs);
-          setApplications([]);
-        }
+        setJobs(backendJobs);
 
         // Check if user has visited before
         const hasVisited = localStorage.getItem('hasVisitedDashboard')
-
-        // First, try to load resume from database
-        let resumeLoaded = false
-        try {
-          const currentResumeResponse = await apiService.getCurrentResume()
-          if (currentResumeResponse.success && currentResumeResponse.data) {
-            // Store the current resume data for the upload prompt
-            setCurrentResume(currentResumeResponse.data)
-            
-            // The /current endpoint returns resume data directly, not in parsedData
-            const dbResume = currentResumeResponse.data
-            
-            // Transform database format to frontend format
-            const resumeData = {
-              personalInfo: {
-                name: dbResume.personalInfo?.fullName || dbResume.personalInfo?.name || '',
-                email: dbResume.personalInfo?.email || '',
-                phone: dbResume.personalInfo?.phone || '',
-                address: dbResume.personalInfo?.fullAddress || dbResume.personalInfo?.address || ''
-              },
-              summary: dbResume.summary || '',
-              skills: dbResume.skills || [], // This is the key fix - use actual skills from Resume collection
-              experience: dbResume.workExperience || [],
-              education: dbResume.education || [],
-              certifications: []
-            }
-            
-            // Resume data loaded successfully from Resume collection
-            
-            setResume(resumeData)
-            const jobService = JobService.getInstance()
-            jobService.setUserResume(resumeData)
-            
-            // Save to localStorage as backup/cache
-            localStorage.setItem('userResume', JSON.stringify(resumeData))
-            
-            resumeLoaded = true
-          }
-        } catch (err) {
-          // Resume not found in database, will try localStorage fallback
-        }
-
-        // If database fails, try localStorage as fallback
-        if (!resumeLoaded) {
-          const storedResume = localStorage.getItem('userResume')
-          if (storedResume) {
-            try {
-              const resumeData = JSON.parse(storedResume)
-              setResume(resumeData)
-              const jobService = JobService.getInstance()
-              jobService.setUserResume(resumeData)
-              resumeLoaded = true
-            } catch (e) {
-              localStorage.removeItem('userResume') // Clean up corrupted data
-            }
-          }
-        }
         
-        // Show initial resume prompt only if no resume found and first visit
-        if (!hasVisited && !resumeLoaded) {
+        // Show initial resume prompt only if first visit
+        if (!hasVisited) {
           setShowInitialResumePrompt(true)
           setIsFirstVisit(true)
         } else {
@@ -355,6 +273,111 @@ const Dashboard: React.FC = () => {
     }
 
     loadData()
+  }, [])
+
+  // Separate effect for auth-dependent data loading
+  useEffect(() => {
+    const loadAuthData = async () => {
+      try {
+        // Wait for Firebase auth to be ready
+        const { auth } = await import('../../config/firebase');
+        
+        return new Promise((resolve) => {
+          const unsubscribe = auth.onAuthStateChanged(async (user) => {
+            unsubscribe(); // Clean up listener
+            
+            if (!user) {
+              resolve(null);
+              return;
+            }
+            
+            try {
+              // Load user's applications to mark applied jobs
+              const applicationsResponse = await apiService.getUserApplications();
+              if (applicationsResponse.success && applicationsResponse.data) {
+                const userApplications = applicationsResponse.data;
+                setApplications(userApplications);
+                
+                // Mark jobs as applied based on user's applications
+                const appliedJobIds = new Set<string | number>();
+                
+                userApplications.forEach((app: any) => {
+                  const jobId = app.jobId;
+                  
+                  // Handle MongoDB ObjectId format
+                  if (typeof jobId === 'string') {
+                    appliedJobIds.add(jobId);
+                  } else if (typeof jobId === 'object' && jobId) {
+                    // MongoDB ObjectId object - convert to string
+                    const objectIdString = jobId.toString();
+                    appliedJobIds.add(objectIdString);
+                    
+                    // Also try extracting the hex string if it's a proper ObjectId
+                    if (jobId.$oid) {
+                      appliedJobIds.add(jobId.$oid);
+                    }
+                  } else if (typeof jobId === 'number') {
+                    appliedJobIds.add(jobId);
+                    appliedJobIds.add(jobId.toString());
+                  }
+                });
+                
+                setAppliedJobs(appliedJobIds);
+                
+                // Update existing jobs with applied state
+                setJobs(prev => prev.map(job => {
+                  const jobIdString = job.id?.toString();
+                  const isApplied = appliedJobIds.has(jobIdString) || 
+                                   appliedJobIds.has(job.id) ||
+                                   Array.from(appliedJobIds).some(appId => 
+                                     appId?.toString() === jobIdString
+                                   );
+                  
+                  return {
+                    ...job,
+                    applied: isApplied
+                  };
+                }));
+              }
+              
+              // Load resume data
+              const currentResumeResponse = await apiService.getCurrentResume()
+              if (currentResumeResponse.success && currentResumeResponse.data) {
+                setCurrentResume(currentResumeResponse.data)
+                
+                const dbResume = currentResumeResponse.data
+                const resumeData = {
+                  personalInfo: {
+                    name: dbResume.personalInfo?.fullName || dbResume.personalInfo?.name || '',
+                    email: dbResume.personalInfo?.email || '',
+                    phone: dbResume.personalInfo?.phone || '',
+                    address: dbResume.personalInfo?.fullAddress || dbResume.personalInfo?.address || ''
+                  },
+                  summary: dbResume.summary || '',
+                  skills: dbResume.skills || [],
+                  experience: dbResume.workExperience || [],
+                  education: dbResume.education || [],
+                  certifications: []
+                }
+                
+                setResume(resumeData)
+                const jobService = JobService.getInstance()
+                jobService.setUserResume(resumeData)
+                localStorage.setItem('userResume', JSON.stringify(resumeData))
+              }
+            } catch (err) {
+              // Failed to load user-specific data, continue without it
+            }
+            
+            resolve(user);
+          });
+        });
+      } catch (error) {
+        console.error('Error in auth data loading:', error);
+      }
+    };
+
+    loadAuthData();
   }, [])
 
   // Update notifications count based on applications
@@ -632,20 +655,20 @@ const Dashboard: React.FC = () => {
       });
       setShowApplicationSuccess(true);
       
-      console.log('Application submitted successfully for job:', jobId)
       
       // Update the jobs list to reflect the applied status
-      console.log('Updating job applied status for jobId:', jobId);
       setJobs(prev => {
         const updated = prev.map(job => 
           job.id === jobId ? { ...job, applied: true } : job
         );
-        console.log('Updated jobs array:', updated.find(j => j.id === jobId));
         return updated;
       });
       
-      // Update appliedJobs set
-      setAppliedJobs(prev => new Set(Array.from(prev).concat([jobId])));
+      // Update appliedJobs set - ensure consistent ID format
+      setAppliedJobs(prev => {
+        const newSet = new Set(Array.from(prev).concat([jobId, jobId?.toString()]));
+        return newSet;
+      });
       
       // Also update filteredJobs if it's being used
       setFilteredJobs(prev => prev.map(job => 
