@@ -96,7 +96,7 @@ export const JobsListView: React.FC<JobsListViewProps> = ({
         <div className={styles.headerCell}>#</div>
         <div className={styles.headerCell}>Company Name</div>
         <div className={styles.headerCell}>Required Skills</div>
-        <div className={styles.headerCell}>Your Skills</div>
+        <div className={styles.headerCell}>My Skills</div>
         <div className={styles.headerCell}>
           Match Score
           {(!jobseekerSkills || jobseekerSkills.length === 0) && (
