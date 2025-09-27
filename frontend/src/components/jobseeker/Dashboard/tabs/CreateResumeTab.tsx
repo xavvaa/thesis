@@ -5,6 +5,7 @@ import html2canvas from 'html2canvas';
 import { auth } from '../../../../config/firebase';
 import psgc from "@dctsph/psgc";
 import styles from './CreateResumeTab.module.css';
+import dashboardStyles from '../../../../pages/jobseeker/Dashboard.module.css';
 
 // Year Picker Component
 interface YearPickerProps {
@@ -1504,7 +1505,7 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
 
 
   return (
-    <div className={styles.fullPageContainer}>
+    <div className={dashboardStyles.tabContent}>
       <div className={styles.contentWrapper}>
       
       {/* Generation Modal */}

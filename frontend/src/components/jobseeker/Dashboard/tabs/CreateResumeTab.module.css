@@ -10,14 +10,12 @@
 
 .contentWrapper {
   flex: 1;
-  margin: 0 auto;
   padding: 1.5rem;
   background: white;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
-  max-width: 1440px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -1124,8 +1122,6 @@
 
 /* Resume View Styles */
 .resumeViewContainer {
-  max-width: 900px;
-  margin: 0 auto;
   background: white;
   min-height: 100vh;
 }

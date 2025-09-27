@@ -812,15 +812,18 @@ const Dashboard: React.FC = () => {
           </div>
         </header>
 
-        {/* Content */}
-        <div className={styles.contentArea}>
-          {error && (
+        {/* Error Banner */}
+        {error && (
+          <div className={styles.contentArea}>
             <div className={styles.errorBanner}>
               <p>{error}</p>
               <button onClick={() => setError(null)}>×</button>
             </div>
-          )}
+          </div>
+        )}
 
+        {/* Content - Outside contentArea to align with header */}
+        <div className={styles.fullWidthContent}>
           {renderContent()}
         </div>
       </main>

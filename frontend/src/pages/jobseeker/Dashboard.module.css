@@ -63,8 +63,6 @@
   scrollbar-color: var(--gray-300) transparent;
   width: 100%;
   box-sizing: border-box;
-  max-width: 1440px;
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -75,29 +73,35 @@
   .contentArea {
     padding: 0 1rem 1rem;
   }
+  
 }
 
 @media (max-width: 480px) {
   .contentArea {
     padding: 0 0.75rem 0.75rem;
   }
+  
 }
 
 /* Custom scrollbar for WebKit browsers */
-.contentArea::-webkit-scrollbar {
+.contentArea::-webkit-scrollbar,
+.fullWidthContent::-webkit-scrollbar {
   width: 6px;
 }
 
-.contentArea::-webkit-scrollbar-track {
+.contentArea::-webkit-scrollbar-track,
+.fullWidthContent::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.contentArea::-webkit-scrollbar-thumb {
+.contentArea::-webkit-scrollbar-thumb,
+.fullWidthContent::-webkit-scrollbar-thumb {
   background-color: var(--gray-300);
   border-radius: 3px;
 }
 
-.contentArea::-webkit-scrollbar-thumb:hover {
+.contentArea::-webkit-scrollbar-thumb:hover,
+.fullWidthContent::-webkit-scrollbar-thumb:hover {
   background-color: var(--gray-400);
 }
 
@@ -841,6 +845,19 @@ body {
   width: 100%;
 }
 
+/* Full Width Content - Aligns with dynamic header */
+.fullWidthContent {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gray-300) transparent;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
 .pageHeader {
   margin-bottom: 32px;
   text-align: center;
@@ -1471,7 +1488,6 @@ body {
 
   /* Mobile Dashboard Overview */
   .dashboardOverview {
-    padding: 1rem;
     gap: 1rem;
   }
 
@@ -1555,9 +1571,6 @@ body {
     height: 32px;
   }
 
-  .pageContent {
-    padding: 1rem;
-  }
 
   .pageTitle {
     font-size: 1.5rem;
@@ -1684,7 +1697,6 @@ body {
 
   /* Tablet Dashboard Overview */
   .dashboardOverview {
-    padding: 1.25rem;
     gap: 1.25rem;
   }
 
@@ -1705,9 +1717,6 @@ body {
     gap: 1rem;
   }
 
-  .pageContent {
-    padding: 1.25rem;
-  }
 
   /* Tablet Applications Grid */
   .applicationsGrid {
@@ -1823,7 +1832,6 @@ body {
 
   /* Desktop Dashboard Overview */
   .dashboardOverview {
-    padding: 1.5rem;
     gap: 1.5rem;
   }
 
@@ -1842,9 +1850,6 @@ body {
     gap: 1rem;
   }
 
-  .pageContent {
-    padding: 1.5rem;
-  }
 }
 
 /* Large Desktop */
@@ -1854,13 +1859,9 @@ body {
   }
 
   .dashboardOverview {
-    padding: 1.75rem;
     gap: 1.5rem;
   }
 
-  .pageContent {
-    padding: 1.75rem;
-  }
 }
 
 /* Empty State Styles */
@@ -3857,6 +3858,16 @@ body {
 /* Tab Content */
 .tabContent {
   animation: fadeIn 0.3s ease-out;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding-top: 1.5rem; /* Space below dynamic header */
+}
+
+@media (max-width: 768px) {
+  .tabContent {
+    padding-top: 1rem; /* Smaller space on mobile */
+  }
 }
 
 /* Buttons */

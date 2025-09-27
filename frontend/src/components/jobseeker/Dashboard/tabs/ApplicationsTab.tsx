@@ -31,6 +31,7 @@ const ApplicationsTab: React.FC<any> = ({
   onOpenFilters,
 }) => {
   const [applications, setApplications] = useState<Application[]>([]);
+  const [jobDetails, setJobDetails] = useState<{[key: string]: Job}>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
@@ -64,6 +65,8 @@ const ApplicationsTab: React.FC<any> = ({
       const data = await response.json();
       if (data.success) {
         setApplications(data.data);
+        // Fetch job details for each application
+        await fetchJobDetails(data.data);
       } else {
         setError(data.error || 'Failed to fetch applications');
       }
@@ -72,6 +75,44 @@ const ApplicationsTab: React.FC<any> = ({
       setError('Failed to load applications');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchJobDetails = async (applications: Application[]) => {
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const token = await user.getIdToken();
+      const jobDetailsMap: {[key: string]: Job} = {};
+
+      // Fetch job details for each unique jobId
+      const uniqueJobIds = Array.from(new Set(applications.map(app => app.jobId)));
+      
+      for (const jobId of uniqueJobIds) {
+        try {
+          const response = await fetch(`http://localhost:3001/api/jobs/${jobId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (response.ok) {
+            const jobData = await response.json();
+            if (jobData.success) {
+              jobDetailsMap[jobId] = jobData.data;
+            }
+          }
+        } catch (jobErr) {
+          console.error(`Error fetching job ${jobId}:`, jobErr);
+          // Continue with other jobs even if one fails
+        }
+      }
+
+      setJobDetails(jobDetailsMap);
+    } catch (err) {
+      console.error('Error fetching job details:', err);
     }
   };
 
@@ -86,27 +127,30 @@ const ApplicationsTab: React.FC<any> = ({
 
   // Convert applications to Job format for JobsList component
   const convertApplicationsToJobs = (): Job[] => {
-    return applications.map(app => ({
-      id: app.jobId,
-      title: app.jobTitle,
-      company: app.company,
-      location: app.location,
-      description: app.description || '',
-      type: app.type,
-      level: app.level || '',
-      department: app.department,
-      workplaceType: app.workplaceType as 'On-site' | 'Hybrid' | 'Remote' | undefined,
-      salary: app.salary || '₱10,000+',
-      applied: true, // All applications are already applied
-      status: app.status,
-      appliedDate: app.appliedDate,
-      postedDate: app.appliedDate // Use applied date as posted date for display
-    }));
+    return applications.map(app => {
+      const jobDetail = jobDetails[app.jobId];
+      return {
+        id: app.jobId,
+        title: app.jobTitle,
+        company: app.company,
+        location: app.location,
+        description: jobDetail?.description || app.description || 'No description available',
+        type: app.type,
+        level: app.level || '',
+        department: app.department,
+        workplaceType: app.workplaceType as 'On-site' | 'Hybrid' | 'Remote' | undefined,
+        salary: app.salary || '₱10,000+',
+        applied: true, // All applications are already applied
+        status: app.status,
+        appliedDate: app.appliedDate,
+        postedDate: app.appliedDate // Use applied date as posted date for display
+      };
+    });
   };
 
   if (loading) {
     return (
-      <div className={styles.pageContent}>
+      <div className={styles.tabContent}>
         <div className={styles.loadingState}>
           <p>Loading applications...</p>
         </div>
@@ -116,7 +160,7 @@ const ApplicationsTab: React.FC<any> = ({
 
   if (error) {
     return (
-      <div className={styles.pageContent}>
+      <div className={styles.tabContent}>
         <div className={styles.errorState}>
           <p>Error: {error}</p>
           <button onClick={fetchApplications} className={styles.retryButton}>
@@ -127,8 +171,19 @@ const ApplicationsTab: React.FC<any> = ({
     );
   }
 
+  if (applications.length === 0) {
+    return (
+      <div className={styles.tabContent}>
+        <div className={styles.emptyState}>
+          <h3>No Applications Yet</h3>
+          <p>You haven't applied to any jobs yet. Start browsing and apply to jobs that interest you!</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={styles.pageContent}>
+    <div className={styles.tabContent}>
       <JobsList
         jobs={convertApplicationsToJobs()}
         title=""

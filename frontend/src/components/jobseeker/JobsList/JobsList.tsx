@@ -27,19 +27,21 @@ const JobsList: React.FC<JobsListProps> = ({
 }) => {
   return (
     <div className={styles.jobsSection}>
-      <div className={styles.sectionHeader}>
-        <h3 className={styles.sectionTitle}>{title}</h3>
-        {onOpenFilters && (
-          <button 
-            className={styles.filterButton}
-            onClick={onOpenFilters}
-            aria-label="Filter jobs"
-          >
-            <FiFilter className={styles.filterIcon} />
-            <span>Filters</span>
-          </button>
-        )}
-      </div>
+      {(title || onOpenFilters) && (
+        <div className={styles.sectionHeader}>
+          {title && <h3 className={styles.sectionTitle}>{title}</h3>}
+          {onOpenFilters && (
+            <button 
+              className={styles.filterButton}
+              onClick={onOpenFilters}
+              aria-label="Filter jobs"
+            >
+              <FiFilter className={styles.filterIcon} />
+              <span>Filters</span>
+            </button>
+          )}
+        </div>
+      )}
       
       <div className={styles.jobsList}>
         {jobs.map((job) => (

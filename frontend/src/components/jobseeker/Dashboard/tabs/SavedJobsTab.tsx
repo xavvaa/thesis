@@ -17,7 +17,7 @@ const SavedJobsTab: React.FC<any> = ({
   });
 
   return (
-    <div className={styles.pageContent}>
+    <div className={styles.tabContent}>
       {savedJobsList.length > 0 ? (
         <JobsList
           jobs={savedJobsList}

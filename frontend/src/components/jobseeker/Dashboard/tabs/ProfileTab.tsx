@@ -4,7 +4,7 @@ import { FiUser } from 'react-icons/fi';
 
 const ProfileTab: React.FC = () => {
   return (
-    <div className={styles.pageContent}>
+    <div className={styles.tabContent}>
       <div className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>Profile</h1>
         <p className={styles.pageSubtitle}>Manage your personal information</p>

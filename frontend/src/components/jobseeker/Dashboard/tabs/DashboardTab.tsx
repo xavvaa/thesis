@@ -22,7 +22,7 @@ const DashboardTab: React.FC<any> = ({
   onJobClick,
 }) => {
   return (
-    <div className={styles.dashboardOverview}>
+    <div className={styles.tabContent}>
       <WelcomeHeader userName={resume?.personalInfo?.name} />
       <StatsGrid
         applicationsCount={applications.length}

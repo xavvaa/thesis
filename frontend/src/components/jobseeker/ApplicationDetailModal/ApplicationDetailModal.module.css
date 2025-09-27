@@ -20,7 +20,7 @@
   background: white;
   border-radius: 16px;
   width: 95vw;
-  max-width: 1400px;
+  max-width: 1200px;
   height: 90vh;
   overflow: hidden;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
@@ -55,7 +55,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 2rem 2rem 1.5rem 2rem;
+  padding: 1.5rem 2rem 1.25rem 2rem;
   background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   border-radius: 16px 16px 0 0;
   color: white;
@@ -68,14 +68,14 @@
 }
 
 .companyLogo {
-  width: 60px;
-  height: 60px;
-  border-radius: 16px;
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   color: white;
   background: rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(10px);
@@ -87,50 +87,120 @@
   flex: 1;
 }
 
-.jobTitle {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: white;
-  margin: 0 0 0.25rem 0;
-  line-height: 1.3;
+.titleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+  gap: 1rem;
 }
 
-.headerMeta {
+.jobTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+  line-height: 1.3;
+  flex: 1;
+}
+
+.titleMeta {
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.appliedDate {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.companyRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.locationInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+.locationIcon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 .companyName {
-  font-size: 1rem;
+  font-size: 0.9rem;
   color: rgba(255, 255, 255, 0.9);
   margin: 0;
   font-weight: 500;
 }
 
-.headerDate {
-  font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.7);
-  margin: 0;
-  font-weight: 400;
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px);
 }
 
-.viewJobLink {
+/* Tab Navigation */
+.tabNavigation {
+  display: flex;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0;
+}
+
+.tabButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.25rem;
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.8);
+  color: #64748b;
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  text-decoration: underline;
-  padding: 0;
-  margin: 0.5rem 0 0 0;
   transition: all 0.2s ease;
+  border-bottom: 3px solid transparent;
 }
 
-.viewJobLink:hover {
-  color: white;
-  text-decoration: none;
+.tabButton:hover {
+  background: #f1f5f9;
+  color: #374151;
+}
+
+.tabButtonActive {
+  background: white;
+  color: #8b5cf6;
+  border-bottom-color: #8b5cf6;
+}
+
+.tabIcon {
+  width: 16px;
+  height: 16px;
 }
 
 .closeButton {
@@ -138,8 +208,8 @@
   border: 1px solid rgba(255, 255, 255, 0.3);
   color: white;
   cursor: pointer;
-  padding: 0.75rem;
-  border-radius: 12px;
+  padding: 0.6rem;
+  border-radius: 8px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
@@ -154,21 +224,6 @@
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-/* Overview Card */
-.overviewCard {
-  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-}
-
-.statusContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
 
 .statusTimeline {
   display: flex;
@@ -206,38 +261,11 @@
   color: #6b7280;
 }
 
-.statusBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  border-radius: 16px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  text-transform: capitalize;
-  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
-  border: 2px solid transparent;
-}
-
-.statusPending {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.statusApproved {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.statusRejected {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
 .statusIcon {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
+
 
 .statusDetails {
   display: flex;
@@ -262,26 +290,188 @@
 /* Modal Body */
 .modalBody {
   flex: 1;
-  display: flex;
   overflow: hidden;
   background: white;
 }
 
-/* Left Content */
-.leftContent {
-  flex: 1;
-  padding: 2rem;
+/* Tab Content */
+.tabContent {
+  height: 100%;
   overflow-y: auto;
-  max-height: calc(90vh - 120px);
+  padding: 2rem;
 }
 
-/* Right Sidebar */
-.rightSidebar {
-  width: 300px;
+/* Quick Info Grid */
+.quickInfoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.infoCard {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.infoCard:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+}
+
+.infoIcon {
+  width: 20px;
+  height: 20px;
+  color: #8b5cf6;
+  flex-shrink: 0;
+}
+
+.infoContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.infoLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.infoValue {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Tags Container */
+.tagsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.tagItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.tagLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 20px;
+  border: none;
+  box-shadow: 0 2px 4px 0 rgba(139, 92, 246, 0.2);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.tag:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px 0 rgba(139, 92, 246, 0.3);
+}
+
+/* Details Grid - Keep for backward compatibility */
+.detailsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detailLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.detailValue {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Company Description */
+.companyDescription {
+  font-size: 0.9rem;
+  color: #475569;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Contact Grid */
+.contactGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.contactItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
   background: #f8fafc;
-  padding: 2rem;
-  overflow-y: auto;
-  border-left: 1px solid #e2e8f0;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.contactIcon {
+  width: 16px;
+  height: 16px;
+  color: #64748b;
+  margin-top: 0.125rem;
+  flex-shrink: 0;
+}
+
+.contactLabel {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.125rem;
+}
+
+.contactValue {
+  display: block;
+  font-size: 0.875rem;
+  color: #374151;
+  font-weight: 500;
 }
 
 /* Sections */
@@ -296,41 +486,6 @@
   margin: 0 0 1rem 0;
 }
 
-/* Metadata Section */
-.metadataSection {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-  padding: 0;
-  background: none;
-  border: none;
-}
-
-.metadataItem {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0;
-  background: none;
-  border: none;
-  border-radius: 0;
-  font-size: 0.875rem;
-  color: #64748b;
-}
-
-.metadataIcon {
-  width: 16px;
-  height: 16px;
-  color: #8b5cf6;
-  flex-shrink: 0;
-}
-
-.metadataLabel {
-  color: #374151;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
 
 /* Job Description */
 .jobDescription p {
@@ -359,37 +514,6 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
-}
-
-.contactItem {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-}
-
-.contactIcon {
-  width: 16px;
-  height: 16px;
-  color: #64748b;
-  margin-top: 0.125rem;
-  flex-shrink: 0;
-}
-
-.contactLabel {
-  display: block;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #9ca3af;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.125rem;
-}
-
-.contactValue {
-  display: block;
-  font-size: 0.875rem;
-  color: #374151;
-  font-weight: 500;
 }
 
 /* Materials Grid */
@@ -571,51 +695,39 @@
 
 .statusMessage {
   display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  padding: 1.5rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
   background: #fef3c7;
   border: 1px solid #fbbf24;
-  border-radius: 12px;
-  margin-top: 1.5rem;
+  border-radius: 8px;
+  margin-top: 1rem;
 }
 
 .messageIcon {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   color: #f59e0b;
   flex-shrink: 0;
-  margin-top: 0.125rem;
 }
 
-.messageContent p {
+.statusMessage p {
   margin: 0;
   font-size: 0.875rem;
   color: #92400e;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
-/* Action Section */
-.actionSection {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  margin-top: 2rem;
-  padding: 2rem;
-  background: #f8fafc;
-  border-radius: 16px;
-  border: 1px solid #e2e8f0;
-}
-
-.primaryActions {
+/* Quick Actions */
+.quickActions {
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
-}
-
-.secondaryActions {
-  display: flex;
-  gap: 1rem;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
 }
 
 .primaryButton {
@@ -723,42 +835,103 @@
 }
 
 /* Responsive */
-@media (max-width: 1200px) {
-  .modalContent {
-    max-width: 900px;
-  }
-}
-
 @media (max-width: 768px) {
+  .modalOverlay {
+    padding: 0.5rem;
+  }
+  
   .modalContent {
-    margin: 0.5rem;
-    max-height: 95vh;
-    max-width: 95vw;
+    width: 100%;
+    height: 95vh;
+    max-width: none;
   }
   
   .modalHeader {
-    padding: 1.5rem 1.5rem 1rem 1.5rem;
+    padding: 1.25rem 1rem 1rem 1rem;
   }
   
-  .section {
-    padding: 1rem 1.5rem;
+  .headerContent {
+    gap: 0.75rem;
   }
   
-  .jobMetadata {
+  .companyLogo {
+    width: 45px;
+    height: 45px;
+    font-size: 1.1rem;
+  }
+  
+  .jobTitle {
+    font-size: 1.1rem;
+  }
+  
+  .tabContent {
+    padding: 1.5rem;
+  }
+  
+  .quickInfoGrid {
     grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .infoCard {
+    padding: 1rem;
+  }
+  
+  .detailsGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .tagsContainer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  
+  .tagItem {
+    width: 100%;
+  }
+  
+  .tag {
+    width: fit-content;
+    min-width: 120px;
+    justify-content: center;
   }
   
   .contactGrid {
     grid-template-columns: 1fr;
   }
   
-  .actionSection {
-    padding: 1rem 1.5rem;
+  .quickActions {
     flex-direction: column;
+    padding: 1rem;
   }
   
-  .withdrawButton, .contactButton, .companyButton {
+  .primaryButton,
+  .secondaryButton,
+  .contactButton {
     width: 100%;
     justify-content: center;
+  }
+  
+  .tabButton {
+    padding: 0.875rem 1rem;
+    font-size: 0.8rem;
+  }
+  
+  .tabButton span {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .headerMeta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .statusBadge {
+    align-self: flex-start;
   }
 }
