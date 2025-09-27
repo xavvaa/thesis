@@ -8,7 +8,7 @@ interface ApplicantCardProps {
   applicant: Applicant;
   onAccept?: (applicantId: number) => void;
   onReject?: (applicantId: number) => void;
-  onViewResume?: (resumeUrl: string) => void;
+  onViewResume?: (applicantId: number) => void;
 }
 
 export const ApplicantCard: React.FC<ApplicantCardProps> = ({
@@ -85,7 +85,7 @@ export const ApplicantCard: React.FC<ApplicantCardProps> = ({
           variant="outline"
           size="sm"
           className={styles.viewResumeBtn}
-          onClick={() => onViewResume?.(applicant.resumeUrl)}
+          onClick={() => onViewResume?.(applicant.id)}
         >
           <FiDownload className={styles.icon} />
           View Resume

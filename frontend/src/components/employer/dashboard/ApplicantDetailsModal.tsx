@@ -157,19 +157,30 @@ export const ApplicantDetailsModal: React.FC<ApplicantDetailsModalProps> = ({
       if (!currentUser) return;
 
       const token = await currentUser.getIdToken();
-      const response = await fetch(`http://localhost:3001/api/applications/${applicationData._id}/resume`, {
+      const response = await fetch(`http://localhost:3001/api/resumes/view/${applicationData._id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
 
       if (response.ok) {
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        setResumePreviewUrl(url);
-        setIsFullScreenPreview(true);
+        const data = await response.json();
+        
+        if (data.success && data.generatePDF) {
+          // Generate PDF using the same logic as CreateResumeTab
+          const { generateResumePDF } = await import('../../../utils/pdfGenerator');
+          const pdfBlob = generateResumePDF(data.resumeData, undefined, true) as Blob;
+          
+          if (pdfBlob && pdfBlob.size > 0) {
+            const url = URL.createObjectURL(pdfBlob);
+            setResumePreviewUrl(url);
+            setIsFullScreenPreview(true);
+          }
+        }
       } else {
         console.error('Failed to fetch resume');
+        const errorData = await response.json();
+        console.error('Resume fetch error:', errorData.error);
       }
     } catch (error) {
       console.error('Error fetching resume:', error);
@@ -186,26 +197,24 @@ export const ApplicantDetailsModal: React.FC<ApplicantDetailsModalProps> = ({
       if (!currentUser || !applicationData?._id) return;
 
       const token = await currentUser.getIdToken();
-      const response = await fetch(`http://localhost:3001/api/applications/${applicationData._id}/resume`, {
+      const response = await fetch(`http://localhost:3001/api/resumes/download/${applicationData._id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
       if (response.ok) {
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = applicationData.resumeFile?.fileName || `${applicationData.applicant.name}_Resume.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        const data = await response.json();
+        if (data.success && data.downloadPDF) {
+          // Generate PDF using the same logic as CreateResumeTab
+          const { generateResumePDF } = await import('../../../utils/pdfGenerator');
+          const fileName = `${data.applicantName.replace(/[^a-zA-Z0-9]/g, '_')}_Resume.pdf`;
+          generateResumePDF(data.resumeData, fileName, false); // This will trigger download
+        }
       } else {
-        const errorText = await response.text();
-        console.error('Resume download error:', errorText);
-        alert('Resume not found or unable to download');
+        const errorData = await response.json();
+        console.error('Resume download error:', errorData.error);
+        alert(errorData.error || 'Resume not found or unable to download');
       }
     } catch (error) {
       console.error('Error downloading resume:', error);

@@ -17,7 +17,7 @@ interface ApplicantsTabProps {
   onFilterChange: (filterType: string, value: string) => void;
   onAcceptApplicant: (applicantId: number) => void;
   onRejectApplicant: (applicantId: number) => void;
-  onViewResume: (resumeUrl: string) => void;
+  onViewResume: (applicantId: number) => void;
   onViewDetails: (applicant: Applicant) => void;
   onExport?: () => void;
   jobPostings?: Job[];

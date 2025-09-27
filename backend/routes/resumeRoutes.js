@@ -7,6 +7,343 @@ const Resume = require('../models/Resume');
 const MLResume = require('../models/MLResume');
 const JobSeeker = require('../models/JobSeeker');
 
+// Transform database resume data to jobseeker format
+function transformToJobseekerFormat(resumeData, application) {
+  const resumeObj = resumeData.toObject ? resumeData.toObject() : resumeData;
+  const personalInfo = resumeObj.personalInfo || {};
+  
+  return {
+    personalInfo: {
+      firstName: personalInfo.firstName || personalInfo.fullName?.split(' ')[0] || '',
+      lastName: personalInfo.lastName || personalInfo.fullName?.split(' ').slice(1).join(' ') || '',
+      email: personalInfo.email || '',
+      phone: personalInfo.phone || '',
+      address: personalInfo.address || personalInfo.fullAddress || '',
+      photo: personalInfo.photo || '',
+      // Add readable location data for PDF generation
+      readableLocationRegion: personalInfo.readableLocation?.region || '',
+      readableLocationProvince: personalInfo.readableLocation?.province || '',
+      readableLocationCity: personalInfo.readableLocation?.city || '',
+      readableLocationBarangay: personalInfo.readableLocation?.barangay || ''
+    },
+    summary: resumeObj.summary || '',
+    experience: (resumeObj.workExperience || resumeObj.experience || []).map(exp => ({
+      company: exp.company || '',
+      position: exp.position || '',
+      startDate: exp.startDate || '',
+      endDate: exp.endDate || '',
+      duration: exp.duration || '',
+      description: exp.description || ''
+    })),
+    education: (resumeObj.education || []).map(edu => ({
+      degree: edu.degree || '',
+      school: edu.school || edu.institution || '',
+      startDate: edu.startDate || '',
+      endDate: edu.endDate || ''
+    })),
+    skills: resumeObj.skills || []
+  };
+}
+
+// Helper function to get location display names (copied from CreateResumeTab)
+function getLocationDisplayNames(personalInfo) {
+  return {
+    regionName: personalInfo.readableLocationRegion || '',
+    provinceName: personalInfo.readableLocationProvince || '',
+    cityName: personalInfo.readableLocationCity || '',
+    barangayName: personalInfo.readableLocationBarangay || ''
+  };
+}
+
+// Exact PDF generation function copied from CreateResumeTab
+function generateJobseekerPDF(resumeData, filename, returnBlob = true) {
+  const jsPDF = require('jspdf');
+  const doc = new jsPDF();
+  const { personalInfo, summary, experience, education, skills } = resumeData;
+  
+  // Page margins and layout
+  const margin = 20;
+  const pageWidth = doc.internal.pageSize.width;
+  const pageHeight = doc.internal.pageSize.height;
+  const contentWidth = pageWidth - (margin * 2);
+  
+  let yPosition = 20;
+  
+  // Colors
+  const blackColor = [0, 0, 0];
+  const blueColor = [0, 100, 200]; // Blue for name
+  const grayColor = [100, 100, 100]; // Gray for secondary text
+  
+  // Helper function to check if we need a new page
+  const checkPageBreak = (requiredSpace) => {
+    if (yPosition + requiredSpace > pageHeight - margin) {
+      doc.addPage();
+      yPosition = margin + 10;
+      return true;
+    }
+    return false;
+  };
+  
+  // Header section with photo and name layout like the sample
+  const photoWidth = 35; // Bigger photo - approximately 1.4 inches
+  const photoHeight = 35; // Bigger photo - approximately 1.4 inches
+  let hasPhoto = false;
+  
+  if (personalInfo.photo) {
+    try {
+      // Position photo on the top left - 2x2 ID picture format
+      doc.addImage(personalInfo.photo, 'JPEG', margin, yPosition, photoWidth, photoHeight);
+      hasPhoto = true;
+    } catch (error) {
+      console.error('Error adding photo to PDF:', error);
+    }
+  }
+  
+  // Name - positioned next to photo, large and bold in blue
+  const nameX = hasPhoto ? margin + photoWidth + 8 : margin;
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(blueColor[0], blueColor[1], blueColor[2]);
+  const fullName = `${personalInfo.firstName || ''} ${personalInfo.lastName || ''}`.trim() || 'Your Name';
+  doc.text(fullName.toUpperCase(), nameX, yPosition + 8);
+  
+  // Contact information positioned next to name (right side of header)
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
+  
+  let contactY = yPosition + 8;
+  
+  // Construct address
+  let regionName = '', provinceName = '', cityName = '', barangayName = '';
+  if (personalInfo.readableLocationRegion) {
+    regionName = personalInfo.readableLocationRegion;
+    provinceName = personalInfo.readableLocationProvince || '';
+    cityName = personalInfo.readableLocationCity || '';
+    barangayName = personalInfo.readableLocationBarangay || '';
+  } else {
+    const displayNames = getLocationDisplayNames(personalInfo);
+    regionName = displayNames.regionName;
+    provinceName = displayNames.provinceName;
+    cityName = displayNames.cityName;
+    barangayName = displayNames.barangayName;
+  }
+  
+  const addressParts = [];
+  if (personalInfo.address) addressParts.push(personalInfo.address);
+  if (barangayName) addressParts.push(barangayName);
+  if (cityName) addressParts.push(cityName);
+  if (provinceName) addressParts.push(provinceName);
+  
+  // Address
+  if (addressParts.length > 0) {
+    doc.text(`Address: ${addressParts.join(', ')}`, nameX, contactY + 5);
+    contactY += 4;
+  }
+  
+  // Phone
+  if (personalInfo.phone) {
+    doc.text(`Phone: ${personalInfo.phone}`, nameX, contactY + 5);
+    contactY += 4;
+  }
+  
+  // Email
+  if (personalInfo.email) {
+    doc.text(`Email: ${personalInfo.email}`, nameX, contactY + 5);
+    contactY += 4;
+  }
+  
+  // Adjust yPosition to account for header
+  yPosition = Math.max(yPosition + photoHeight + 10, contactY + 10);
+  
+  // Helper function to add section headers - plain with underline
+  const addSectionHeader = (title) => {
+    checkPageBreak(20);
+    
+    // Add spacing before section
+    yPosition += 8;
+    
+    // Section header - blue text with underline to match name color
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(blueColor[0], blueColor[1], blueColor[2]);
+    doc.text(title.toUpperCase(), margin, yPosition);
+    
+    // Add underline - extend to the end of the page margin with blue color
+    doc.setDrawColor(blueColor[0], blueColor[1], blueColor[2]);
+    doc.setLineWidth(0.5);
+    doc.line(margin, yPosition + 2, pageWidth - margin, yPosition + 2);
+    
+    yPosition += 8;
+  };
+  
+  // Professional Summary
+  if (summary) {
+    addSectionHeader('Summary');
+    
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
+    const summaryLines = doc.splitTextToSize(summary, contentWidth);
+    checkPageBreak(summaryLines.length * 4 + 10);
+    doc.text(summaryLines, margin, yPosition);
+    yPosition += summaryLines.length * 4 + 5;
+  }
+  
+  // Work Experience
+  const validExperience = experience.filter(exp => exp.company && exp.position);
+  if (validExperience.length > 0) {
+    addSectionHeader('Experience');
+    
+    validExperience.forEach((exp, index) => {
+      // Calculate space needed for this experience entry
+      const descLines = exp.description ? doc.splitTextToSize(exp.description, contentWidth - 8) : [];
+      const spaceNeeded = 15 + (descLines.length * 4);
+      checkPageBreak(spaceNeeded);
+      
+      // Job title - bold
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
+      doc.text(exp.position, margin, yPosition);
+      
+      // Duration (right aligned)
+      let durationText = '';
+      if (exp.startDate && exp.endDate && exp.endDate !== 'present') {
+        const startDate = new Date(exp.startDate + '-01');
+        const endDate = new Date(exp.endDate + '-01');
+        const startMonth = startDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        const endMonth = endDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        durationText = `${startMonth} - ${endMonth}`;
+      } else if (exp.startDate) {
+        const startDate = new Date(exp.startDate + '-01');
+        const startMonth = startDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        durationText = `${startMonth} - Present`;
+      } else if (exp.duration) {
+        durationText = exp.duration;
+      }
+      
+      if (durationText) {
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        const durationWidth = doc.getTextWidth(durationText);
+        doc.text(durationText, pageWidth - margin - durationWidth, yPosition);
+      }
+      yPosition += 4;
+      
+      // Company name - italic
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'italic');
+      doc.text(exp.company, margin, yPosition);
+      yPosition += 4;
+      
+      // Description with bullet points
+      if (exp.description) {
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
+        
+        // Split description into bullet points if it contains line breaks
+        const descriptionParts = exp.description.split('\n').filter(part => part.trim());
+        
+        descriptionParts.forEach(part => {
+          const bulletText = `• ${part.trim()}`;
+          const bulletLines = doc.splitTextToSize(bulletText, contentWidth - 8);
+          checkPageBreak(bulletLines.length * 4 + 2);
+          doc.text(bulletLines, margin + 8, yPosition);
+          yPosition += bulletLines.length * 4;
+        });
+        yPosition += 5;
+      }
+      
+      // Add spacing between experiences
+      if (index < validExperience.length - 1) {
+        yPosition += 8;
+      }
+    });
+  }
+  
+  // Educational Background
+  const validEducation = education.filter(edu => edu.degree && edu.school);
+  if (validEducation.length > 0) {
+    addSectionHeader('Education');
+    
+    validEducation.forEach((edu, index) => {
+      checkPageBreak(25);
+      
+      // Degree (bold) with cleaner typography
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
+      doc.text(edu.degree, margin, yPosition);
+      
+      // Duration (right aligned) - format from start and end dates
+      let durationText = '';
+      if (edu.startDate && edu.endDate && edu.endDate !== 'present') {
+        const startDate = new Date(edu.startDate + '-01');
+        const endDate = new Date(edu.endDate + '-01');
+        const startYear = startDate.getFullYear();
+        const endYear = endDate.getFullYear();
+        durationText = `${startYear} — ${endYear}`;
+      } else if (edu.startDate) {
+        const startDate = new Date(edu.startDate + '-01');
+        const startYear = startDate.getFullYear();
+        durationText = `${startYear} — Present`;
+      }
+      
+      if (durationText) {
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
+        const durationWidth = doc.getTextWidth(durationText);
+        doc.text(durationText, pageWidth - margin - durationWidth, yPosition);
+      }
+      yPosition += 4;
+      
+      // School name (italic)
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
+      doc.text(edu.school, margin, yPosition);
+      yPosition += 6;
+    });
+  }
+  
+  // Skills section
+  const validSkills = skills.filter(skill => skill && skill.trim() !== '');
+  
+  if (validSkills.length > 0) {
+    addSectionHeader('Skills');
+    
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
+    
+    // Display skills in a compact format
+    const skillsText = validSkills.join(' • ');
+    const skillLines = doc.splitTextToSize(skillsText, contentWidth);
+    
+    checkPageBreak(skillLines.length * 4 + 10);
+    skillLines.forEach((line) => {
+      doc.text(line, margin, yPosition);
+      yPosition += 4;
+    });
+    yPosition += 5;
+  }
+  
+  // Return blob for database storage or save file for download
+  if (returnBlob) {
+    return doc.output('blob');
+  } else {
+    // Use provided filename or generate a consistent one
+    const fullName = `${personalInfo.firstName || ''}_${personalInfo.lastName || ''}`.replace(/\s+/g, '_') || 'Resume';
+    const defaultFileName = `${fullName}_Resume.pdf`;
+    const fileName = filename || defaultFileName;
+    doc.save(fileName);
+    return undefined;
+  }
+}
+
 // @route   GET /api/resumes
 // @desc    Get job seeker's resumes
 // @access  Private (Job Seeker)
@@ -377,42 +714,71 @@ router.get('/view/:applicationId', verifyToken, async (req, res) => {
       });
     }
 
-    // Get the job seeker's current resume
+    // Get resume data from database and generate PDF on-the-fly
     const JobSeeker = require('../models/JobSeeker');
     const jobSeeker = await JobSeeker.findOne({ uid: application.jobSeekerUid });
     
-    if (!jobSeeker || !jobSeeker.currentResumeId) {
+    let resumeData = null;
+    
+    // Try to get resume data from JobSeeker's current resume
+    if (jobSeeker && jobSeeker.currentResumeId) {
+      const resume = await Resume.findById(jobSeeker.currentResumeId);
+      if (resume) {
+        resumeData = resume;
+        console.log('✅ Found resume data via JobSeeker.currentResumeId');
+      }
+    }
+    
+    // Fallback: Get resume data from application
+    if (!resumeData && application.resumeData) {
+      resumeData = {
+        personalInfo: application.resumeData.personalInfo,
+        summary: application.resumeData.summary,
+        skills: application.resumeData.skills,
+        workExperience: application.resumeData.experience,
+        education: application.resumeData.education
+      };
+      console.log('✅ Using resume data from application');
+    }
+    
+    // Fallback: Find any resume for this job seeker
+    if (!resumeData) {
+      const anyResume = await Resume.findOne({ 
+        jobSeekerUid: application.jobSeekerUid,
+        isActive: true 
+      }).sort({ uploadedAt: -1 });
+      
+      if (anyResume) {
+        resumeData = anyResume;
+        console.log('✅ Found resume data via any active resume');
+      }
+    }
+
+    if (!resumeData) {
+      console.log('❌ No resume data found for application:', {
+        applicationId,
+        jobSeekerUid: application.jobSeekerUid,
+        hasJobSeeker: !!jobSeeker,
+        hasCurrentResumeId: !!jobSeeker?.currentResumeId,
+        hasApplicationResumeData: !!application.resumeData
+      });
+      
       return res.status(404).json({
         success: false,
-        error: 'Resume not found'
+        error: 'Resume data not found'
       });
     }
 
-    const resume = await Resume.findById(jobSeeker.currentResumeId);
-    if (!resume || !resume.pdfPath) {
-      return res.status(404).json({
-        success: false,
-        error: 'Resume PDF not found'
-      });
-    }
-
-    const fs = require('fs');
-    const path = require('path');
+    // Transform resume data to match jobseeker format
+    const jobseekerFormat = transformToJobseekerFormat(resumeData, application);
     
-    const filePath = path.resolve(resume.pdfPath);
-    
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({
-        success: false,
-        error: 'Resume file not found on server'
-      });
-    }
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${resume.fileName || 'resume.pdf'}"`);
-    
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
+    // Return the resume data so frontend can generate PDF using CreateResumeTab logic
+    res.json({
+      success: true,
+      resumeData: jobseekerFormat,
+      applicantName: resumeData.personalInfo?.fullName || resumeData.personalInfo?.name || 'Applicant',
+      generatePDF: true // Flag to indicate frontend should generate PDF
+    });
 
   } catch (error) {
     console.error('Error viewing resume:', error);
@@ -445,45 +811,71 @@ router.get('/download/:applicationId', verifyToken, async (req, res) => {
       });
     }
 
-    // Get the job seeker's current resume
+    // Get resume data from database and generate PDF on-the-fly
     const JobSeeker = require('../models/JobSeeker');
     const jobSeeker = await JobSeeker.findOne({ uid: application.jobSeekerUid });
     
-    if (!jobSeeker || !jobSeeker.currentResumeId) {
+    let resumeData = null;
+    
+    // Try to get resume data from JobSeeker's current resume
+    if (jobSeeker && jobSeeker.currentResumeId) {
+      const resume = await Resume.findById(jobSeeker.currentResumeId);
+      if (resume) {
+        resumeData = resume;
+        console.log('✅ Found resume data for download via JobSeeker.currentResumeId');
+      }
+    }
+    
+    // Fallback: Get resume data from application
+    if (!resumeData && application.resumeData) {
+      resumeData = {
+        personalInfo: application.resumeData.personalInfo,
+        summary: application.resumeData.summary,
+        skills: application.resumeData.skills,
+        workExperience: application.resumeData.experience,
+        education: application.resumeData.education
+      };
+      console.log('✅ Using resume data from application for download');
+    }
+    
+    // Fallback: Find any resume for this job seeker
+    if (!resumeData) {
+      const anyResume = await Resume.findOne({ 
+        jobSeekerUid: application.jobSeekerUid,
+        isActive: true 
+      }).sort({ uploadedAt: -1 });
+      
+      if (anyResume) {
+        resumeData = anyResume;
+        console.log('✅ Found resume data for download via any active resume');
+      }
+    }
+
+    if (!resumeData) {
+      console.log('❌ No resume data found for download for application:', {
+        applicationId,
+        jobSeekerUid: application.jobSeekerUid,
+        hasJobSeeker: !!jobSeeker,
+        hasCurrentResumeId: !!jobSeeker?.currentResumeId,
+        hasApplicationResumeData: !!application.resumeData
+      });
+      
       return res.status(404).json({
         success: false,
-        error: 'Resume not found'
+        error: 'Resume data not found'
       });
     }
 
-    const resume = await Resume.findById(jobSeeker.currentResumeId);
-    if (!resume || !resume.pdfPath) {
-      return res.status(404).json({
-        success: false,
-        error: 'Resume PDF not found'
-      });
-    }
-
-    const fs = require('fs');
-    const path = require('path');
+    // Transform resume data to match jobseeker format
+    const jobseekerFormat = transformToJobseekerFormat(resumeData, application);
     
-    const filePath = path.resolve(resume.pdfPath);
-    
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({
-        success: false,
-        error: 'Resume file not found on server'
-      });
-    }
-
-    const applicantName = application.applicant?.name || application.resumeData?.personalInfo?.name || 'applicant';
-    const fileName = `${applicantName.replace(/[^a-zA-Z0-9]/g, '_')}_Resume.pdf`;
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-    
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
+    // Return the resume data so frontend can generate PDF for download
+    res.json({
+      success: true,
+      resumeData: jobseekerFormat,
+      applicantName: resumeData.personalInfo?.fullName || resumeData.personalInfo?.name || 'Applicant',
+      downloadPDF: true // Flag to indicate frontend should download PDF
+    });
 
   } catch (error) {
     console.error('Error downloading resume:', error);

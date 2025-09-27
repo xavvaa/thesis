@@ -613,13 +613,44 @@ const EmployerDashboard: React.FC = () => {
     }
   };
 
-  const handleViewResume = (applicantId: number) => {
-    const applicant = enhancedApplicants.find(app => app.id === applicantId);
-    if (applicant?.resumeUrl) {
-      // In a real app, this would open the resume in a new tab or modal
-      window.open(applicant.resumeUrl, '_blank');
-    } else {
-      alert('Resume not available for this applicant.');
+  const handleViewResume = async (applicantId: number) => {
+    try {
+      const applicant = enhancedApplicants.find(app => app.id === applicantId);
+      if (!applicant) {
+        alert('Applicant not found.');
+        return;
+      }
+
+      if (!currentUser) {
+        alert('Please log in again to view resumes.');
+        return;
+      }
+
+      const token = await currentUser.getIdToken();
+      
+      // Use the application ID to fetch the specific applicant's resume
+      const response = await fetch(`http://localhost:3001/api/resumes/view/${applicant.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        // Create a blob URL for the PDF and open it in a new tab
+        const blob = await response.blob();
+        const pdfUrl = URL.createObjectURL(blob);
+        window.open(pdfUrl, '_blank');
+        
+        // Clean up the blob URL after a delay to free memory
+        setTimeout(() => URL.revokeObjectURL(pdfUrl), 1000);
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || 'Resume not available for this applicant.');
+      }
+    } catch (error) {
+      console.error('Error viewing resume:', error);
+      alert('Failed to load resume. Please try again.');
     }
   };
 
@@ -633,17 +664,49 @@ const EmployerDashboard: React.FC = () => {
     setSelectedApplicant(null);
   };
 
-  const handleDownloadResume = (applicantId: number) => {
-    const applicant = enhancedApplicants.find(a => a.id === applicantId);
-    if (applicant && applicant.resumeUrl) {
-      const link = document.createElement('a');
-      link.href = applicant.resumeUrl;
-      link.download = `${applicant.name.replace(/\s+/g, '_')}_Resume.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } else {
-      alert('Resume not available for download.');
+  const handleDownloadResume = async (applicantId: number) => {
+    try {
+      const applicant = enhancedApplicants.find(a => a.id === applicantId);
+      if (!applicant) {
+        alert('Applicant not found.');
+        return;
+      }
+
+      if (!currentUser) {
+        alert('Please log in again to download resumes.');
+        return;
+      }
+
+      const token = await currentUser.getIdToken();
+      
+      // Use the application ID to download the specific applicant's resume
+      const response = await fetch(`http://localhost:3001/api/resumes/download/${applicant.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        // Create a blob from the response and trigger download
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${applicant.name.replace(/\s+/g, '_')}_Resume.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up the blob URL
+        URL.revokeObjectURL(url);
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || 'Resume not available for download.');
+      }
+    } catch (error) {
+      console.error('Error downloading resume:', error);
+      alert('Failed to download resume. Please try again.');
     }
   };
 
@@ -1097,11 +1160,7 @@ const EmployerDashboard: React.FC = () => {
               }}
               onAcceptApplicant={handleApproveApplicant}
               onRejectApplicant={handleRejectApplicant}
-              onViewResume={(resumeUrl) => {
-                if (resumeUrl) {
-                  window.open(resumeUrl, '_blank');
-                }
-              }}
+              onViewResume={handleViewResume}
               onViewDetails={(applicant) => {
                 setSelectedApplicant(applicant);
                 setIsModalOpen(true);
