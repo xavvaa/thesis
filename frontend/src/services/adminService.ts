@@ -282,6 +282,24 @@ class AdminService {
     }
   }
 
+  // Get jobseeker users for admin (admin-accessible alternative to getUsers)
+  async getJobseekerUsers(): Promise<any[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/jobseekers/users`, {
+        headers: this.getAuthHeaders()
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.users || [];
+      }
+      return [];
+    } catch (error) {
+      console.error('Error fetching jobseeker users:', error);
+      return [];
+    }
+  }
+
   // Get all resumes for admin - fetch directly from resumes endpoint
   async getAllResumes(): Promise<any[]> {
     try {

@@ -263,91 +263,129 @@ The jobseeker will receive an email notification with instructions to reactivate
     try {
       setLoading(true);
       
-      // Make parallel API calls for different data
-      const [usersResponse, jobsResponse, dashboardStats, applicationsResponse, resumesResponse, jobseekersResponse] = await Promise.all([
-        adminService.getUsers({}),
+      // Make parallel API calls for admin-accessible endpoints only
+      const [jobsResponse, dashboardStats, applicationsResponse, resumesResponse, jobseekersResponse, jobseekerUsersResponse] = await Promise.all([
         adminService.getJobs({}), // Get all job postings
         adminService.getDashboardStats(),
         adminService.getAllApplications(), // Get all applications
         adminService.getAllResumes(), // Get all resumes with names and skills
-        adminService.getAllJobSeekers() // Get all jobseeker profiles
+        adminService.getAllJobSeekers(), // Get all jobseeker profiles
+        adminService.getJobseekerUsers() // Get jobseeker users (admin-accessible)
       ]);
-      // Process users data
-const allUsers = usersResponse.users || [];
-const allJobs = jobsResponse.jobs || jobsResponse.data || [];
-const allApplications = applicationsResponse || [];
-const allResumes = resumesResponse || [];
-const allJobSeekers = jobseekersResponse || [];
+      
+      // Process data from admin-accessible endpoints
+      const allJobs = jobsResponse.jobs || jobsResponse.data || [];
+      const allApplications = applicationsResponse || [];
+      const allResumes = resumesResponse || [];
+      const allJobSeekers = jobseekersResponse || [];
+      const allJobseekerUsers = jobseekerUsersResponse || [];
 
-// Create maps for quick lookup
-const resumeMap = new Map();
-allResumes.forEach((resume: any) => {
-  resumeMap.set(resume.jobSeekerUid, resume);
-});
+      // Create maps for quick lookup
+      const resumeMap = new Map();
+      allResumes.forEach((resume: any) => {
+        resumeMap.set(resume.jobSeekerUid, resume);
+      });
 
-const jobSeekerMap = new Map();
-allJobSeekers.forEach((js: any) => {
-  jobSeekerMap.set(js.uid, js);
-});
+      const jobSeekerMap = new Map();
+      allJobSeekers.forEach((js: any) => {
+        jobSeekerMap.set(js.uid, js);
+      });
 
-const jobSeekerUsers = allUsers.filter((user: any) => 
-  user.role === 'jobseeker' || user.userType === 'jobseeker' || user.type === 'jobseeker'
-);
+      // Create a map of jobseeker users for additional data
+      const jobseekerUserMap = new Map();
+      allJobseekerUsers.forEach((user: any) => {
+        jobseekerUserMap.set(user.uid, user);
+      });
 
-// Transform jobseekers by merging user data with resume and jobseeker data
-const transformedJobseekers: Jobseeker[] = [];
+      // Create a map of applications by jobSeekerUid for counting
+      const applicationCountMap = new Map();
+      allApplications.forEach((app: any) => {
+        const uid = app.jobSeekerUid;
+        applicationCountMap.set(uid, (applicationCountMap.get(uid) || 0) + 1);
+      });
 
-jobSeekerUsers.forEach((user: any) => {
-  const resume = resumeMap.get(user.uid);
-  const jobSeekerProfile = jobSeekerMap.get(user.uid);
-  
-  // If no resume found by uid, try to find by email
-  let fallbackResume = null;
-  if (!resume && user.email) {
-    fallbackResume = allResumes.find((r: any) => 
-      r.personalInfo?.email === user.email || 
-      r.applicantEmail === user.email
-    );
-  }
-  
-  const finalResume = resume || fallbackResume;
+      // Transform jobseekers using JobSeeker collection as primary source
+      const transformedJobseekers: Jobseeker[] = [];
 
-  const jobseekerData: Jobseeker = {
-    _id: user.uid || user._id,
-    firstName: jobSeekerProfile?.firstName || user.firstName || 'Unknown',
-    lastName: jobSeekerProfile?.lastName || user.lastName || '',
-    email: finalResume?.personalInfo?.email || 
-           jobSeekerProfile?.email || 
-           user.email,
-    phone: finalResume?.personalInfo?.phone || jobSeekerProfile?.phone || user.phone,
-    skills: finalResume?.skills || jobSeekerProfile?.skills || [],
-    applications: allApplications.filter((app: any) => app.jobSeekerUid === user.uid).length,
-    status: user.disabled ? 'inactive' : (user.status || 'active'),
-    createdAt: user.createdAt || user.dateRegistered || user.metadata?.creationTime,
-    lastActive: finalResume?.updatedAt || 
-               jobSeekerProfile?.updatedAt || 
-               jobSeekerProfile?.lastActive ||
-               user.lastActive || 
-               user.updatedAt || 
-               user.lastLogin ||
-               user.lastLoginAt,
-    resume: finalResume ? {
-      personalInfo: {
-        phone: finalResume.personalInfo?.phone,
-        birthday: finalResume.personalInfo?.birthday,
-        age: finalResume.personalInfo?.age,
-        name: finalResume.personalInfo?.name,
-        email: finalResume.personalInfo?.email,
-        address: finalResume.personalInfo?.address
-      }
-    } : undefined
-  };
-  
-  transformedJobseekers.push(jobseekerData);
-});
+      // Create a combined set of all unique jobseeker UIDs
+      const allJobseekerUIDs = new Set([
+        ...allJobSeekers.map((js: any) => js.uid),
+        ...allJobseekerUsers.map((user: any) => user.uid),
+        ...allResumes.map((resume: any) => resume.jobSeekerUid).filter(Boolean)
+      ]);
+
+      allJobseekerUIDs.forEach((uid: string) => {
+        const jobSeekerProfile = jobSeekerMap.get(uid);
+        const userProfile = jobseekerUserMap.get(uid);
+        const resume = resumeMap.get(uid);
+        
+        // If no resume found by uid, try to find by email
+        let fallbackResume = null;
+        const email = jobSeekerProfile?.email || userProfile?.email;
+        if (!resume && email) {
+          fallbackResume = allResumes.find((r: any) => 
+            r.personalInfo?.email === email || 
+            r.applicantEmail === email
+          );
+        }
+        
+        const finalResume = resume || fallbackResume;
+        const applicationCount = applicationCountMap.get(uid) || 0;
+
+        // Prioritize resume name data, then fallback to local profile data
+        let firstName = 'Unknown';
+        let lastName = '';
+        
+        if (finalResume?.personalInfo?.fullName) {
+          const nameParts = finalResume.personalInfo.fullName.split(' ');
+          firstName = nameParts[0] || 'Unknown';
+          lastName = nameParts.slice(1).join(' ') || '';
+        } else if (finalResume?.personalInfo?.name) {
+          const nameParts = finalResume.personalInfo.name.split(' ');
+          firstName = nameParts[0] || 'Unknown';
+          lastName = nameParts.slice(1).join(' ') || '';
+        } else {
+          // Fallback to local profile data
+          firstName = jobSeekerProfile?.firstName || userProfile?.firstName || 'Unknown';
+          lastName = jobSeekerProfile?.lastName || userProfile?.lastName || '';
+        }
+
+        const jobseekerData: Jobseeker = {
+          _id: uid,
+          firstName: firstName,
+          lastName: lastName,
+          email: finalResume?.personalInfo?.email || 
+                 jobSeekerProfile?.email || 
+                 userProfile?.email ||
+                 'No email provided',
+          phone: finalResume?.personalInfo?.phone || jobSeekerProfile?.phoneNumber || userProfile?.phone,
+          skills: finalResume?.skills || jobSeekerProfile?.skills?.map((s: any) => s.name || s) || [],
+          applications: applicationCount,
+          status: (jobSeekerProfile?.isActive === false || userProfile?.disabled || userProfile?.isActive === false) ? 'inactive' : 'active',
+          createdAt: jobSeekerProfile?.createdAt || userProfile?.createdAt || finalResume?.createdAt || new Date().toISOString(),
+          lastActive: finalResume?.updatedAt || 
+                     jobSeekerProfile?.updatedAt || 
+                     userProfile?.lastLoginAt ||
+                     userProfile?.updatedAt ||
+                     jobSeekerProfile?.createdAt ||
+                     userProfile?.createdAt,
+          resume: finalResume ? {
+            personalInfo: {
+              phone: finalResume.personalInfo?.phone,
+              birthday: finalResume.personalInfo?.birthday,
+              age: finalResume.personalInfo?.age,
+              name: finalResume.personalInfo?.name,
+              email: finalResume.personalInfo?.email,
+              address: finalResume.personalInfo?.address
+            }
+          } : undefined
+        };
+        
+        transformedJobseekers.push(jobseekerData);
+      });
       
       // Set individual stats using real API data
-      setTotalUsers(dashboardStats.totalJobSeekers || jobSeekerUsers.length || 0);
+      setTotalUsers(dashboardStats.totalJobSeekers || transformedJobseekers.length || 0);
       setTotalJobs(dashboardStats.totalJobs || allJobs.length || 0);
       setTotalApplications(dashboardStats.totalApplications || allApplications.length || 0);
       
@@ -356,6 +394,7 @@ jobSeekerUsers.forEach((user: any) => {
       setTotalJobseekers(transformedJobseekers.length);
       
     } catch (error) {
+      console.error('Error fetching jobseekers data:', error);
       setJobseekers([]);
       setTotalUsers(0);
       setTotalJobs(0);

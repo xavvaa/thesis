@@ -2119,6 +2119,32 @@ router.get('/jobseekers/all', verifyToken, adminMiddleware, async (req, res) => 
   }
 });
 
+// Get jobseeker users for admin dashboard (admin-accessible alternative to /users endpoint)
+router.get('/jobseekers/users', verifyToken, adminMiddleware, async (req, res) => {
+  try {
+    // Get users with jobseeker role from User collection
+    const jobseekerUsers = await User.find({ 
+      role: 'jobseeker' 
+    })
+    .select('uid firstName lastName email phone createdAt updatedAt lastLoginAt isActive disabled status')
+    .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      users: jobseekerUsers,
+      total: jobseekerUsers.length
+    });
+
+  } catch (error) {
+    console.error('Error fetching jobseeker users:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error fetching jobseeker users',
+      error: error.message
+    });
+  }
+});
+
 // Get all resumes for admin dashboard
 router.get('/resumes/all', verifyToken, adminMiddleware, async (req, res) => {
   try {
