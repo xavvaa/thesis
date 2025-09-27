@@ -7,7 +7,9 @@ interface JobsListViewProps {
   jobs: Job[];
   onJobClick: (job: Job) => void;
   onSaveJob?: (jobId: string | number) => void;
+  onApplyJob?: (jobId: string | number) => void;
   savedJobs?: Set<string | number>;
+  appliedJobs?: Set<string | number>;
   jobseekerSkills?: string[]; // Skills from jobseeker's resume
 }
 
@@ -15,7 +17,9 @@ export const JobsListView: React.FC<JobsListViewProps> = ({
   jobs,
   onJobClick,
   onSaveJob,
+  onApplyJob,
   savedJobs = new Set(),
+  appliedJobs = new Set(),
   jobseekerSkills = [],
 }) => {
   // TF-IDF calculation for jobseeker side
@@ -89,9 +93,10 @@ export const JobsListView: React.FC<JobsListViewProps> = ({
         </div>
       )}
       <div className={styles.listHeader}>
-        <div className={styles.headerCell}>Job</div>
-        <div className={styles.headerCell}>Company</div>
-        <div className={styles.headerCell}>Location</div>
+        <div className={styles.headerCell}>#</div>
+        <div className={styles.headerCell}>Company Name</div>
+        <div className={styles.headerCell}>Required Skills</div>
+        <div className={styles.headerCell}>Your Skills</div>
         <div className={styles.headerCell}>
           Match Score
           {(!jobseekerSkills || jobseekerSkills.length === 0) && (
@@ -100,7 +105,7 @@ export const JobsListView: React.FC<JobsListViewProps> = ({
             </span>
           )}
         </div>
-        <div className={styles.headerCell}>Actions</div>
+        <div className={styles.headerCell}>Action</div>
       </div>
       
       <div className={styles.listBody}>
@@ -112,6 +117,7 @@ export const JobsListView: React.FC<JobsListViewProps> = ({
           // Use the full string ID for MongoDB ObjectIds, or convert to number for numeric IDs
           const jobId = typeof job.id === 'string' && job.id.length > 10 ? job.id : (typeof job.id === 'string' ? parseInt(job.id) : job.id);
           const isSaved = savedJobs.has(jobId);
+          const isApplied = appliedJobs.has(jobId);
 
           return (
             <div key={job.id} className={styles.listRow}>
@@ -125,29 +131,42 @@ export const JobsListView: React.FC<JobsListViewProps> = ({
                 </div>
                 <div className={styles.companyInfo}>
                   <div className={styles.companyName}>{job.company}</div>
-                  <div className={styles.companyMeta}>
-                    <span className={styles.location}>
-                      <FiMapPin className={styles.icon} />
-                      {formatLocation(job.location)}
-                    </span>
-                  </div>
+                  <div className={styles.jobTitle}>{job.title}</div>
                 </div>
               </div>
               
-              <div className={styles.jobTitleCell}>
-                <div className={styles.jobTitleInfo}>
-                  <div className={styles.jobTitle}>{job.title}</div>
-                  <div className={styles.jobMeta}>
-                    <span className={styles.salary}>
-                      <FiTag className={styles.icon} />
-                      {formatSalary(job.salary)}
-                    </span>
-                    <span className={styles.jobType}>
-                      <FiClock className={styles.icon} />
-                      {formatJobType(job.type)}
-                    </span>
+              <div className={styles.skillsCell}>
+                {job.requirements && job.requirements.length > 0 ? (
+                  <div className={styles.skillsList}>
+                    {job.requirements.slice(0, 3).map((skill, i) => (
+                      <span key={i} className={styles.skillTag}>
+                        {skill}
+                      </span>
+                    ))}
+                    {job.requirements.length > 3 && (
+                      <span className={styles.moreSkills}>+{job.requirements.length - 3} more</span>
+                    )}
                   </div>
-                </div>
+                ) : (
+                  <span className={styles.noSkills}>No requirements listed</span>
+                )}
+              </div>
+              
+              <div className={styles.skillsCell}>
+                {jobseekerSkills && jobseekerSkills.length > 0 ? (
+                  <div className={styles.skillsList}>
+                    {jobseekerSkills.slice(0, 3).map((skill, i) => (
+                      <span key={i} className={styles.skillTag}>
+                        {skill}
+                      </span>
+                    ))}
+                    {jobseekerSkills.length > 3 && (
+                      <span className={styles.moreSkills}>+{jobseekerSkills.length - 3} more</span>
+                    )}
+                  </div>
+                ) : (
+                  <span className={styles.noSkills}>No skills in resume</span>
+                )}
               </div>
               
               <div className={styles.matchCell}>
@@ -163,6 +182,16 @@ export const JobsListView: React.FC<JobsListViewProps> = ({
               </div>
               
               <div className={styles.actionsCell}>
+              {onSaveJob && (
+                  <button
+                    onClick={() => onSaveJob(jobId)}
+                    className={`${styles.saveButton} ${isSaved ? styles.saved : ''}`}
+                    title={isSaved ? "Remove from saved" : "Save job"}
+                  >
+                    <FiBookmark className={styles.icon} />
+                  </button>
+                )}
+                
                 <button
                   className={styles.viewButton}
                   onClick={() => onJobClick(job)}
@@ -170,14 +199,16 @@ export const JobsListView: React.FC<JobsListViewProps> = ({
                   <FiEye className={styles.icon} />
                   View Details
                 </button>
-                {onSaveJob && (
+               
+                {onApplyJob && (
                   <button
-                    onClick={() => onSaveJob(jobId)}
-                    className={`${styles.saveButton} ${isSaved ? styles.saved : ''}`}
-                    title={isSaved ? "Remove from saved" : "Save job"}
+                    onClick={() => !isApplied && onApplyJob(jobId)}
+                    className={`${styles.applyButton} ${isApplied ? styles.applied : ''}`}
+                    title={isApplied ? "Already applied" : "Apply to this job"}
+                    disabled={isApplied}
                   >
-                    <FiBookmark className={styles.icon} />
-                    {isSaved ? 'Saved' : 'Save'}
+                    <FiBriefcase className={styles.icon} />
+                    {isApplied ? 'Applied' : 'Apply'}
                   </button>
                 )}
               </div>

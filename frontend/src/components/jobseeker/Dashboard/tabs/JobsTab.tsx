@@ -11,6 +11,7 @@ const JobsTab: React.FC<any> = ({
   onApplyJob,
   onJobClick,
   savedJobs,
+  appliedJobs,
   onOpenFilters,
 }) => {
 
@@ -26,7 +27,9 @@ const JobsTab: React.FC<any> = ({
           jobs={getJobsToDisplay()}
           onJobClick={onJobClick}
           onSaveJob={onSaveJob}
+          onApplyJob={onApplyJob}
           savedJobs={savedJobs}
+          appliedJobs={appliedJobs}
           jobseekerSkills={resume?.skills || []}
         />
       </div>

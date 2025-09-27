@@ -73,6 +73,7 @@ const Dashboard: React.FC = () => {
   const [showResumeUpload, setShowResumeUpload] = useState(false)
   const [resume, setResume] = useState<ParsedResume | null>(null)
   const [applications, setApplications] = useState<Application[]>([])
+  const [appliedJobs, setAppliedJobs] = useState<Set<string | number>>(new Set())
   const [savedJobs, setSavedJobs] = useState<Set<string | number>>(() => {
     // Load saved jobs from localStorage on initialization
     try {
@@ -260,7 +261,8 @@ const Dashboard: React.FC = () => {
             setApplications(userApplications);
             
             // Mark jobs as applied based on user's applications
-            const appliedJobIds = new Set(userApplications.map((app: any) => app.jobId));
+            const appliedJobIds = new Set<string | number>(userApplications.map((app: any) => app.jobId as string | number));
+            setAppliedJobs(appliedJobIds);
             const jobsWithAppliedState = backendJobs.map(job => ({
               ...job,
               applied: appliedJobIds.has(job.id)
@@ -637,6 +639,9 @@ const Dashboard: React.FC = () => {
         return updated;
       });
       
+      // Update appliedJobs set
+      setAppliedJobs(prev => new Set(Array.from(prev).concat([jobId])));
+      
       // Also update filteredJobs if it's being used
       setFilteredJobs(prev => prev.map(job => 
         job.id === jobId ? { ...job, applied: true } : job
@@ -692,11 +697,9 @@ const Dashboard: React.FC = () => {
       resume,
       applications,
       savedJobs,
+      appliedJobs,
       jobs,
       hasSkippedResume,
-      userProfile,
-      onNavigate: setActiveTab,
-      onShowResumeUpload: () => setShowResumeUpload(true),
       getJobsToDisplay,
       onSaveJob: handleSaveJob,
       onApplyJob: handleApplyJob,
