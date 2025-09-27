@@ -61,26 +61,33 @@ MLResumeSchema.pre('save', function(next) {
 
 // Static method to create or update ML resume from Resume data
 MLResumeSchema.statics.createOrUpdateFromResume = async function(resumeData) {
-  const mlResumeData = {
-    resumeId: resumeData._id,
-    jobSeekerUid: resumeData.jobSeekerUid,
-    jobSeekerId: resumeData.jobSeekerId,
-    name: resumeData.personalInfo?.fullName || '',
-    skills: resumeData.skills || []
-  };
+  try {
+    const mlResumeData = {
+      resumeId: resumeData._id,
+      jobSeekerUid: resumeData.jobSeekerUid,
+      jobSeekerId: resumeData.jobSeekerId,
+      name: resumeData.personalInfo?.fullName || '',
+      skills: resumeData.skills || [],
+      isActive: true,
+      updatedAt: new Date()
+    };
 
-  // Use upsert to create or update
-  const result = await this.findOneAndUpdate(
-    { resumeId: resumeData._id },
-    mlResumeData,
-    { 
-      upsert: true, 
-      new: true, 
-      setDefaultsOnInsert: true 
-    }
-  );
+    // Use upsert to create or update
+    const result = await this.findOneAndUpdate(
+      { resumeId: resumeData._id },
+      mlResumeData,
+      { 
+        upsert: true, 
+        new: true, 
+        setDefaultsOnInsert: true 
+      }
+    );
 
-  return result;
+    return result;
+  } catch (error) {
+    console.error('Error in MLResume.createOrUpdateFromResume:', error);
+    throw error;
+  }
 };
 
 // Static method to get all active ML resumes
