@@ -7,7 +7,7 @@
 
 .listHeader {
   display: grid;
-  grid-template-columns: 60px 1.5fr 1.8fr 1fr 0.8fr;
+  grid-template-columns: 60px 1.5fr 1.2fr 1.3fr 1.3fr 1fr 0.8fr;
   background: #f9fafb;
   color: #374151;
   padding: 16px 0;
@@ -34,7 +34,7 @@
 
 .listRow {
   display: grid;
-  grid-template-columns: 60px 1.5fr 1.8fr 1fr 0.8fr;
+  grid-template-columns: 60px 1.5fr 1.2fr 1.3fr 1.3fr 1fr 0.8fr;
   padding: 16px 0;
   border-bottom: 1px solid #f3f4f6;
   align-items: center;
@@ -270,4 +270,91 @@
   .actionsCell {
     justify-content: flex-start;
   }
+}
+
+/* Skill highlighting styles */
+.requiredSkillTag {
+  background-color: #fef3c7;
+  border: 1px solid #f59e0b;
+  color: #92400e;
+}
+
+.matchingSkillTag {
+  background-color: #d1fae5;
+  border: 1px solid #10b981;
+  color: #065f46;
+  font-weight: 600;
+}
+
+.metRequirementTag {
+  background-color: #d1fae5;
+  border: 1px solid #10b981;
+  color: #065f46;
+  font-weight: 600;
+}
+
+/* Job cell styles */
+.jobCell {
+  padding: 0 16px;
+  border-right: 1px solid #e5e7eb;
+}
+
+.jobInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.jobTitle {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.jobDepartment {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+/* Info banner styles */
+.infoBanner {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.infoText {
+  color: #475569;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.legend {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }

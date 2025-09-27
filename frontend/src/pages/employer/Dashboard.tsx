@@ -137,7 +137,6 @@ const EmployerDashboard: React.FC = () => {
     const { auth } = require('../../config/firebase');
     
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log('Auth state changed:', !!user);
       setCurrentUser(user);
       setIsAuthReady(true);
       
@@ -154,7 +153,6 @@ const EmployerDashboard: React.FC = () => {
           
           if (response.ok) {
             const data = await response.json();
-            console.log('Employer account status:', data.data?.accountStatus);
             setUserVerificationStatus(data.data?.accountStatus);
             
             // If employer is not verified, redirect to verification pending
@@ -228,22 +226,13 @@ const EmployerDashboard: React.FC = () => {
   // Load jobs from backend when auth is ready and user is verified
   useEffect(() => {
     if (!isAuthReady || !currentUser || isCheckingVerification || userVerificationStatus !== 'verified') {
-      console.log('Auth not ready, no user, or not verified:', { 
-        isAuthReady, 
-        hasUser: !!currentUser, 
-        isCheckingVerification, 
-        verificationStatus: userVerificationStatus 
-      });
       return;
     }
 
     const loadJobs = async () => {
       try {
         setIsLoadingJobs(true);
-        console.log('🔄 Loading employer jobs...');
         const response = await jobApiService.getEmployerJobs();
-        console.log('📊 Jobs API response:', response);
-        console.log('📝 Number of jobs received:', response.jobs?.length || 0);
         
         // Convert backend jobs to Job format
         const convertedJobs: Job[] = response.jobs.map((job: any) => ({
@@ -278,7 +267,6 @@ const EmployerDashboard: React.FC = () => {
           matchQuality: 85
         }));
         
-        console.log('✅ Converted jobs:', convertedJobs);
         setJobPostings(convertedJobs);
       } catch (error) {
         console.error('❌ Error loading jobs:', error);
@@ -319,7 +307,6 @@ const EmployerDashboard: React.FC = () => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Company profile updated successfully:', data);
         
         // Update local state with new data
         setCompanyProfileData(profileData);
@@ -343,12 +330,6 @@ const EmployerDashboard: React.FC = () => {
   // Load applications from backend when auth is ready and user is verified
   useEffect(() => {
     if (!isAuthReady || !currentUser || isCheckingVerification || userVerificationStatus !== 'verified') {
-      console.log('Auth not ready for applications or not verified:', { 
-        isAuthReady, 
-        hasUser: !!currentUser, 
-        isCheckingVerification, 
-        verificationStatus: userVerificationStatus 
-      });
       return;
     }
 
@@ -365,23 +346,21 @@ const EmployerDashboard: React.FC = () => {
           }
         });
 
-        console.log('Applications API response status:', response.status);
-        console.log('Applications API response headers:', response.headers);
 
         if (response.ok) {
           const data = await response.json();
-          console.log('Applications data received:', data);
-          console.log('Number of applications:', data.data?.length || data.applications?.length || 0);
           
           // If no applications, show empty state instead of mock data
           if (!data.data || data.data.length === 0) {
-            console.log('No applications found, setting empty array');
             setApplications([]);
             return;
           }
           
           // Convert backend applications to Applicant format
           const applicationsArray = data.data || data.applications || [];
+          
+          // Applications now pull fresh data from Resume collection
+          
           const convertedApplications: Applicant[] = applicationsArray.map((app: any) => ({
             id: app._id,
             name: app.applicant?.name || app.resumeData?.personalInfo?.name || 'Unknown Applicant',
@@ -536,7 +515,6 @@ const EmployerDashboard: React.FC = () => {
   const handleEditJob = (job: Job) => {
     setSelectedJob(job);
     // In a real implementation, you would open an edit form modal here
-    console.log('Edit job:', job);
   };
 
   const handleApplicantFilter = (status: string) => {
@@ -544,7 +522,6 @@ const EmployerDashboard: React.FC = () => {
   };
 
   const handleLogout = () => {
-    console.log('Logging out...');
     // Add logout logic here - clear tokens, redirect to login, etc.
     window.location.href = '/auth';
   };
@@ -755,7 +732,6 @@ const EmployerDashboard: React.FC = () => {
       };
 
       setJobPostings(prev => [...prev, newJob]);
-      console.log('Job created successfully:', newJob);
     } catch (error) {
       console.error('Error creating job:', error);
       alert('Failed to create job. Please try again.');
@@ -868,7 +844,6 @@ const EmployerDashboard: React.FC = () => {
       setJobPostings(prev => prev.filter(job => job.id !== jobId));
       
       // In a real app, you would also update applicant statuses based on hiredApplicantIds
-      console.log('Job deleted:', jobId, 'Hired applicants:', hiredApplicantIds);
     } catch (error) {
       console.error('Error deleting job:', error);
       alert('Failed to delete job. Please try again.');
@@ -908,7 +883,6 @@ const EmployerDashboard: React.FC = () => {
       setSelectedJob(job);
       // Here you would typically open an edit form modal
       // For now, we'll just log it
-      console.log('Edit job:', job);
     };
     handleEditJob(job);
     setIsJobDetailsModalOpen(false);
@@ -1076,7 +1050,6 @@ const EmployerDashboard: React.FC = () => {
                 setIsModalOpen(true);
               }}
               onExport={() => {
-                console.log('Export applicants');
               }}
               jobPostings={enhancedJobPostings}
             />
@@ -1145,15 +1118,12 @@ const EmployerDashboard: React.FC = () => {
           }}
           onEdit={() => {
             // Handle edit job
-            console.log('Edit job:', selectedJob);
           }}
           onDelete={() => {
             // Handle delete job
-            console.log('Delete job:', selectedJob);
           }}
           onViewApplicants={() => {
             // Handle view applicants
-            console.log('View applicants for job:', selectedJob);
           }}
         />
       )}
@@ -1170,7 +1140,6 @@ const EmployerDashboard: React.FC = () => {
         isOpen={isNotificationPreferencesModalOpen}
         onClose={() => setIsNotificationPreferencesModalOpen(false)}
         onSave={(preferences: NotificationPreferences) => {
-          console.log('Notification preferences updated:', preferences);
           // Handle save notification preferences
         }}
       />
@@ -1179,7 +1148,6 @@ const EmployerDashboard: React.FC = () => {
         isOpen={isTeamManagementModalOpen}
         onClose={() => setIsTeamManagementModalOpen(false)}
         onSave={(teamData: TeamData) => {
-          console.log('Team data updated:', teamData);
           // Handle save team data
         }}
       />
@@ -1188,7 +1156,6 @@ const EmployerDashboard: React.FC = () => {
         isOpen={isDocumentsModalOpen}
         onClose={() => setIsDocumentsModalOpen(false)}
         onSave={(documentsData: any) => {
-          console.log('Documents updated:', documentsData);
           // Handle save documents data
         }}
       />

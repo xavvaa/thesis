@@ -196,12 +196,6 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onView, onEdit, onDelete,
             className={styles.applicantButton}
             onClick={(e) => {
               e.stopPropagation();
-              console.log('Viewing applicants for job:', {
-                id: job.id,
-                title: job.title,
-                applicants: job.applicants,
-                applicantCount: job.applicantCount
-              });
               onViewApplicants?.(job);
             }}
           >

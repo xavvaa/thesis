@@ -81,7 +81,6 @@ export const JobFormModal: React.FC<JobFormModalProps> = ({
   // Load job data when editing
   useEffect(() => {
     if (isOpen && isEditing && job) {
-      console.log('Loading job data for editing:', job);
       
       // Parse existing salary range if it exists - use only numeric values
       let salaryMin = '';
@@ -113,7 +112,6 @@ export const JobFormModal: React.FC<JobFormModalProps> = ({
           status: job.status || ''
         };
         
-        console.log('Setting form data:', newFormData);
         setFormData(newFormData);
       }, 100);
     }
@@ -288,8 +286,6 @@ export const JobFormModal: React.FC<JobFormModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Debug log to check if job data is being passed correctly
-  console.log('JobFormModal - isEditing:', isEditing, 'job:', job, 'formData:', formData);
 
   const modalContent = (
     <div className={styles.overlay} onClick={onClose}>

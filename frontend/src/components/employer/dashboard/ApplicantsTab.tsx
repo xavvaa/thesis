@@ -36,6 +36,8 @@ export const ApplicantsTab: React.FC<ApplicantsTabProps> = ({
   onExport,
   jobPostings = [],
 }) => {
+  // Pass job postings to ApplicantListView so it can match each applicant to their specific job
+  // No need to pre-calculate target skills here since each applicant applied to different jobs
   return (
     <div className="p-8">
       <div className="max-w-full">
@@ -60,6 +62,8 @@ export const ApplicantsTab: React.FC<ApplicantsTabProps> = ({
         <ApplicantListView
           applicants={applicants}
           onViewDetails={onViewDetails}
+          jobPostings={jobPostings}
+          selectedJobId={filters.jobId}
         />
       </div>
     </div>

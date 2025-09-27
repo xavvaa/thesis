@@ -27,6 +27,7 @@ const JobsTab: React.FC<any> = ({
           onJobClick={onJobClick}
           onSaveJob={onSaveJob}
           savedJobs={savedJobs}
+          jobseekerSkills={resume?.skills || []}
         />
       </div>
     </div>

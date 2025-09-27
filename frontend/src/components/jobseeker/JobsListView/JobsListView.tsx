@@ -8,6 +8,7 @@ interface JobsListViewProps {
   onJobClick: (job: Job) => void;
   onSaveJob?: (jobId: string | number) => void;
   savedJobs?: Set<string | number>;
+  jobseekerSkills?: string[]; // Skills from jobseeker's resume
 }
 
 export const JobsListView: React.FC<JobsListViewProps> = ({
@@ -15,16 +16,30 @@ export const JobsListView: React.FC<JobsListViewProps> = ({
   onJobClick,
   onSaveJob,
   savedJobs = new Set(),
+  jobseekerSkills = [],
 }) => {
-  const calculateMatchScore = (job: Job) => {
-    // Placeholder match score - will be replaced with actual ML-based calculation
-    // Using job ID to create varied scores for sorting demonstration
-    const jobId = typeof job.id === 'string' ? job.id : job.id.toString();
-    const hash = jobId.split('').reduce((a, b) => {
-      a = ((a << 5) - a) + b.charCodeAt(0);
-      return a & a;
-    }, 0);
-    return Math.abs(hash % 40) + 60; // Score between 60-100
+  // TF-IDF calculation for jobseeker side
+  const calculateMatchScore = (job: Job): number => {
+    if (!jobseekerSkills || jobseekerSkills.length === 0) return 0;
+    if (!job.requirements || job.requirements.length === 0) return 0;
+    
+    const lowerJobRequirements = job.requirements.map(s => s.toLowerCase());
+    const lowerJobseekerSkills = jobseekerSkills.map(s => s.toLowerCase());
+    
+    // Find matching skills
+    const matchingSkills = lowerJobseekerSkills.filter(skill => lowerJobRequirements.includes(skill));
+    
+    // TF: how many jobseeker skills match job requirements
+    const tf = matchingSkills.length / jobseekerSkills.length;
+    
+    // IDF: give higher weight to matching skills
+    const idf = lowerJobseekerSkills.reduce((sum, skill) => {
+      const weight = lowerJobRequirements.includes(skill) ? 2 : 0.5;
+      return sum + weight;
+    }, 0) / jobseekerSkills.length;
+    
+    const score = (tf * idf) * 100;
+    return Math.min(100, Math.round(score));
   };
 
   const formatSalary = (salary: string | number | undefined) => {
@@ -61,11 +76,30 @@ export const JobsListView: React.FC<JobsListViewProps> = ({
 
   return (
     <div className={styles.listContainer}>
+      {(!jobseekerSkills || jobseekerSkills.length === 0) && (
+        <div style={{ 
+          padding: '12px', 
+          backgroundColor: '#fff3cd', 
+          border: '1px solid #ffeaa7', 
+          borderRadius: '4px', 
+          marginBottom: '16px',
+          color: '#856404'
+        }}>
+          <strong>💡 Tip:</strong> Add skills to your resume to see accurate job matching scores based on your qualifications.
+        </div>
+      )}
       <div className={styles.listHeader}>
-        <div className={styles.headerCell}>#</div>
+        <div className={styles.headerCell}>Job</div>
         <div className={styles.headerCell}>Company</div>
-        <div className={styles.headerCell}>Job Title</div>
-        <div className={styles.headerCell}>Match Score</div>
+        <div className={styles.headerCell}>Location</div>
+        <div className={styles.headerCell}>
+          Match Score
+          {(!jobseekerSkills || jobseekerSkills.length === 0) && (
+            <span style={{ fontSize: '0.7em', color: '#666', fontWeight: 'normal' }}>
+              (No skills in resume)
+            </span>
+          )}
+        </div>
         <div className={styles.headerCell}>Actions</div>
       </div>
       

@@ -288,20 +288,40 @@ const Dashboard: React.FC = () => {
             // Store the current resume data for the upload prompt
             setCurrentResume(currentResumeResponse.data)
             
-            // If we have a resume in the database, use its parsed data
+            // The /current endpoint returns resume data directly, not in parsedData
             const dbResume = currentResumeResponse.data
-            if (dbResume.parsedData) {
-              setResume(dbResume.parsedData)
-              const jobService = JobService.getInstance()
-              jobService.setUserResume(dbResume.parsedData)
-              resumeLoaded = true
+            
+            // Transform database format to frontend format
+            const resumeData = {
+              personalInfo: {
+                name: dbResume.personalInfo?.fullName || dbResume.personalInfo?.name || '',
+                email: dbResume.personalInfo?.email || '',
+                phone: dbResume.personalInfo?.phone || '',
+                address: dbResume.personalInfo?.fullAddress || dbResume.personalInfo?.address || ''
+              },
+              summary: dbResume.summary || '',
+              skills: dbResume.skills || [], // This is the key fix - use actual skills from Resume collection
+              experience: dbResume.workExperience || [],
+              education: dbResume.education || [],
+              certifications: []
             }
+            
+            // Resume data loaded successfully from Resume collection
+            
+            setResume(resumeData)
+            const jobService = JobService.getInstance()
+            jobService.setUserResume(resumeData)
+            
+            // Save to localStorage as backup/cache
+            localStorage.setItem('userResume', JSON.stringify(resumeData))
+            
+            resumeLoaded = true
           }
         } catch (err) {
-          console.log('No resume found in database, checking localStorage')
+          // Resume not found in database, will try localStorage fallback
         }
 
-        // If no resume in database, check localStorage as fallback
+        // If database fails, try localStorage as fallback
         if (!resumeLoaded) {
           const storedResume = localStorage.getItem('userResume')
           if (storedResume) {
@@ -312,7 +332,7 @@ const Dashboard: React.FC = () => {
               jobService.setUserResume(resumeData)
               resumeLoaded = true
             } catch (e) {
-              console.error('Error parsing stored resume:', e)
+              localStorage.removeItem('userResume') // Clean up corrupted data
             }
           }
         }
@@ -374,7 +394,7 @@ const Dashboard: React.FC = () => {
       setShowInitialResumePrompt(false)
       setHasSkippedResume(false)
       
-      // Store resume data locally as backup
+      // Save to localStorage as backup/cache
       localStorage.setItem('userResume', JSON.stringify(resumeData))
       
       // Set resume in JobService for better job matching

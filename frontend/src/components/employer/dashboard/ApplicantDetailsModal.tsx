@@ -127,9 +127,6 @@ export const ApplicantDetailsModal: React.FC<ApplicantDetailsModalProps> = ({
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Full applications data:', data);
-        console.log('Looking for applicant ID:', applicant.id);
-        console.log('Available applications:', data.data.map((app: any) => ({ _id: app._id, applicantId: app.applicant?.id, name: app.applicant?.name })));
         
         // Try to find by applicant ID first, then by application ID
         let application = data.data.find((app: any) => app.applicant?.id === applicant.id);
@@ -137,8 +134,6 @@ export const ApplicantDetailsModal: React.FC<ApplicantDetailsModalProps> = ({
           application = data.data.find((app: any) => app._id === applicant.id);
         }
         
-        console.log('Found application:', application);
-        console.log('Resume data:', application?.resumeData);
         
         if (application) {
           setApplicationData(application);
