@@ -620,28 +620,33 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
     let cityName = '';
     let barangayName = '';
 
-    // Get region name
-    if (region && psgc && typeof psgc.getAllRegions === 'function') {
-      const regionData = psgc.getAllRegions().find((r: any) => (r.reg_code || r.regCode) === region);
-      regionName = regionData ? (regionData.name || regionData.regDesc) : '';
-    }
+    try {
+      // Get region name
+      if (region && psgc && typeof psgc.getAllRegions === 'function') {
+        const regionData = psgc.getAllRegions().find((r: any) => (r.reg_code || r.regCode) === region);
+        regionName = regionData ? (regionData.name || regionData.regDesc) : '';
+      }
 
-    // Get province name
-    if (province && psgc && typeof psgc.getProvincesByRegion === 'function' && region) {
-      const provinceData = psgc.getProvincesByRegion(region).find((p: any) => (p.prv_code || p.prov_code || p.provCode) === province);
-      provinceName = provinceData ? (provinceData.name || provinceData.provDesc) : '';
-    }
+      // Get province name
+      if (province && psgc && typeof psgc.getProvincesByRegion === 'function' && region) {
+        const provinceData = psgc.getProvincesByRegion(region).find((p: any) => (p.prv_code || p.prov_code || p.provCode) === province);
+        provinceName = provinceData ? (provinceData.name || provinceData.provDesc) : '';
+      }
 
-    // Get city name
-    if (city && psgc && typeof psgc.getMunicipalitiesByProvince === 'function' && province) {
-      const cityData = psgc.getMunicipalitiesByProvince(province).find((c: any) => (c.mun_code || c.citymunCode) === city);
-      cityName = cityData ? (cityData.name || cityData.citymunDesc) : '';
-    }
+      // Get city name
+      if (city && psgc && typeof psgc.getMunicipalitiesByProvince === 'function' && province) {
+        const cityData = psgc.getMunicipalitiesByProvince(province).find((c: any) => (c.mun_code || c.citymunCode) === city);
+        cityName = cityData ? (cityData.name || cityData.citymunDesc) : '';
+      }
 
-    // Get barangay name
-    if (barangay && psgc && typeof psgc.getBarangaysByMunicipality === 'function' && city) {
-      const barangayData = psgc.getBarangaysByMunicipality(city).find((b: any) => (b.bgy_code || b.brgy_code || b.brgyCode) === barangay);
-      barangayName = barangayData ? (barangayData.name || barangayData.brgyDesc) : '';
+      // Get barangay name
+      if (barangay && psgc && typeof psgc.getBarangaysByMunicipality === 'function' && city) {
+        const barangayData = psgc.getBarangaysByMunicipality(city).find((b: any) => (b.bgy_code || b.brgy_code || b.brgyCode) === barangay);
+        barangayName = barangayData ? (barangayData.name || barangayData.brgyDesc) : '';
+      }
+    } catch (error) {
+      console.warn('Error getting location display names:', error);
+      // Continue with empty strings if PSGC fails
     }
 
     return { regionName, provinceName, cityName, barangayName };
@@ -949,17 +954,18 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
     const doc = new jsPDF();
     const { personalInfo, summary, experience, education, skills } = resumeData;
     
-    // Page margins and layout - cleaner, more compact spacing
+    // Page margins and layout
     const margin = 20;
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
     const contentWidth = pageWidth - (margin * 2);
     
-    let yPosition = 25;
+    let yPosition = 20;
     
-    // Black and white color scheme
-    const blackColor = [0, 0, 0]; // Pure black
-    const grayColor = [100, 100, 100]; // Medium gray
+    // Colors
+    const blackColor = [0, 0, 0];
+    const blueColor = [0, 100, 200]; // Blue for name
+    const grayColor = [100, 100, 100]; // Gray for secondary text
     
     // Helper function to check if we need a new page
     const checkPageBreak = (requiredSpace: number) => {
@@ -971,25 +977,38 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
       return false;
     };
     
-    // Header section - Name centered and bold
-    doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
+    // Header section with photo and name layout like the sample
+    const photoWidth = 35; // Bigger photo - approximately 1.4 inches
+    const photoHeight = 35; // Bigger photo - approximately 1.4 inches
+    let hasPhoto = false;
+    
+    if (personalInfo.photo) {
+      try {
+        // Position photo on the top left - 2x2 ID picture format
+        doc.addImage(personalInfo.photo, 'JPEG', margin, yPosition, photoWidth, photoHeight);
+        hasPhoto = true;
+      } catch (error) {
+        console.error('Error adding photo to PDF:', error);
+      }
+    }
+    
+    // Name - positioned next to photo, large and bold in blue
+    const nameX = hasPhoto ? margin + photoWidth + 8 : margin;
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
+    doc.setTextColor(blueColor[0], blueColor[1], blueColor[2]);
     const fullName = `${personalInfo.firstName || ''} ${personalInfo.lastName || ''}`.trim() || 'Your Name';
-    const nameWidth = doc.getTextWidth(fullName);
-    const nameX = (pageWidth - nameWidth) / 2;
-    doc.text(fullName.toUpperCase(), nameX, yPosition);
-    yPosition += 10;
+    doc.text(fullName.toUpperCase(), nameX, yPosition + 8);
     
-    // Contact information section - centered, smaller font
-    doc.setFontSize(10);
+    // Contact information positioned next to name (right side of header)
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
     
-    // Construct full address - use stored readable names if available, otherwise convert PSGC codes
-    let regionName = '', provinceName = '', cityName = '', barangayName = '';
+    let contactY = yPosition + 8;
     
-    // Check if we have stored readable names from database
+    // Construct address
+    let regionName = '', provinceName = '', cityName = '', barangayName = '';
     const personalInfoAny = resumeData.personalInfo as any;
     if (personalInfoAny.readableLocationRegion) {
       regionName = personalInfoAny.readableLocationRegion;
@@ -997,7 +1016,6 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
       cityName = personalInfoAny.readableLocationCity || '';
       barangayName = personalInfoAny.readableLocationBarangay || '';
     } else {
-      // Fallback to converting PSGC codes (for current session or backward compatibility)
       const displayNames = getLocationDisplayNames();
       regionName = displayNames.regionName;
       provinceName = displayNames.provinceName;
@@ -1010,91 +1028,60 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
     if (barangayName) addressParts.push(barangayName);
     if (cityName) addressParts.push(cityName);
     if (provinceName) addressParts.push(provinceName);
-    if (regionName) addressParts.push(regionName);
-    if (personalInfo.zipCode) addressParts.push(personalInfo.zipCode);
     
+    // Address
     if (addressParts.length > 0) {
-      const fullAddress = addressParts.join(', ');
-      const addressWidth = doc.getTextWidth(fullAddress);
-      const addressX = (pageWidth - addressWidth) / 2;
-      doc.text(fullAddress, addressX, yPosition);
-      yPosition += 10;
+      doc.text(`Address: ${addressParts.join(', ')}`, nameX, contactY + 5);
+      contactY += 4;
     }
     
-    // Contact line - email and phone centered together with better spacing
-    const contactParts = [];
-    if (personalInfo.email) contactParts.push(personalInfo.email);
-    if (personalInfo.phone) contactParts.push(personalInfo.phone);
-    
-    if (contactParts.length > 0) {
-      const contactText = contactParts.join('  •  ');
-      const contactWidth = doc.getTextWidth(contactText);
-      const contactX = (pageWidth - contactWidth) / 2;
-      doc.text(contactText, contactX, yPosition);
-      yPosition += 10;
+    // Phone
+    if (personalInfo.phone) {
+      doc.text(`Phone: ${personalInfo.phone}`, nameX, contactY + 5);
+      contactY += 4;
     }
     
-    // Birthday and Age line - centered with better formatting
-    const personalDetails = [];
-    if (personalInfo.birthday) {
-      const formattedDate = new Date(personalInfo.birthday).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-      personalDetails.push(`Birthday: ${formattedDate}`);
-    }
-    if (personalInfo.age) {
-      personalDetails.push(`Age: ${personalInfo.age}`);
+    // Email
+    if (personalInfo.email) {
+      doc.text(`Email: ${personalInfo.email}`, nameX, contactY + 5);
+      contactY += 4;
     }
     
-    if (personalDetails.length > 0) {
-      const personalText = personalDetails.join('  •  ');
-      const personalWidth = doc.getTextWidth(personalText);
-      const personalX = (pageWidth - personalWidth) / 2;
-      doc.text(personalText, personalX, yPosition);
-      yPosition += 10;
-    }
+    // Adjust yPosition to account for header
+    yPosition = Math.max(yPosition + photoHeight + 10, contactY + 10);
     
-    // Add subtle line separator
-    yPosition += 3;
-    doc.setDrawColor(blackColor[0], blackColor[1], blackColor[2]);
-    doc.setLineWidth(0.3);
-    doc.line(margin + 20, yPosition, pageWidth - margin - 20, yPosition);
-    yPosition += 8;
-    
-    // Helper function to add section headers - clean black style
+    // Helper function to add section headers - plain with underline
     const addSectionHeader = (title: string) => {
       checkPageBreak(20);
       
       // Add spacing before section
-      yPosition += 10;
+      yPosition += 8;
       
-      // Section header - black, bold, centered with gray background
-      doc.setFillColor(240, 240, 240); // Light gray background
-      doc.rect(margin, yPosition - 3, contentWidth, 8, 'F');
-      
-      doc.setFontSize(12);
+      // Section header - blue text with underline to match name color
+      doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
-      const titleWidth = doc.getTextWidth(title.toUpperCase());
-      const titleX = (pageWidth - titleWidth) / 2;
-      doc.text(title.toUpperCase(), titleX, yPosition + 2);
+      doc.setTextColor(blueColor[0], blueColor[1], blueColor[2]);
+      doc.text(title.toUpperCase(), margin, yPosition);
       
-      yPosition += 12;
+      // Add underline - extend to the end of the page margin with blue color
+      doc.setDrawColor(blueColor[0], blueColor[1], blueColor[2]);
+      doc.setLineWidth(0.5);
+      doc.line(margin, yPosition + 2, pageWidth - margin, yPosition + 2);
+      
+      yPosition += 8;
     };
     
-    // Professional Summary with improved typography
+    // Professional Summary
     if (summary) {
-      addSectionHeader('Professional Summary');
+      addSectionHeader('Summary');
       
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
       const summaryLines = doc.splitTextToSize(summary, contentWidth);
-      checkPageBreak(summaryLines.length * 5 + 10);
+      checkPageBreak(summaryLines.length * 4 + 10);
       doc.text(summaryLines, margin, yPosition);
-      yPosition += summaryLines.length * 5 + 5;
+      yPosition += summaryLines.length * 4 + 5;
     }
     
     // Work Experience
@@ -1104,77 +1091,61 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
       
       validExperience.forEach((exp, index) => {
         // Calculate space needed for this experience entry
-        const descLines = exp.description ? doc.splitTextToSize(exp.description, contentWidth - 15) : [];
-        const spaceNeeded = 20 + (descLines.length * 5);
+        const descLines = exp.description ? doc.splitTextToSize(exp.description, contentWidth - 8) : [];
+        const spaceNeeded = 15 + (descLines.length * 4);
         checkPageBreak(spaceNeeded);
         
-        // Experience entry with bullet point and formatting like the image
-        doc.setFontSize(10);
+        // Job title - bold
+        doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
+        doc.text(exp.position, margin, yPosition);
         
-        // Format: ❖ Position, Company ........................ Duration
-        const bulletPoint = '❖';
-        const positionCompany = `${bulletPoint} ${exp.position}, ${exp.company}`;
-        doc.text(positionCompany, margin, yPosition);
-        
-        // Duration (right aligned) - format from start and end dates
+        // Duration (right aligned)
         let durationText = '';
         if (exp.startDate && exp.endDate && exp.endDate !== 'present') {
           const startDate = new Date(exp.startDate + '-01');
           const endDate = new Date(exp.endDate + '-01');
           const startMonth = startDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
           const endMonth = endDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-          durationText = `${startMonth} — ${endMonth}`;
+          durationText = `${startMonth} - ${endMonth}`;
         } else if (exp.startDate) {
           const startDate = new Date(exp.startDate + '-01');
           const startMonth = startDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-          durationText = `${startMonth} — Present`;
+          durationText = `${startMonth} - Present`;
         } else if (exp.duration) {
-          // Fallback to old duration field if new dates aren't available
           durationText = exp.duration;
         }
         
         if (durationText) {
-          doc.setFontSize(10);
+          doc.setFontSize(9);
           doc.setFont('helvetica', 'normal');
-          doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
           const durationWidth = doc.getTextWidth(durationText);
           doc.text(durationText, pageWidth - margin - durationWidth, yPosition);
         }
         yPosition += 4;
         
-        // Add location on next line if available
-        if (exp.location) {
-          doc.setFontSize(9);
-          doc.setFont('helvetica', 'italic');
-          doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
-          const locationWidth = doc.getTextWidth(exp.location);
-          doc.text(exp.location, pageWidth - margin - locationWidth, yPosition);
-          yPosition += 4;
-        }
+        // Company name - italic
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'italic');
+        doc.text(exp.company, margin, yPosition);
+        yPosition += 4;
         
-        // Description with improved formatting
+        // Description with bullet points
         if (exp.description) {
-          doc.setFontSize(10);
+          doc.setFontSize(9);
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
           
-          // Split description into bullet points (assuming it's separated by periods or newlines)
-          const bullets = exp.description.split(/[.\n]/).filter(bullet => bullet.trim().length > 0);
+          // Split description into bullet points if it contains line breaks
+          const descriptionParts = exp.description.split('\n').filter(part => part.trim());
           
-          bullets.forEach(bullet => {
-            const bulletText = `• ${bullet.trim()}`;
-            const bulletLines = doc.splitTextToSize(bulletText, contentWidth - 10);
-            
-            bulletLines.forEach((line: string, lineIndex: number) => {
-              if (lineIndex === 0) {
-                doc.text(line, margin + 5, yPosition);
-              } else {
-                doc.text(line, margin + 10, yPosition); // Indent continuation lines
-              }
-              yPosition += 4;
-            });
+          descriptionParts.forEach(part => {
+            const bulletText = `• ${part.trim()}`;
+            const bulletLines = doc.splitTextToSize(bulletText, contentWidth - 8);
+            checkPageBreak(bulletLines.length * 4 + 2);
+            doc.text(bulletLines, margin + 8, yPosition);
+            yPosition += bulletLines.length * 4;
           });
           yPosition += 5;
         }
@@ -1195,7 +1166,7 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
         checkPageBreak(25);
         
         // Degree (bold) with cleaner typography
-        doc.setFontSize(12);
+        doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
         doc.text(edu.degree, margin, yPosition);
@@ -1215,57 +1186,43 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
         }
         
         if (durationText) {
-          doc.setFontSize(10);
-          doc.setFont('helvetica', 'italic');
-          doc.setTextColor(grayColor[0], grayColor[1], grayColor[2]);
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
           const durationWidth = doc.getTextWidth(durationText);
           doc.text(durationText, pageWidth - margin - durationWidth, yPosition);
         }
-        yPosition += 5;
+        yPosition += 4;
         
-        // School name with cleaner styling
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
+        // School name (italic)
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'italic');
         doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
         doc.text(edu.school, margin, yPosition);
-        
-        // Location if available
-        if (edu.location) {
-          doc.setFontSize(9);
-          doc.setFont('helvetica', 'italic');
-          doc.setTextColor(grayColor[0], grayColor[1], grayColor[2]);
-          const locationWidth = doc.getTextWidth(edu.location);
-          doc.text(edu.location, pageWidth - margin - locationWidth, yPosition);
-        }
-        yPosition += 8;
+        yPosition += 6;
       });
     }
     
-    // Skills
+    // Skills section
     const validSkills = skills.filter(skill => skill && skill.trim() !== '');
-    console.log('Skills data for PDF:', skills);
-    console.log('Valid skills for PDF:', validSkills);
     
     if (validSkills.length > 0) {
       addSectionHeader('Skills');
       
-      doc.setFontSize(11);
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(blackColor[0], blackColor[1], blackColor[2]);
       
-      // Display skills in a more compact, professional format
-      const skillsPerLine = 3;
-      const skillsText = validSkills.join('  •  ');
+      // Display skills in a compact format
+      const skillsText = validSkills.join(' • ');
       const skillLines = doc.splitTextToSize(skillsText, contentWidth);
       
-      checkPageBreak(skillLines.length * 6 + 10);
+      checkPageBreak(skillLines.length * 4 + 10);
       skillLines.forEach((line: string) => {
         doc.text(line, margin, yPosition);
-        yPosition += 5;
+        yPosition += 4;
       });
       yPosition += 5;
-    } else {
-      console.log('No valid skills found for PDF generation');
     }
     
     // Return blob for database storage or save file for download
@@ -1277,6 +1234,7 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
       const defaultFileName = `${fullName}_Resume.pdf`;
       const fileName = filename || defaultFileName;
       doc.save(fileName);
+      return undefined;
     }
   };
 
@@ -1302,7 +1260,7 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       // Generate PDF blob for database storage (without downloading)
-      const pdfBlob = generatePDF(undefined, true);
+      const pdfBlob = generatePDF(undefined, true) as Blob;
       
       // Convert blob to base64 for API transmission
       const pdfBase64 = await blobToBase64(pdfBlob);
