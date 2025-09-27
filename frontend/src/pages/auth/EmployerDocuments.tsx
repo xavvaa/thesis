@@ -216,7 +216,6 @@ const EmployerDocuments: React.FC = () => {
         throw new Error(result.message || result.error || 'Failed to upload documents')
       }
 
-      console.log("Documents uploaded successfully:", result)
       setShowVerificationPending(true)
     } catch (error) {
       console.error("Document upload failed:", error)

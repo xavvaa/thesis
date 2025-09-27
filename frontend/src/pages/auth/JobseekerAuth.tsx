@@ -333,12 +333,10 @@ const JobseekerAuth: React.FC = () => {
 
     setIsUploading(true)
     try {
-      console.log("Uploading resume to backend:", resumeFile.name)
 
       const response = await apiService.uploadResume(resumeFile)
       
       if (response.success) {
-        console.log("Resume uploaded successfully:", response.data)
         
         // If resume data was parsed, show edit modal
         if (response.data.resumeData) {
@@ -498,7 +496,6 @@ const JobseekerAuth: React.FC = () => {
       if (resumeFile) {
         try {
           await handleFileUpload()
-          console.log("Resume uploaded successfully during registration")
         } catch (resumeError) {
           // Don't fail registration if resume upload fails - user can upload later
           console.warn("Resume upload failed during registration:", resumeError)

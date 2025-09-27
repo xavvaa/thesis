@@ -166,14 +166,11 @@ const EmployerAuth: React.FC = () => {
         const tempResponse = await firebaseAuthService.signInWithGoogle("employer")
         
         if (tempResponse.success && tempResponse.user) {
-          console.log('🔍 Google Sign-In successful, checking email conflicts for:', tempResponse.user.email)
           
           // Check if this email has role conflicts
           const emailCheck = await apiService.checkEmailExists(tempResponse.user.email!, 'employer')
-          console.log('📧 Email check result:', emailCheck)
           
           if (emailCheck.success && emailCheck.data.exists && emailCheck.data.crossRoleConflict) {
-            console.log('❌ Role conflict detected')
             await firebaseAuthService.signOut()
             showError({
               code: 'role-mismatch',
@@ -182,7 +179,6 @@ const EmployerAuth: React.FC = () => {
             return
           }
           
-          console.log('✅ No role conflicts, proceeding with authentication')
           
           // Check if user is verified and redirect accordingly
           if (!tempResponse.user.emailVerified) {
@@ -193,20 +189,15 @@ const EmployerAuth: React.FC = () => {
           
           // Check employer account status before allowing dashboard access
           try {
-            console.log('🔍 Checking employer account status...')
             const statusResponse = await apiService.get('/employers/account-status')
-            console.log('📊 Account status response:', statusResponse)
             
             if (statusResponse.success && statusResponse.data) {
               const { accountStatus } = statusResponse.data
-              console.log('🏢 Employer account status:', accountStatus)
               
               if (accountStatus === 'pending') {
-                console.log('⏳ Account pending - redirecting to verification pending')
                 navigate('/auth/verification-pending')
                 return
               } else if (accountStatus === 'rejected') {
-                console.log('❌ Account rejected')
                 showError({
                   code: 'account-rejected',
                   message: 'Your employer account has been rejected. Please contact support for assistance.'
@@ -214,7 +205,6 @@ const EmployerAuth: React.FC = () => {
                 await firebaseAuthService.signOut()
                 return
               } else if (accountStatus === 'suspended') {
-                console.log('🚫 Account suspended')
                 showError({
                   code: 'account-suspended',
                   message: 'Your employer account has been suspended. Please contact support for assistance.'
@@ -222,15 +212,12 @@ const EmployerAuth: React.FC = () => {
                 await firebaseAuthService.signOut()
                 return
               } else if (accountStatus === 'verified') {
-                console.log('✅ Account verified - proceeding to dashboard')
                 // Continue to dashboard redirect below
               } else {
-                console.log('⚠️ Unknown account status:', accountStatus, '- redirecting to verification pending')
                 navigate('/auth/verification-pending')
                 return
               }
             } else {
-              console.log('⚠️ No account status data received - redirecting to verification pending')
               navigate('/auth/verification-pending')
               return
             }
@@ -239,12 +226,10 @@ const EmployerAuth: React.FC = () => {
             
             // Check if it's a 404 error (no employer profile found)
             if (error.response && error.response.status === 404) {
-              console.log('📋 No employer profile found - redirecting to documents upload')
               navigate('/auth/employer/documents')
               return
             }
             
-            console.log('🔄 Redirecting to verification pending as fallback')
             navigate('/auth/verification-pending')
             return
           }
@@ -407,22 +392,15 @@ const EmployerAuth: React.FC = () => {
         
         // Check employer account status before allowing dashboard access
         try {
-          console.log('🔍 Checking employer account status for login...')
           const statusResponse = await apiService.get('/employers/account-status')
-          console.log('📊 Account status response:', statusResponse)
           
           if (statusResponse.success && statusResponse.data) {
             const { accountStatus } = statusResponse.data
-            console.log('🏢 Employer account status:', accountStatus)
-            console.log('🔍 Full status response data:', statusResponse.data)
-            console.log('🔍 Status comparison - accountStatus === "verified":', accountStatus === 'verified')
             
             if (accountStatus === 'pending') {
-              console.log('⏳ Account pending - redirecting to verification pending page')
               navigate('/auth/verification-pending')
               return
             } else if (accountStatus === 'rejected') {
-              console.log('❌ Account rejected')
               showError({
                 code: 'account-rejected',
                 message: 'Your employer account has been rejected. Please contact support for assistance.'
@@ -430,7 +408,6 @@ const EmployerAuth: React.FC = () => {
               await firebaseAuthService.signOut()
               return
             } else if (accountStatus === 'suspended') {
-              console.log('🚫 Account suspended')
               showError({
                 code: 'account-suspended',
                 message: 'Your employer account has been suspended. Please contact support for assistance.'
@@ -438,21 +415,17 @@ const EmployerAuth: React.FC = () => {
               await firebaseAuthService.signOut()
               return
             } else if (accountStatus === 'verified') {
-              console.log('✅ Account verified - proceeding to dashboard')
               // Continue to dashboard redirect below
             } else {
-              console.log('⚠️ Unknown account status:', accountStatus, '- redirecting to verification pending page')
               navigate('/auth/verification-pending')
               return
             }
           } else {
-            console.log('⚠️ No account status data received - redirecting to verification pending page')
             navigate('/auth/verification-pending')
             return
           }
         } catch (error) {
           console.error('❌ Error checking account status:', error)
-          console.log('🔄 Redirecting to verification pending page as fallback')
           navigate('/auth/verification-pending')
           return
         }

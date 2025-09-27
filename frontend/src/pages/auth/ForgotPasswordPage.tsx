@@ -37,9 +37,7 @@ const ForgotPasswordPage: React.FC = () => {
         return;
       }
       
-      console.log('Attempting to send password reset email to:', email);
       const response = await firebaseAuthService.sendPasswordResetEmail(email);
-      console.log('Password reset response:', response);
       
       if (response.success) {
         setIsSubmitted(true);
