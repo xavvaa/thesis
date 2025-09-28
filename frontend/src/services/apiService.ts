@@ -144,6 +144,33 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  async uploadProfilePicture(file: File): Promise<ApiResponse> {
+    const formData = new FormData();
+    formData.append('profilePicture', file);
+    
+    const headers = await this.getAuthHeaders();
+    // Remove Content-Type to let browser set it with boundary for FormData
+    delete (headers as any)['Content-Type'];
+    
+    const response = await fetch(`${API_BASE_URL}/users/profile-picture`, {
+      method: 'POST',
+      headers,
+      body: formData
+    });
+    
+    return this.handleResponse(response);
+  }
+
+  async removeProfilePicture(): Promise<ApiResponse> {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}/users/profile-picture`, {
+      method: 'DELETE',
+      headers
+    });
+    
+    return this.handleResponse(response);
+  }
+
   async checkUserExists(uid: string): Promise<ApiResponse> {
     const response = await fetch(`${API_BASE_URL}/users/check/${uid}`);
     return this.handleResponse(response);

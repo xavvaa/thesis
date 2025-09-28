@@ -67,6 +67,10 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  profilePicture: {
+    type: String,
+    default: null
+  },
   
   // Registration and verification status
   registrationStatus: {

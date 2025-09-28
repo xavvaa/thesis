@@ -33,6 +33,8 @@ app.use('/uploads', express.static('uploads', {
     if (path.endsWith('.pdf')) {
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', 'inline');
+    } else if (path.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache images for 1 year
     }
   }
 }));

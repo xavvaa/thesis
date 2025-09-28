@@ -459,22 +459,60 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 20px;
-  background: rgba(255, 255, 255, 0.2);
+  padding: 10px 16px;
+  background-color: #3182ce;
   color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
+  border: none;
+  border-radius: 6px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  backdrop-filter: blur(10px);
 }
 
 .editButton:hover {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.5);
-  transform: translateY(-1px);
+  background-color: #2c5aa0;
+  box-shadow: 0 4px 8px rgba(49, 130, 206, 0.3);
+}
+
+.downloadButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: #48bb78;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.downloadButton:hover {
+  background-color: #38a169;
+  box-shadow: 0 4px 8px rgba(72, 187, 120, 0.3);
+}
+
+.createResumeButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: #8b5cf6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.createResumeButton:hover {
+  background-color: #7c3aed;
+  box-shadow: 0 4px 8px rgba(139, 92, 246, 0.3);
 }
 
 .editActions {
@@ -923,25 +961,33 @@ input:checked + .slider:before {
 
 .profilePictureUpload {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 24px;
   margin-top: 16px;
+  text-align: center;
 }
 
 .currentPicture {
-  width: 80px;
-  height: 80px;
+  width: 180px;
+  height: 180px;
   border-radius: 50%;
   background: #f7fafc;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #e2e8f0;
+  border: 3px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.currentPicture:hover {
+  border-color: #cbd5e0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .defaultAvatar {
-  width: 40px;
-  height: 40px;
+  width: 60px;
+  height: 60px;
   color: #a0aec0;
 }
 
@@ -955,9 +1001,9 @@ input:checked + .slider:before {
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background-color: #3182ce;
-  color: white;
-  border: none;
+  background-color: transparent;
+  color: #3182ce;
+  border: 2px solid #3182ce;
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
@@ -966,7 +1012,8 @@ input:checked + .slider:before {
 }
 
 .uploadPictureButton:hover {
-  background-color: #2c5aa0;
+  background-color: #3182ce;
+  color: white;
 }
 
 .removePictureButton {

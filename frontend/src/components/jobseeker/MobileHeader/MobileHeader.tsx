@@ -6,6 +6,7 @@ interface MobileHeaderProps {
   pageTitle: string
   userName?: string
   userInitial?: string
+  userProfilePicture?: string
   onFilterClick?: () => void
   onMenuClick?: () => void
   notifications?: number
@@ -17,6 +18,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
   pageTitle,
   userName = 'User',
   userInitial = 'U',
+  userProfilePicture,
   onFilterClick,
   onMenuClick,
   notifications = 0,
@@ -65,7 +67,15 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
           </button>
           
           <div className={styles.userAvatar} aria-label="User profile">
-            {userInitial}
+            {userProfilePicture ? (
+              <img 
+                src={`http://localhost:3001/${userProfilePicture}`} 
+                alt="Profile" 
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+              />
+            ) : (
+              userInitial
+            )}
           </div>
         </div>
       </header>

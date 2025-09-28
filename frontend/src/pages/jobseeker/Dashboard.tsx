@@ -273,6 +273,20 @@ const Dashboard: React.FC = () => {
     }
 
     loadData()
+    
+    // Listen for profile picture updates from Settings component
+    const handleProfilePictureUpdate = (event: any) => {
+      setUserProfile(prev => ({
+        ...prev,
+        profilePicture: event.detail.profilePicture
+      }));
+    };
+    
+    window.addEventListener('profilePictureUpdated', handleProfilePictureUpdate);
+    
+    return () => {
+      window.removeEventListener('profilePictureUpdated', handleProfilePictureUpdate);
+    };
   }, [])
 
   // Separate effect for auth-dependent data loading
@@ -760,7 +774,7 @@ const Dashboard: React.FC = () => {
           onResumeDataChange={setResumeFormData}
         />;
       case 'profile':
-        return <SettingsTab />;
+        return <SettingsTab onNavigate={setActiveTab} />;
       default:
         return (
           <div className={styles.pageContent}>
@@ -784,6 +798,7 @@ const Dashboard: React.FC = () => {
         <MobileHeader
           pageTitle={getPageTitle(activeTab)}
           userInitial={resume?.personalInfo?.name?.charAt(0) || 'U'}
+          userProfilePicture={userProfile?.profilePicture}
           onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
           onFilterClick={activeTab === 'jobs' ? () => setShowFilterModal(true) : undefined}
           notifications={notifications}
@@ -848,7 +863,15 @@ const Dashboard: React.FC = () => {
               className={styles.userAvatar}
               aria-label="User profile"
             >
-              {resume?.personalInfo?.name?.charAt(0) || 'U'}
+              {userProfile?.profilePicture ? (
+                <img 
+                  src={`http://localhost:3001/${userProfile.profilePicture}`} 
+                  alt="Profile" 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                />
+              ) : (
+                resume?.personalInfo?.name?.charAt(0) || 'U'
+              )}
             </div>
           </div>
         </header>

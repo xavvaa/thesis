@@ -164,4 +164,93 @@ const userController = {
   }
 };
 
+// Upload profile picture
+userController.uploadProfilePicture = async (req, res) => {
+  try {
+    const { uid } = req.user;
+    
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No file uploaded'
+      });
+    }
+
+    const user = await User.findOne({ uid });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    // Delete old profile picture if it exists
+    if (user.profilePicture) {
+      const fs = require('fs');
+      const path = require('path');
+      const oldFilePath = path.join(__dirname, '..', user.profilePicture);
+      if (fs.existsSync(oldFilePath)) {
+        fs.unlinkSync(oldFilePath);
+      }
+    }
+
+    // Update user with new profile picture path
+    const profilePicturePath = `uploads/profile-pictures/${req.file.filename}`;
+    user.profilePicture = profilePicturePath;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Profile picture uploaded successfully',
+      profilePicture: profilePicturePath
+    });
+  } catch (error) {
+    console.error('Upload profile picture error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to upload profile picture'
+    });
+  }
+};
+
+// Remove profile picture
+userController.removeProfilePicture = async (req, res) => {
+  try {
+    const { uid } = req.user;
+
+    const user = await User.findOne({ uid });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    // Delete profile picture file if it exists
+    if (user.profilePicture) {
+      const fs = require('fs');
+      const path = require('path');
+      const filePath = path.join(__dirname, '..', user.profilePicture);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+
+    // Remove profile picture from user record
+    user.profilePicture = null;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Profile picture removed successfully'
+    });
+  } catch (error) {
+    console.error('Remove profile picture error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to remove profile picture'
+    });
+  }
+};
+
 module.exports = userController;

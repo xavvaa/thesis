@@ -3,9 +3,10 @@ import styles from './WelcomeHeader.module.css';
 
 interface WelcomeHeaderProps {
   userName: string | undefined;
+  profilePicture?: string;
 }
 
-const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ userName }) => {
+const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ userName, profilePicture }) => {
   const firstName = userName?.split(' ')[0] || 'User';
   const avatarInitial = userName?.charAt(0) || 'U';
 
@@ -20,7 +21,15 @@ const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ userName }) => {
         </p>
       </div>
       <div className={styles.welcomeAvatar}>
-        {avatarInitial}
+        {profilePicture ? (
+          <img 
+            src={`http://localhost:3001/${profilePicture}`} 
+            alt="Profile" 
+            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+          />
+        ) : (
+          avatarInitial
+        )}
       </div>
     </div>
   );

@@ -49,7 +49,11 @@ export const RecentApplicants: React.FC<RecentApplicantsProps> = ({
           >
             <div className={styles.applicantContent}>
               <div className={styles.avatar}>
-                <FiUsers size={20} />
+                {applicant.avatar ? (
+                  <img src={applicant.avatar} alt={applicant.name} />
+                ) : (
+                  <FiUsers size={20} />
+                )}
               </div>
               <div className={styles.applicantInfo}>
                 <h3 className={styles.position}>Applied to {applicant.position}</h3>

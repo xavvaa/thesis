@@ -356,6 +356,9 @@ const EmployerDashboard: React.FC = () => {
 
         if (response.ok) {
           const data = await response.json();
+          console.log('Applications API response:', data);
+          
+          const applicationsArray = data.data || [];
           
           // If no applications, show empty state instead of mock data
           if (!data.data || data.data.length === 0) {
@@ -364,10 +367,6 @@ const EmployerDashboard: React.FC = () => {
           }
           
           // Convert backend applications to Applicant format
-          const applicationsArray = data.data || data.applications || [];
-          
-          // Applications now pull fresh data from Resume collection
-          
           const convertedApplications: Applicant[] = applicationsArray.map((app: any) => ({
             id: app._id,
             name: app.applicant?.name || app.resumeData?.personalInfo?.name || 'Unknown Applicant',
@@ -389,7 +388,8 @@ const EmployerDashboard: React.FC = () => {
             jobId: app.jobId,
             resumeUrl: app.resumeData ? '#' : undefined,
             coverLetter: app.coverLetter || '',
-            notes: app.notes || ''
+            notes: app.notes || '',
+            avatar: app.applicant?.profilePicture ? `http://localhost:3001/${app.applicant.profilePicture}` : undefined
           }));
           
           setApplications(convertedApplications);

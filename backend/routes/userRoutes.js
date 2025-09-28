@@ -1,8 +1,44 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const User = require('../models/User');
 const userController = require('../controllers/userController');
 const { verifyToken } = require('../middleware/authMiddleware');
+
+// Configure multer for profile picture uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = 'uploads/profile-pictures';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    // Generate unique filename with timestamp and original extension
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, req.user.uid + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  // Accept only image files
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image files are allowed'), false);
+  }
+};
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
 
 // @route   POST /api/users
 // @desc    Create a new user
@@ -65,5 +101,15 @@ router.get('/:uid', verifyToken, userController.getUserByUid);
 // @desc    Check if user exists
 // @access  Public
 router.get('/check/:uid', userController.checkUserExists);
+
+// @route   POST /api/users/profile-picture
+// @desc    Upload profile picture
+// @access  Private
+router.post('/profile-picture', verifyToken, upload.single('profilePicture'), userController.uploadProfilePicture);
+
+// @route   DELETE /api/users/profile-picture
+// @desc    Remove profile picture
+// @access  Private
+router.delete('/profile-picture', verifyToken, userController.removeProfilePicture);
 
 module.exports = router;

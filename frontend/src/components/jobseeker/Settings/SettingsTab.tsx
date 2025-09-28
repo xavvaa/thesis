@@ -48,7 +48,11 @@ interface JobseekerProfile {
   isActive?: boolean;
 }
 
-const SettingsTab: React.FC = () => {
+interface SettingsTabProps {
+  onNavigate?: (tab: string) => void;
+}
+
+const SettingsTab: React.FC<SettingsTabProps> = ({ onNavigate }) => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<JobseekerProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -103,6 +107,13 @@ const SettingsTab: React.FC = () => {
     checkUserAuthMethods();
   }, []);
 
+  // Add effect to re-fetch profile when activeSection changes to ensure fresh data
+  useEffect(() => {
+    if (activeSection === 'profile' || activeSection === 'account') {
+      fetchProfile();
+    }
+  }, [activeSection]);
+
   const checkUserAuthMethods = async () => {
     try {
       setCheckingAuthMethods(true);
@@ -142,9 +153,25 @@ const SettingsTab: React.FC = () => {
         return;
       }
       
-      const response = await apiService.get('/jobseekers/profile');
-      if (response.success && response.data) {
-        let profileData = response.data;
+      // Fetch both jobseeker profile and user profile to get complete data
+      const [jobseekerResponse, userResponse] = await Promise.all([
+        apiService.get('/jobseekers/profile'),
+        apiService.getUserProfile()
+      ]);
+      
+      if (jobseekerResponse.success && jobseekerResponse.data) {
+        let profileData = jobseekerResponse.data;
+        
+        // Merge user data (including profilePicture) with jobseeker data
+        if (userResponse.success && userResponse.data) {
+          console.log('User response data:', userResponse.data);
+          const userData = userResponse.data.user || userResponse.data;
+          console.log('Profile picture from user data:', userData.profilePicture);
+          profileData = {
+            ...profileData,
+            profilePicture: userData.profilePicture
+          };
+        }
         
         // Fetch current resume from the Resume collection
         try {
@@ -160,16 +187,18 @@ const SettingsTab: React.FC = () => {
           console.log('No resume found in Resume collection');
         }
         
+        console.log('Final profile data being set:', profileData);
+        console.log('Profile picture in final data:', profileData.profilePicture);
         setProfile(profileData);
         setEditedProfile(profileData);
       } else {
         // If 401 error, redirect to auth
-        if (response.error?.includes('401') || response.error?.includes('Unauthorized')) {
+        if (jobseekerResponse.error?.includes('401') || jobseekerResponse.error?.includes('Unauthorized')) {
           setError('Session expired. Please sign in again.');
           navigate('/auth');
           return;
         }
-        setError(response.error || 'Failed to load profile');
+        setError(jobseekerResponse.error || 'Failed to load profile');
       }
     } catch (err: any) {
       console.error('Profile fetch error:', err);
@@ -226,6 +255,75 @@ const SettingsTab: React.FC = () => {
         ...editedProfile,
         [field]: value
       });
+    }
+  };
+
+  const handleProfilePictureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError('Please select a valid image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image size must be less than 5MB');
+      return;
+    }
+
+    try {
+      setUploadingPicture(true);
+      setError(null);
+
+      const response = await apiService.uploadProfilePicture(file);
+      
+      if (response.success && response.data) {
+        console.log('Upload response:', response.data);
+        console.log('New profile picture path:', response.data.profilePicture);
+        setProfile(prev => prev ? { ...prev, profilePicture: response.data.profilePicture } : null);
+        
+        // Trigger a custom event to notify other components of the profile update
+        window.dispatchEvent(new CustomEvent('profilePictureUpdated', {
+          detail: { profilePicture: response.data.profilePicture }
+        }));
+        
+        setSuccess('Profile picture updated successfully!');
+      } else {
+        setError(response.error || 'Failed to upload profile picture');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload profile picture');
+    } finally {
+      setUploadingPicture(false);
+    }
+  };
+
+  const handleRemoveProfilePicture = async () => {
+    try {
+      setUploadingPicture(true);
+      setError(null);
+
+      const response = await apiService.removeProfilePicture();
+      
+      if (response.success) {
+        setProfile(prev => prev ? { ...prev, profilePicture: undefined } : null);
+        
+        // Trigger a custom event to notify other components of the profile update
+        window.dispatchEvent(new CustomEvent('profilePictureUpdated', {
+          detail: { profilePicture: undefined }
+        }));
+        
+        setSuccess('Profile picture removed successfully!');
+      } else {
+        setError(response.error || 'Failed to remove profile picture');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to remove profile picture');
+    } finally {
+      setUploadingPicture(false);
     }
   };
 
@@ -524,6 +622,53 @@ const SettingsTab: React.FC = () => {
               </div>
 
               <div className={styles.profileForm}>
+                {/* Profile Picture Section */}
+                <div className={styles.profilePictureSection}>
+                  <h3>Profile Picture</h3>
+                  <div className={styles.profilePictureUpload}>
+                    <div className={styles.currentPicture}>
+                      {profile.profilePicture ? (
+                        <img 
+                          src={`http://localhost:3001/${profile.profilePicture}`} 
+                          alt="Profile" 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                        />
+                      ) : (
+                        <FiUser className={styles.defaultAvatar} />
+                      )}
+                    </div>
+                    <div className={styles.pictureActions}>
+                      <label className={styles.uploadPictureButton}>
+                        <FiUpload />
+                        {profile.profilePicture ? 'Change Photo' : 'Upload Photo'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleProfilePictureChange}
+                          style={{ display: 'none' }}
+                          disabled={uploadingPicture}
+                        />
+                      </label>
+                      {profile.profilePicture && (
+                        <button 
+                          onClick={handleRemoveProfilePicture}
+                          className={styles.removePictureButton}
+                          disabled={uploadingPicture}
+                        >
+                          <FiTrash2 />
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {uploadingPicture && (
+                    <div className={styles.uploadProgress}>
+                      <div className={styles.spinner}></div>
+                      <span>Uploading photo...</span>
+                    </div>
+                  )}
+                </div>
+
                 <div className={styles.formRow}>
                   <div className={styles.formGroup}>
                     <label>First Name</label>
@@ -603,23 +748,7 @@ const SettingsTab: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  <div className={styles.formGroup}>
-                    <label>Job Title</label>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={editedProfile?.jobTitle || ''}
-                        onChange={(e) => handleInputChange('jobTitle', e.target.value)}
-                        className={styles.input}
-                        placeholder="e.g., Software Developer"
-                      />
-                    ) : (
-                      <div className={styles.displayValue}>
-                        <FiStar className={styles.fieldIcon} />
-                        {profile?.jobTitle || 'Not specified'}
-                      </div>
-                    )}
-                  </div>
+                  
                 </div>
 
                 <div className={styles.formRow}>
@@ -642,84 +771,6 @@ const SettingsTab: React.FC = () => {
                         {profile.address ? 
                           (typeof profile.address === 'string' ? profile.address :
                             `${profile.address.street || ''} ${profile.address.city || ''} ${profile.address.province || ''} ${profile.address.zipCode || ''}`.trim() || 'Not specified')
-                          : 'Not specified'
-                        }
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label>Portfolio URL</label>
-                    {isEditing ? (
-                      <input
-                        type="url"
-                        value={editedProfile?.portfolioUrl || ''}
-                        onChange={(e) => handleInputChange('portfolioUrl', e.target.value)}
-                        className={styles.input}
-                        placeholder="https://your-portfolio.com"
-                      />
-                    ) : (
-                      <div className={styles.displayValue}>
-                        <FiGlobe className={styles.fieldIcon} />
-                        {profile.portfolioUrl ? (
-                          <a href={profile.portfolioUrl} target="_blank" rel="noopener noreferrer">
-                            {profile.portfolioUrl}
-                          </a>
-                        ) : 'Not specified'}
-                      </div>
-                    )}
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label>LinkedIn URL</label>
-                    {isEditing ? (
-                      <input
-                        type="url"
-                        value={editedProfile?.linkedinUrl || ''}
-                        onChange={(e) => handleInputChange('linkedinUrl', e.target.value)}
-                        className={styles.input}
-                        placeholder="https://linkedin.com/in/yourprofile"
-                      />
-                    ) : (
-                      <div className={styles.displayValue}>
-                        <FiGlobe className={styles.fieldIcon} />
-                        {profile.linkedinUrl ? (
-                          <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer">
-                            {profile.linkedinUrl}
-                          </a>
-                        ) : 'Not specified'}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label>Salary Expectation (₱)</label>
-                    {isEditing ? (
-                      <div className={styles.salaryInputs}>
-                        <input
-                          type="number"
-                          value={editedProfile?.salaryExpectation?.min || ''}
-                          onChange={(e) => handleInputChange('salaryExpectation.min', parseInt(e.target.value))}
-                          className={styles.input}
-                          placeholder="Min salary"
-                        />
-                        <span>to</span>
-                        <input
-                          type="number"
-                          value={editedProfile?.salaryExpectation?.max || ''}
-                          onChange={(e) => handleInputChange('salaryExpectation.max', parseInt(e.target.value))}
-                          className={styles.input}
-                          placeholder="Max salary"
-                        />
-                      </div>
-                    ) : (
-                      <div className={styles.displayValue}>
-                        <FiDollarSign className={styles.fieldIcon} />
-                        {profile.salaryExpectation ? 
-                          `₱${profile.salaryExpectation.min.toLocaleString()} - ₱${profile.salaryExpectation.max.toLocaleString()}`
                           : 'Not specified'
                         }
                       </div>
@@ -759,26 +810,31 @@ const SettingsTab: React.FC = () => {
                         View
                       </a>
                       <button 
-                        onClick={handleResumeDelete}
-                        className={styles.deleteButton}
+                        onClick={() => onNavigate?.('create-resume')}
+                        className={styles.editButton}
                       >
-                        <FiTrash2 />
-                        Delete
+                        <FiEdit2 />
+                        Edit Resume
+                      </button>
+                      <button 
+                        onClick={() => window.open(`http://localhost:3001${profile.resumeUrl}`, '_blank')}
+                        className={styles.downloadButton}
+                      >
+                        <FiDownload />
+                        Download
                       </button>
                     </>
                   )}
                   
-                  <label className={styles.uploadButton}>
-                    <FiUpload />
-                    {profile.resumeUrl ? 'Replace' : 'Upload'}
-                    <input
-                      type="file"
-                      accept=".pdf"
-                      onChange={handleFileChange}
-                      style={{ display: 'none' }}
-                      disabled={uploading}
-                    />
-                  </label>
+                  {!profile.resumeUrl && (
+                    <button 
+                      onClick={() => onNavigate?.('create-resume')}
+                      className={styles.createResumeButton}
+                    >
+                      <FiEdit2 />
+                      Create Resume
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -1231,6 +1287,53 @@ const SettingsTab: React.FC = () => {
               </div>
 
               <div className={styles.accountContent}>
+                {/* Profile Picture Section */}
+                <div className={styles.profilePictureSection}>
+                  <h3>Profile Picture</h3>
+                  <div className={styles.profilePictureUpload}>
+                    <div className={styles.currentPicture}>
+                      {profile.profilePicture ? (
+                        <img 
+                          src={`http://localhost:3001/${profile.profilePicture}`} 
+                          alt="Profile" 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                        />
+                      ) : (
+                        <FiUser className={styles.defaultAvatar} />
+                      )}
+                    </div>
+                    <div className={styles.pictureActions}>
+                      <label className={styles.uploadPictureButton}>
+                        <FiUpload />
+                        {profile.profilePicture ? 'Change Photo' : 'Upload Photo'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleProfilePictureChange}
+                          style={{ display: 'none' }}
+                          disabled={uploadingPicture}
+                        />
+                      </label>
+                      {profile.profilePicture && (
+                        <button 
+                          onClick={handleRemoveProfilePicture}
+                          className={styles.removePictureButton}
+                          disabled={uploadingPicture}
+                        >
+                          <FiTrash2 />
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {uploadingPicture && (
+                    <div className={styles.uploadProgress}>
+                      <div className={styles.spinner}></div>
+                      <span>Uploading photo...</span>
+                    </div>
+                  )}
+                </div>
+
                 <div className={styles.accountInfo}>
                   <h3>Account Information</h3>
                   <div className={styles.accountGrid}>

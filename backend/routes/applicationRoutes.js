@@ -177,10 +177,20 @@ router.get('/employer', verifyToken, async (req, res) => {
       .sort({ appliedDate: -1 });
 
     const Resume = require('../models/Resume');
+    const User = require('../models/User');
     
     const formattedApplications = await Promise.all(applications.map(async (app) => {
       // Try to get fresh resume data from Resume collection
       let currentResumeData = app.resumeData;
+      
+      // Get job seeker's profile picture from User model
+      let profilePicture = null;
+      try {
+        const jobSeekerUser = await User.findOne({ uid: app.jobSeekerUid }).select('profilePicture');
+        profilePicture = jobSeekerUser?.profilePicture || null;
+      } catch (userError) {
+        console.log('Could not fetch user profile picture for application:', app._id, userError);
+      }
       
       try {
         const latestResume = await Resume.findOne({
@@ -223,7 +233,8 @@ router.get('/employer', verifyToken, async (req, res) => {
           name: currentResumeData?.personalInfo?.name || currentResumeData?.personalInfo?.fullName || app.applicantName || 'Unknown Applicant',
           email: currentResumeData?.personalInfo?.email || app.applicantEmail || '',
           phone: currentResumeData?.personalInfo?.phone || app.applicantPhone || '',
-          address: currentResumeData?.personalInfo?.address || currentResumeData?.personalInfo?.fullAddress || app.applicantAddress || ''
+          address: currentResumeData?.personalInfo?.address || currentResumeData?.personalInfo?.fullAddress || app.applicantAddress || '',
+          profilePicture: profilePicture
         },
         resumeData: currentResumeData,
         status: app.status,
