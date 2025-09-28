@@ -128,6 +128,7 @@ const EmployerDashboard: React.FC = () => {
   const [isJobDetailsModalOpen, setIsJobDetailsModalOpen] = useState(false);
   const [applicantStatuses, setApplicantStatuses] = useState<Record<number, string>>({});
   const [companyProfileData, setCompanyProfileData] = useState<CompanyProfileData | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   
   // Job form modal states
   const [isJobFormModalOpen, setIsJobFormModalOpen] = useState(false);
@@ -214,6 +215,11 @@ const EmployerDashboard: React.FC = () => {
             address: employer.address?.street || 
                     (employer.address ? `${employer.address.street || ''} ${employer.address.city || ''} ${employer.address.province || ''}`.trim() : ''),
             description: employer.companyDescription || ''
+          });
+          
+          // Set user profile for welcome header
+          setUserProfile({
+            companyName: employer.companyName || ''
           });
         }
       } catch (error) {
@@ -1115,7 +1121,7 @@ const EmployerDashboard: React.FC = () => {
               <>
                 {/* Welcome Section */}
                 <WelcomeSection 
-                  userName="Employer"
+                  userName={userProfile?.companyName || "Employer"}
                   subtitle="Here's what's happening with your hiring process today"
                 />
 

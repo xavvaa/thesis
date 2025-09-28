@@ -23,7 +23,7 @@ const DashboardTab: React.FC<any> = ({
 }) => {
   return (
     <div className={styles.tabContent}>
-      <WelcomeHeader userName={resume?.personalInfo?.name} />
+      <WelcomeHeader userName={userProfile?.firstName || "User"} />
       <StatsGrid
         applicationsCount={applications.length}
         savedJobsCount={savedJobs.size}

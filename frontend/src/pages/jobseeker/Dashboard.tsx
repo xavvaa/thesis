@@ -340,6 +340,13 @@ const Dashboard: React.FC = () => {
                 }));
               }
               
+              // Load user profile data
+              const userProfileResponse = await apiService.getUserProfile()
+              if (userProfileResponse.success && userProfileResponse.data) {
+                console.log('User profile response:', userProfileResponse.data)
+                setUserProfile(userProfileResponse.data.user)
+              }
+              
               // Load resume data
               const currentResumeResponse = await apiService.getCurrentResume()
               if (currentResumeResponse.success && currentResumeResponse.data) {
@@ -735,7 +742,7 @@ const Dashboard: React.FC = () => {
       onOpenFilters: () => setShowFilterModal(true),
       onNavigate: setActiveTab,
       onShowResumeUpload: () => setShowResumeUpload(true),
-      userProfile: resume?.personalInfo,
+      userProfile: userProfile,
     };
 
     switch (activeTab) {
