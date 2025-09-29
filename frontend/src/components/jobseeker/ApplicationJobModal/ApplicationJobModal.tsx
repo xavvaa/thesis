@@ -31,7 +31,25 @@ interface ApplicationJobModalProps {
   onWithdrawApplication?: (applicationId: string) => void
 }
 
-const getCompanyLogo = (company: string) => {
+const getCompanyLogo = (company: string, companyLogo?: string) => {
+  console.log('ApplicationJobModal - company:', company);
+  console.log('ApplicationJobModal - companyLogo:', companyLogo);
+  
+  if (companyLogo) {
+    console.log('ApplicationJobModal - rendering image with URL:', `http://localhost:3001/${companyLogo}`);
+    return (
+      <div className={styles.companyLogo}>
+        <img 
+          src={`http://localhost:3001/${companyLogo}`} 
+          alt={`${company} logo`} 
+          className={styles.companyLogoImage}
+          onLoad={() => console.log('ApplicationJobModal - Image loaded successfully')}
+          onError={(e) => console.error('ApplicationJobModal - Image failed to load:', e, `http://localhost:3001/${companyLogo}`)}
+        />
+      </div>
+    );
+  }
+
   // Generate a consistent color based on company name
   const colors = [
     '#667eea', '#764ba2', '#f093fb', '#f5576c',
@@ -208,7 +226,7 @@ const ApplicationJobModal: React.FC<ApplicationJobModalProps> = ({
           <div className={styles.companyBanner}>
             <div className={styles.companyBannerContent}>
               <div className={styles.companyLogoContainer}>
-                {getCompanyLogo(job.company)}
+                {getCompanyLogo(job.company, job.companyLogo)}
               </div>
               <div className={styles.companyHeaderInfo}>
                 <div className={styles.jobTitleBanner}>

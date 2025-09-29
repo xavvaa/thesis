@@ -228,6 +228,19 @@ router.get('/:id', async (req, res) => {
       };
     }
 
+    // Get employer's profile picture
+    try {
+      const employer = await Employer.findById(job.employerId);
+      if (employer) {
+        const user = await User.findOne({ uid: employer.uid });
+        if (user && user.profilePicture) {
+          jobData.companyLogo = user.profilePicture;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching employer profile picture for job details:', error);
+    }
+
     res.json({
       success: true,
       data: jobData
