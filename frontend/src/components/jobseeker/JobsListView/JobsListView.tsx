@@ -69,6 +69,19 @@ export const JobsListView: React.FC<JobsListViewProps> = ({
       .toUpperCase();
   };
 
+  const getCompanyAvatar = (job: Job) => {
+    if (job.companyLogo) {
+      return (
+        <img 
+          src={`http://localhost:3001/${job.companyLogo}`} 
+          alt={`${job.company} logo`} 
+          className={styles.companyLogoImage}
+        />
+      );
+    }
+    return <span>{getCompanyInitials(job.company)}</span>;
+  };
+
 
   if (jobs.length === 0) {
     return (
@@ -127,7 +140,7 @@ export const JobsListView: React.FC<JobsListViewProps> = ({
               
               <div className={styles.companyCell}>
                 <div className={styles.avatar}>
-                  <span>{getCompanyInitials(job.company)}</span>
+                  {getCompanyAvatar(job)}
                 </div>
                 <div className={styles.companyInfo}>
                   <div className={styles.companyName}>{job.company}</div>

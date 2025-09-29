@@ -46,6 +46,14 @@
   color: white;
   background: #e2e8f0;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.companyLogoImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
 }
 
 .companyLogo.google {

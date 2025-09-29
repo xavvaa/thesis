@@ -19,6 +19,7 @@ export interface Job {
   title: string
   company: string
   companyDetails?: Company
+  companyLogo?: string // Direct access to company profile picture
   location: string
   description: string
   

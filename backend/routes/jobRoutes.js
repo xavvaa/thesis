@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Job = require('../models/Job');
 const Employer = require('../models/Employer');
+const User = require('../models/User');
 const { verifyToken } = require('../middleware/authMiddleware');
 const { requireRole } = require('../middleware/roleBasedAccess');
 
@@ -42,8 +43,25 @@ router.get('/', async (req, res) => {
     const endIndex = page * limit;
     const paginatedJobs = jobs.slice(startIndex, endIndex);
 
-    // Convert to public format
-    const publicJobs = paginatedJobs.map(job => job.getPublicData());
+    // Convert to public format and add company profile pictures
+    const publicJobs = await Promise.all(paginatedJobs.map(async (job) => {
+      const jobData = job.getPublicData();
+      
+      // Get employer's profile picture
+      try {
+        const employer = await Employer.findById(job.employerId);
+        if (employer) {
+          const user = await User.findOne({ uid: employer.uid });
+          if (user && user.profilePicture) {
+            jobData.companyLogo = user.profilePicture;
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching employer profile picture:', error);
+      }
+      
+      return jobData;
+    }));
 
     res.json({
       success: true,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiHome, FiMail, FiPhone, FiMapPin, FiGlobe } from 'react-icons/fi';
+import { FiX, FiHome, FiMail, FiPhone, FiMapPin, FiGlobe, FiUpload, FiTrash2 } from 'react-icons/fi';
 import styles from './SettingsModal.module.css';
 
 interface CompanyProfileModalProps {
@@ -36,6 +36,10 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
     description: ''
   });
 
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [profilePicture, setProfilePicture] = useState<string>('');
+
   // Update form data when initialData changes
   useEffect(() => {
     if (initialData) {
@@ -54,10 +58,138 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
     }
   }, [initialData]);
 
+  // Load current user's profile picture when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const loadUserProfile = async () => {
+        try {
+          const { auth } = await import('../../../config/firebase');
+          const token = await auth.currentUser?.getIdToken();
+          
+          const response = await fetch('http://localhost:3001/api/users/profile', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log('User profile data:', data); // Debug log
+            setProfilePicture(data.user?.profilePicture || '');
+          }
+        } catch (error) {
+          console.error('Error loading user profile:', error);
+        }
+      };
+
+      loadUserProfile();
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleInputChange = (field: keyof CompanyProfileData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Please select an image file');
+      return;
+    }
+
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('Image size must be less than 5MB');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('profilePicture', file);
+
+      const response = await fetch('http://localhost:3001/api/users/profile-picture', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${await (await import('../../../config/firebase')).auth.currentUser?.getIdToken()}`
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Upload response:', result); // Debug log
+        setProfilePicture(result.profilePicture);
+        setUploadError('');
+        
+        // Dispatch global event to update profile picture across components
+        window.dispatchEvent(new CustomEvent('profilePictureUpdated', {
+          detail: { profilePicture: result.profilePicture }
+        }));
+        
+        console.log('Profile picture uploaded successfully:', result.profilePicture);
+      } else {
+        const errorData = await response.json();
+        setUploadError(errorData.error || 'Failed to upload profile picture');
+      }
+    } catch (error) {
+      console.error('Logo upload error:', error);
+      setUploadError('Failed to upload logo. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleLogoRemove = async () => {
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      const response = await fetch('http://localhost:3001/api/users/profile-picture', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${await (await import('../../../config/firebase')).auth.currentUser?.getIdToken()}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setProfilePicture('');
+        setUploadError('');
+        
+        // Dispatch global event to update profile picture across components
+        window.dispatchEvent(new CustomEvent('profilePictureUpdated', {
+          detail: { profilePicture: null }
+        }));
+        
+        console.log('Profile picture removed successfully');
+      } else {
+        setUploadError(data.error || 'Failed to remove profile picture');
+      }
+    } catch (error) {
+      console.error('Logo removal error:', error);
+      setUploadError('Failed to remove logo. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -81,6 +213,56 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
 
         <form onSubmit={handleSubmit}>
           <div className={styles.modalBody}>
+            {/* Company Logo Upload Section */}
+            <div className={styles.profilePictureSection}>
+              <h3 className={styles.sectionTitle}>Company Logo</h3>
+              <div className={styles.profilePictureContainer}>
+                <div className={styles.profilePictureCircle}>
+                  {profilePicture ? (
+                    <img 
+                      src={`http://localhost:3001/${profilePicture}`} 
+                      alt="Company Logo" 
+                      className={styles.profilePictureImage}
+                      onLoad={() => console.log('Image loaded successfully')}
+                      onError={(e) => console.error('Image failed to load:', e, `http://localhost:3001/${profilePicture}`)}
+                    />
+                  ) : (
+                    <span className={styles.profilePictureInitials}>
+                      {formData.companyName ? getInitials(formData.companyName) : 'CO'}
+                    </span>
+                  )}
+                </div>
+                <div className={styles.profilePictureActions}>
+                  <input
+                    type="file"
+                    id="logo-upload"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    style={{ display: 'none' }}
+                    disabled={isUploading}
+                  />
+                  <label htmlFor="logo-upload" className={`${styles.uploadButton} ${isUploading ? styles.uploading : ''}`}>
+                    <FiUpload size={16} />
+                    {isUploading ? 'Uploading...' : (profilePicture ? 'Change Logo' : 'Upload Logo')}
+                  </label>
+                  {profilePicture && (
+                    <button
+                      type="button"
+                      onClick={handleLogoRemove}
+                      className={styles.removeButton}
+                      disabled={isUploading}
+                    >
+                      <FiTrash2 size={16} />
+                      Remove
+                    </button>
+                  )}
+                </div>
+              </div>
+              {uploadError && (
+                <div className={styles.errorMessage}>{uploadError}</div>
+              )}
+            </div>
+
             <div className={styles.formGrid}>
               <div className={styles.formGroup}>
                 <label className={styles.label}>Company Name</label>

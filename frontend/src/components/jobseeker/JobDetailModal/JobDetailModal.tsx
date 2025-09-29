@@ -11,7 +11,19 @@ interface JobDetailModalProps {
   onApply: (jobId: string | number) => void
 }
 
-const getCompanyLogo = (company: string) => {
+const getCompanyLogo = (company: string, companyLogo?: string) => {
+  if (companyLogo) {
+    return (
+      <div className={styles.companyLogo}>
+        <img 
+          src={`http://localhost:3001/${companyLogo}`} 
+          alt={`${company} logo`} 
+          className={styles.companyLogoImage}
+        />
+      </div>
+    );
+  }
+
   // Generate a consistent color based on company name
   const colors = [
     '#667eea', '#764ba2', '#f093fb', '#f5576c',
@@ -112,7 +124,7 @@ const JobDetailModal: React.FC<JobDetailModalProps> = ({ job, isOpen, onClose, o
           <div className={styles.companyBanner}>
             <div className={styles.companyBannerContent}>
               <div className={styles.companyLogoContainer}>
-                {getCompanyLogo(job.company)}
+                {getCompanyLogo(job.company, job.companyLogo)}
               </div>
               <div className={styles.companyHeaderInfo}>
                 <div className={styles.jobTitleBanner}>

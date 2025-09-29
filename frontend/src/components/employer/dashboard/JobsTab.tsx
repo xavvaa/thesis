@@ -25,6 +25,7 @@ interface JobsTabProps {
   onCreateJob: (jobData: Partial<Job>) => void;
   onUpdateJob: (jobData: Partial<Job>) => void;
   isLoading?: boolean;
+  profilePicture?: string;
 }
 
 export const JobsTab: React.FC<JobsTabProps> = ({
@@ -35,11 +36,11 @@ export const JobsTab: React.FC<JobsTabProps> = ({
   onSearchChange,
   onFilterChange,
   onViewJob,
-  onEditJob,
   onDeleteJob,
   onCreateJob,
   onUpdateJob,
   isLoading = false,
+  profilePicture
 }) => {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -290,6 +291,7 @@ export const JobsTab: React.FC<JobsTabProps> = ({
         onEdit={handleEditJob}
         onDelete={handleDeleteJob}
         onViewApplicants={handleViewJobApplicants}
+        profilePicture={profilePicture}
       />
       
       <DeleteJobModal

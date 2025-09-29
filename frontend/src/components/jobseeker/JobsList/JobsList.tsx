@@ -53,6 +53,7 @@ const JobsList: React.FC<JobsListProps> = ({
             onJobClick={onJobClick}
             onViewApplication={onViewApplication}
             isSaved={savedJobs.has(Number(job.id))}
+            companyLogo={job.companyLogo}
           />
         ))}
       </div>

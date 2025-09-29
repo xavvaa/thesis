@@ -10,6 +10,7 @@ interface JobCardProps {
   onJobClick?: (job: Job) => void
   onViewApplication?: (job: Job) => void
   isSaved?: boolean
+  companyLogo?: string
 }
 
 const JobCard: React.FC<JobCardProps> = ({
@@ -18,7 +19,8 @@ const JobCard: React.FC<JobCardProps> = ({
   onApply,
   onJobClick,
   onViewApplication,
-  isSaved = false
+  isSaved = false,
+  companyLogo
 }) => {
   const formatPostedDate = () => {
     // For applications, show applied date instead of posted date
@@ -83,7 +85,15 @@ const JobCard: React.FC<JobCardProps> = ({
   const getCompanyLogo = (company: string) => {
     return (
       <div className={styles.companyLogo}>
-        {company.charAt(0)}
+        {companyLogo ? (
+          <img 
+            src={`http://localhost:3001/${companyLogo}`} 
+            alt={`${company} logo`} 
+            className={styles.companyLogoImage}
+          />
+        ) : (
+          company.charAt(0)
+        )}
       </div>
     )
   }

@@ -6,11 +6,13 @@ import buttonStyles from './Buttons.module.css';
 interface WelcomeSectionProps {
   userName: string;
   subtitle?: string;
+  profilePicture?: string;
 }
 
 export const WelcomeSection: React.FC<WelcomeSectionProps> = ({ 
   userName, 
-  subtitle = "Here's what's happening with your job search today" 
+  subtitle = "Here's what's happening with your job search today",
+  profilePicture
 }) => {
   return (
     <div className={styles.welcomeSection}>
@@ -19,7 +21,15 @@ export const WelcomeSection: React.FC<WelcomeSectionProps> = ({
         <p className={styles.welcomeSubtitle}>{subtitle}</p>
       </div>
       <div className={styles.welcomeAvatar}>
-        {userName.charAt(0).toUpperCase()}
+        {profilePicture ? (
+          <img 
+            src={`http://localhost:3001/${profilePicture}`} 
+            alt="Company logo" 
+            className={styles.avatarImage}
+          />
+        ) : (
+          userName.charAt(0).toUpperCase()
+        )}
       </div>
     </div>
   );

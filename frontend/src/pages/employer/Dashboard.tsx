@@ -97,6 +97,11 @@ interface TeamData {
   members: TeamMember[];
 }
 
+interface UserProfile {
+  companyName: string;
+  profilePicture?: string;
+}
+
 // Tab types
 type TabType = 'overview' | 'applicants' | 'jobs' | 'settings';
 
@@ -128,7 +133,7 @@ const EmployerDashboard: React.FC = () => {
   const [isJobDetailsModalOpen, setIsJobDetailsModalOpen] = useState(false);
   const [applicantStatuses, setApplicantStatuses] = useState<Record<number, string>>({});
   const [companyProfileData, setCompanyProfileData] = useState<CompanyProfileData | null>(null);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   
   // Job form modal states
   const [isJobFormModalOpen, setIsJobFormModalOpen] = useState(false);
@@ -194,16 +199,20 @@ const EmployerDashboard: React.FC = () => {
     const loadCompanyProfile = async () => {
       try {
         const token = await currentUser.getIdToken();
-        const response = await fetch('http://localhost:3001/api/employers/profile', {
+        let companyName = '';
+        
+        // Load employer profile
+        const employerResponse = await fetch('http://localhost:3001/api/employers/profile', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          const employer = data.data;
+        if (employerResponse.ok) {
+          const employerData = await employerResponse.json();
+          const employer = employerData.data;
+          companyName = employer.companyName || '';
           
           // Map backend data to frontend CompanyProfileData format
           setCompanyProfileData({
@@ -216,11 +225,28 @@ const EmployerDashboard: React.FC = () => {
                     (employer.address ? `${employer.address.street || ''} ${employer.address.city || ''} ${employer.address.province || ''}`.trim() : ''),
             description: employer.companyDescription || ''
           });
+        }
+
+        // Load user profile for profile picture
+        const userResponse = await fetch('http://localhost:3001/api/users/profile', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          console.log('Dashboard user profile data:', userData); // Debug log
+          console.log('Dashboard profilePicture from userData:', userData.user?.profilePicture);
           
           // Set user profile for welcome header
-          setUserProfile({
-            companyName: employer.companyName || ''
-          });
+          const newUserProfile = {
+            companyName: companyName,
+            profilePicture: userData.user.profilePicture || ''
+          };
+          console.log('Dashboard - Setting userProfile:', newUserProfile);
+          setUserProfile(newUserProfile);
         }
       } catch (error) {
         console.error('Error loading company profile:', error);
@@ -229,6 +255,32 @@ const EmployerDashboard: React.FC = () => {
 
     loadCompanyProfile();
   }, [isAuthReady, currentUser, isCheckingVerification, userVerificationStatus]);
+
+  // Listen for profile picture updates
+  useEffect(() => {
+    const handleProfilePictureUpdate = (event: CustomEvent) => {
+      console.log('Dashboard - Profile picture update event:', event.detail);
+      setUserProfile(prev => {
+        const updated = prev ? {
+          ...prev,
+          profilePicture: event.detail.profilePicture
+        } : null;
+        console.log('Dashboard - Updated userProfile after event:', updated);
+        return updated;
+      });
+    };
+
+    window.addEventListener('profilePictureUpdated', handleProfilePictureUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('profilePictureUpdated', handleProfilePictureUpdate as EventListener);
+    };
+  }, []);
+
+  // Add a useEffect to debug userProfile state changes
+  useEffect(() => {
+    console.log('Dashboard - userProfile state changed:', userProfile);
+  }, [userProfile]);
 
   // Load jobs from backend when auth is ready and user is verified
   useEffect(() => {
@@ -934,6 +986,9 @@ const EmployerDashboard: React.FC = () => {
   };
 
   const handleViewJobDetails = (job: Job) => {
+    console.log('Dashboard - handleViewJobDetails - userProfile:', userProfile);
+    console.log('Dashboard - handleViewJobDetails - profilePicture:', userProfile?.profilePicture);
+    console.log('Dashboard - userProfile state when modal opens:', JSON.stringify(userProfile, null, 2));
     setSelectedJob(job);
     setIsJobDetailsModalOpen(true);
   };
@@ -1075,6 +1130,7 @@ const EmployerDashboard: React.FC = () => {
         <MobileHeader
           pageTitle={getHeaderTitle(activeTab)}
           userInitial={companyProfileData?.companyName?.charAt(0) || 'E'}
+          profilePicture={userProfile?.profilePicture}
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
           notifications={1}
         />
@@ -1110,7 +1166,15 @@ const EmployerDashboard: React.FC = () => {
               className={layoutStyles.userAvatar}
               aria-label="User profile"
             >
-              {companyProfileData?.companyName?.charAt(0) || 'E'}
+              {userProfile?.profilePicture ? (
+                <img 
+                  src={`http://localhost:3001/${userProfile.profilePicture}`} 
+                  alt="Company logo" 
+                  className={layoutStyles.avatarImage}
+                />
+              ) : (
+                companyProfileData?.companyName?.charAt(0) || 'E'
+              )}
             </div>
           </div>
         </header>
@@ -1123,6 +1187,7 @@ const EmployerDashboard: React.FC = () => {
                 <WelcomeSection 
                   userName={userProfile?.companyName || "Employer"}
                   subtitle="Here's what's happening with your hiring process today"
+                  profilePicture={userProfile?.profilePicture}
                 />
 
                 {/* Enhanced Stats Grid */}
@@ -1195,6 +1260,7 @@ const EmployerDashboard: React.FC = () => {
               onCreateJob={handleCreateJob}
               onUpdateJob={handleUpdateJob}
               isLoading={isLoadingJobs}
+              profilePicture={userProfile?.profilePicture}
             />
           )}
 
@@ -1231,7 +1297,7 @@ const EmployerDashboard: React.FC = () => {
       )}
 
       {/* Job Details Modal */}
-      {selectedJob && (
+      {selectedJob && userProfile && (
         <JobDetailsModal
           job={selectedJob}
           isOpen={isJobDetailsModalOpen}
@@ -1248,6 +1314,7 @@ const EmployerDashboard: React.FC = () => {
           onViewApplicants={() => {
             // Handle view applicants
           }}
+          profilePicture={userProfile.profilePicture}
         />
       )}
 

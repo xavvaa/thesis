@@ -12,6 +12,7 @@ interface JobDetailsModalProps {
   onDelete: (job: Job) => void;
   onUpdateJob?: (jobData: Partial<Job>) => void;
   onViewApplicants?: (job: Job) => void;
+  profilePicture?: string;
 }
 
 export const JobDetailsModal: React.FC<JobDetailsModalProps> = (props) => {
@@ -23,8 +24,16 @@ export const JobDetailsModal: React.FC<JobDetailsModalProps> = (props) => {
     onEdit,
     onDelete,
     onUpdateJob,
-    onViewApplicants
+    onViewApplicants,
+    profilePicture
   } = props;
+
+  // Debug logging for profilePicture prop
+  React.useEffect(() => {
+    if (isOpen) {
+      console.log('JobDetailsModal opened - profilePicture prop:', profilePicture);
+    }
+  }, [isOpen, profilePicture]);
   
   // Create a stable reference to the onViewApplicants function
   const handleViewApplicantsClick = React.useCallback((e: React.MouseEvent, job: Job) => {
@@ -111,6 +120,22 @@ export const JobDetailsModal: React.FC<JobDetailsModalProps> = (props) => {
   };
 
   const getCompanyLogo = (company: string) => {
+    console.log('JobDetailsModal - profilePicture:', profilePicture);
+    if (profilePicture) {
+      console.log('JobDetailsModal - rendering image with URL:', `http://localhost:3001/${profilePicture}`);
+      return (
+        <div className={styles.companyLogo}>
+          <img 
+            src={`http://localhost:3001/${profilePicture}`} 
+            alt={`${company} logo`} 
+            className={styles.companyLogoImage}
+            onLoad={() => console.log('JobDetailsModal - Image loaded successfully')}
+            onError={(e) => console.error('JobDetailsModal - Image failed to load:', e, `http://localhost:3001/${profilePicture}`)}
+          />
+        </div>
+      );
+    }
+
     const colors = [
       '#667eea', '#764ba2', '#f093fb', '#f5576c',
       '#4facfe', '#00f2fe', '#43e97b', '#38f9d7',
