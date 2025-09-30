@@ -1,7 +1,7 @@
 import React from 'react';
 import { Applicant } from '@/types/dashboard';
-import Button from '../ui/Button';
-import { FiMail, FiPhone, FiCalendar, FiDownload, FiUser, FiCheck, FiX } from 'react-icons/fi';
+import { FiEye, FiDownload, FiCalendar, FiUser, FiCheck, FiX, FiMail, FiPhone } from 'react-icons/fi';
+// import { formatImageSrc, getInitials } from '@/utils/imageUtils';
 import styles from './ApplicantCard.module.css';
 
 interface ApplicantCardProps {
@@ -17,12 +17,15 @@ export const ApplicantCard: React.FC<ApplicantCardProps> = ({
   onReject,
   onViewResume,
 }) => {
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase();
+  // Temporary inline functions
+  const formatImageSrc = (imageData: string | null | undefined): string | undefined => {
+    if (!imageData) return undefined;
+    if (imageData.startsWith('data:')) return imageData;
+    return `data:image/jpeg;base64,${imageData}`;
+  };
+
+  const getInitials = (name: string): string => {
+    return name.split(' ').map((n) => n[0]).join('').toUpperCase();
   };
 
   return (
@@ -30,7 +33,10 @@ export const ApplicantCard: React.FC<ApplicantCardProps> = ({
       <div className={styles.applicantHeader}>
         <div className={styles.avatar}>
           {applicant.avatar ? (
-            <img src={applicant.avatar} alt={applicant.name} />
+            <img 
+              src={formatImageSrc(applicant.avatar)} 
+              alt={applicant.name} 
+            />
           ) : (
             <span>{getInitials(applicant.name)}</span>
           )}
@@ -81,34 +87,28 @@ export const ApplicantCard: React.FC<ApplicantCardProps> = ({
       )}
 
       <div className={styles.actions}>
-        <Button
-          variant="outline"
-          size="sm"
+        <button
           className={styles.viewResumeBtn}
           onClick={() => onViewResume?.(applicant.id)}
         >
           <FiDownload className={styles.icon} />
           View Resume
-        </Button>
+        </button>
         <div className={styles.decisionButtons}>
-          <Button
-            variant="success"
-            size="sm"
+          <button
             className={styles.acceptBtn}
             onClick={() => onAccept?.(applicant.id)}
           >
             <FiCheck className={styles.icon} />
             Accept
-          </Button>
-          <Button
-            variant="danger"
-            size="sm"
+          </button>
+          <button
             className={styles.rejectBtn}
             onClick={() => onReject?.(applicant.id)}
           >
             <FiX className={styles.icon} />
             Reject
-          </Button>
+          </button>
         </div>
       </div>
     </div>

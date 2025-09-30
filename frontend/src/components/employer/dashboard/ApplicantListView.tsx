@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Applicant } from '@/types/dashboard';
 import { Job } from '@/types/Job';
 import { FiEye } from 'react-icons/fi';
+// import { formatImageSrc, getInitials } from '@/utils/imageUtils';
 import styles from './ApplicantListView.module.css';
 
 interface ApplicantListViewProps {
@@ -18,8 +19,19 @@ export const ApplicantListView: React.FC<ApplicantListViewProps> = ({
   selectedJobId
 }) => {
  
+  // Temporary inline functions
+  const formatImageSrc = (imageData: string | null | undefined): string | undefined => {
+    if (!imageData) return undefined;
+    if (imageData.startsWith('data:')) return imageData;
+    return `data:image/jpeg;base64,${imageData}`;
+  };
+
+  const getInitials = (name: string): string => {
+    return name.split(' ').map((n) => n[0]).join('').toUpperCase();
+  };
+
   // TF-IDF calculation based on the specific job each applicant applied to
-  const calculateTfidfScore = (applicant: Applicant): number => {
+  const calculateTfidfScore = useCallback((applicant: Applicant): number => {
     const applicantSkills = applicant.skills || [];
     if (!applicantSkills || applicantSkills.length === 0) return 0;
     
@@ -42,7 +54,7 @@ export const ApplicantListView: React.FC<ApplicantListViewProps> = ({
  
     const score = (tf * idf) * 100;
     return Math.min(100, Math.round(score));
-  };
+  }, [jobPostings]);
  
   // Precompute TF-IDF scores based on the job each applicant applied to
   const processedApplicants = useMemo(() =>
@@ -51,14 +63,8 @@ export const ApplicantListView: React.FC<ApplicantListViewProps> = ({
       tfidfScore: calculateTfidfScore(applicant)
     }))
     .sort((a, b) => b.tfidfScore - a.tfidfScore)
-  , [applicants, jobPostings]);
+  , [applicants, jobPostings, calculateTfidfScore]);
 
-  const getInitials = (name: string) =>
-    name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase();
 
   return (
     <div className={styles.listContainer}>
@@ -105,7 +111,10 @@ export const ApplicantListView: React.FC<ApplicantListViewProps> = ({
               <div className={styles.applicantCell}>
                 <div className={styles.avatar}>
                   {applicant.avatar ? (
-                    <img src={applicant.avatar} alt={applicant.name} />
+                    <img 
+                      src={formatImageSrc(applicant.avatar)} 
+                      alt={applicant.name} 
+                    />
                   ) : (
                     <span>{getInitials(applicant.name)}</span>
                   )}

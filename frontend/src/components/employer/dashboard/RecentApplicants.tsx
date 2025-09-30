@@ -1,6 +1,7 @@
 import React from 'react';
+import { Applicant } from '@/types/dashboard';
 import { FiUsers } from 'react-icons/fi';
-import { Applicant } from '../../../types/dashboard';
+// import { formatImageSrc, getInitials } from '@/utils/imageUtils';
 import styles from './RecentApplicants.module.css';
 
 interface RecentApplicantsProps {
@@ -14,6 +15,13 @@ export const RecentApplicants: React.FC<RecentApplicantsProps> = ({
   onViewAll,
   onViewApplicantDetails
 }) => {
+  // Temporary inline function
+  const formatImageSrc = (imageData: string | null | undefined): string | undefined => {
+    if (!imageData) return undefined;
+    if (imageData.startsWith('data:')) return imageData;
+    return `data:image/jpeg;base64,${imageData}`;
+  };
+
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case 'hired': return styles.statusHired;
@@ -50,7 +58,10 @@ export const RecentApplicants: React.FC<RecentApplicantsProps> = ({
             <div className={styles.applicantContent}>
               <div className={styles.avatar}>
                 {applicant.avatar ? (
-                  <img src={applicant.avatar} alt={applicant.name} />
+                  <img 
+                    src={formatImageSrc(applicant.avatar)} 
+                    alt={applicant.name} 
+                  />
                 ) : (
                   <FiUsers size={20} />
                 )}

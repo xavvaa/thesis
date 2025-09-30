@@ -419,30 +419,34 @@ const EmployerDashboard: React.FC = () => {
           }
           
           // Convert backend applications to Applicant format
-          const convertedApplications: Applicant[] = applicationsArray.map((app: any) => ({
-            id: app._id,
-            name: app.applicant?.name || app.resumeData?.personalInfo?.name || 'Unknown Applicant',
-            position: app.jobTitle || 'Unknown Position',
-            email: app.applicant?.email || app.resumeData?.personalInfo?.email || '',
-            phone: app.applicant?.phone || app.resumeData?.personalInfo?.phone || '',
-            location: app.applicant?.address || app.resumeData?.personalInfo?.address || 'Metro Manila',
-            salary: app.jobSalary || '₱80,000',
-            expectedSalary: app.resumeData?.expectedSalary || '₱70,000 - ₱90,000',
-            experience: app.resumeData?.experience?.[0]?.duration || app.resumeData?.workExperience?.[0]?.duration || '2+ years',
-            skills: app.resumeData?.skills || [],
-            education: app.resumeData?.education?.[0]?.degree || app.resumeData?.education?.[0]?.institution || '',
-            appliedDate: app.appliedDate,
-            status: app.status,
-            match: 85, // Default match score
-            matchPercentage: 85,
-            matchScore: 85,
-            jobTitle: app.jobTitle || 'Unknown Position',
-            jobId: app.jobId,
-            resumeUrl: app.resumeData ? '#' : undefined,
-            coverLetter: app.coverLetter || '',
-            notes: app.notes || '',
-            avatar: app.applicant?.profilePicture ? `http://localhost:3001/${app.applicant.profilePicture}` : undefined
-          }));
+          const convertedApplications: Applicant[] = applicationsArray.map((app: any) => {
+            // Debug logs removed - system working correctly
+            
+            return {
+              id: app._id,
+              name: app.applicant?.name || app.resumeData?.personalInfo?.name || 'Unknown Applicant',
+              position: app.jobTitle || 'Unknown Position',
+              email: app.applicant?.email || app.resumeData?.personalInfo?.email || '',
+              phone: app.applicant?.phone || app.resumeData?.personalInfo?.phone || '',
+              location: app.applicant?.address || app.resumeData?.personalInfo?.address || 'Metro Manila',
+              salary: app.jobSalary || '₱80,000',
+              expectedSalary: app.resumeData?.expectedSalary || '₱70,000 - ₱90,000',
+              experience: app.resumeData?.experience?.[0]?.duration || app.resumeData?.workExperience?.[0]?.duration || '2+ years',
+              skills: app.resumeData?.skills || [],
+              education: app.resumeData?.education?.[0]?.degree || app.resumeData?.education?.[0]?.institution || '',
+              appliedDate: app.appliedDate,
+              status: app.status,
+              match: 85, // Default match score
+              matchPercentage: 85,
+              matchScore: 85,
+              jobTitle: app.jobTitle || 'Unknown Position',
+              jobId: app.jobId,
+              resumeUrl: app.resumeData ? '#' : undefined,
+              coverLetter: app.coverLetter || '',
+              notes: app.notes || '',
+              avatar: app.applicant?.profilePicture || undefined
+            };
+          });
           
           setApplications(convertedApplications);
         } else {

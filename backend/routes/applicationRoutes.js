@@ -179,21 +179,16 @@ router.get('/employer', verifyToken, async (req, res) => {
     const Resume = require('../models/Resume');
     const User = require('../models/User');
     
+    // Debug logs removed - system working correctly
+    
     const formattedApplications = await Promise.all(applications.map(async (app) => {
       // Try to get fresh resume data from Resume collection
       let currentResumeData = app.resumeData;
       
-      // Get job seeker's profile picture from User model
-      let profilePicture = null;
+      // Get fresh resume data from Resume collection FIRST (needed for fallback)
+      let latestResume = null;
       try {
-        const jobSeekerUser = await User.findOne({ uid: app.jobSeekerUid }).select('profilePicture');
-        profilePicture = jobSeekerUser?.profilePicture || null;
-      } catch (userError) {
-        console.log('Could not fetch user profile picture for application:', app._id, userError);
-      }
-      
-      try {
-        const latestResume = await Resume.findOne({
+        latestResume = await Resume.findOne({
           jobSeekerUid: app.jobSeekerUid,
           isActive: true
         }).sort({ uploadedAt: -1 });
@@ -218,9 +213,30 @@ router.get('/employer', verifyToken, async (req, res) => {
           };
         }
       } catch (resumeError) {
-        console.log('Could not fetch latest resume for application:', app._id);
+        console.log('Could not fetch latest resume for application:', app._id, resumeError);
         // Fall back to stored resume data
       }
+      
+      // Get profile picture from User model (settings profile picture) and convert to Base64
+      let profilePicture = null;
+      try {
+        const jobSeekerUser = await User.findOne({ uid: app.jobSeekerUid }).select('profilePicture');
+        if (jobSeekerUser?.profilePicture) {
+          const fs = require('fs');
+          const path = require('path');
+          const filePath = path.join(__dirname, '..', jobSeekerUser.profilePicture);
+          
+          if (fs.existsSync(filePath)) {
+            const imageBuffer = fs.readFileSync(filePath);
+            const base64Image = imageBuffer.toString('base64');
+            const mimeType = path.extname(filePath).toLowerCase() === '.png' ? 'image/png' : 'image/jpeg';
+            profilePicture = `data:${mimeType};base64,${base64Image}`;
+          }
+        }
+      } catch (userError) {
+        console.log('❌ Error fetching profile picture for application:', app._id, userError.message);
+      }
+      
       
       return {
         _id: app._id,
