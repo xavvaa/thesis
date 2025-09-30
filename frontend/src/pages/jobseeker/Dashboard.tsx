@@ -865,7 +865,10 @@ const Dashboard: React.FC = () => {
             >
               {userProfile?.profilePicture ? (
                 <img 
-                  src={`http://localhost:3001/${userProfile.profilePicture}`} 
+                  src={userProfile.profilePicture.startsWith('data:') 
+                    ? userProfile.profilePicture 
+                    : `http://localhost:3001/${userProfile.profilePicture}`
+                  } 
                   alt="Profile" 
                   style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
                 />

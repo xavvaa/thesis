@@ -23,7 +23,10 @@ const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ userName, profilePicture 
       <div className={styles.welcomeAvatar}>
         {profilePicture ? (
           <img 
-            src={`http://localhost:3001/${profilePicture}`} 
+            src={profilePicture.startsWith('data:') 
+              ? profilePicture 
+              : `http://localhost:3001/${profilePicture}`
+            } 
             alt="Profile" 
             style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
           />

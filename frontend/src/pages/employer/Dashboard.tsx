@@ -1172,7 +1172,10 @@ const EmployerDashboard: React.FC = () => {
             >
               {userProfile?.profilePicture ? (
                 <img 
-                  src={`http://localhost:3001/${userProfile.profilePicture}`} 
+                  src={userProfile.profilePicture.startsWith('data:') 
+                    ? userProfile.profilePicture 
+                    : `http://localhost:3001/${userProfile.profilePicture}`
+                  } 
                   alt="Company logo" 
                   className={layoutStyles.avatarImage}
                 />

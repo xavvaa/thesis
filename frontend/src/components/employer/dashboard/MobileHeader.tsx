@@ -69,7 +69,10 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
           <div className={styles.userAvatar} aria-label="User profile">
             {profilePicture ? (
               <img 
-                src={`http://localhost:3001/${profilePicture}`} 
+                src={profilePicture.startsWith('data:') 
+                  ? profilePicture 
+                  : `http://localhost:3001/${profilePicture}`
+                } 
                 alt="Company logo" 
                 className={styles.avatarImage}
               />

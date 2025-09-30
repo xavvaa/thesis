@@ -184,8 +184,8 @@ userController.uploadProfilePicture = async (req, res) => {
       });
     }
 
-    // Delete old profile picture if it exists
-    if (user.profilePicture) {
+    // Delete old profile picture if it exists (legacy file path cleanup)
+    if (user.profilePicture && !user.profilePicture.startsWith('data:')) {
       const fs = require('fs');
       const path = require('path');
       const oldFilePath = path.join(__dirname, '..', user.profilePicture);
@@ -194,15 +194,30 @@ userController.uploadProfilePicture = async (req, res) => {
       }
     }
 
-    // Update user with new profile picture path
-    const profilePicturePath = `uploads/profile-pictures/${req.file.filename}`;
-    user.profilePicture = profilePicturePath;
+    // Convert uploaded file to Base64 and store in database
+    const fs = require('fs');
+    const path = require('path');
+    const filePath = path.join(__dirname, '..', 'uploads', 'profile-pictures', req.file.filename);
+    
+    // Read the uploaded file and convert to Base64
+    const imageBuffer = fs.readFileSync(filePath);
+    const base64Image = imageBuffer.toString('base64');
+    const mimeType = req.file.mimetype;
+    const profilePictureData = `data:${mimeType};base64,${base64Image}`;
+    
+    // Store Base64 data in database (cross-device compatible)
+    user.profilePicture = profilePictureData;
     await user.save();
+    
+    // Clean up the temporary file (no longer needed)
+    fs.unlinkSync(filePath);
+    
+    console.log(`✅ Profile picture stored as Base64 for user: ${uid} (${profilePictureData.length} chars)`);
 
     res.json({
       success: true,
       message: 'Profile picture uploaded successfully',
-      profilePicture: profilePicturePath
+      profilePicture: profilePictureData
     });
   } catch (error) {
     console.error('Upload profile picture error:', error);

@@ -126,11 +126,14 @@ export const JobDetailsModal: React.FC<JobDetailsModalProps> = (props) => {
       return (
         <div className={styles.companyLogo}>
           <img 
-            src={`http://localhost:3001/${profilePicture}`} 
+            src={profilePicture.startsWith('data:') 
+              ? profilePicture 
+              : `http://localhost:3001/${profilePicture}`
+            } 
             alt={`${company} logo`} 
             className={styles.companyLogoImage}
             onLoad={() => console.log('JobDetailsModal - Image loaded successfully')}
-            onError={(e) => console.error('JobDetailsModal - Image failed to load:', e, `http://localhost:3001/${profilePicture}`)}
+            onError={(e) => console.error('JobDetailsModal - Image failed to load:', e)}
           />
         </div>
       );

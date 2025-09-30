@@ -629,7 +629,10 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ onNavigate }) => {
                     <div className={styles.currentPicture}>
                       {profile.profilePicture ? (
                         <img 
-                          src={`http://localhost:3001/${profile.profilePicture}`} 
+                        src={profile.profilePicture.startsWith('data:') 
+                          ? profile.profilePicture 
+                          : `http://localhost:3001/${profile.profilePicture}`
+                        } 
                           alt="Profile" 
                           style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
                         />

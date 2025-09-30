@@ -164,6 +164,7 @@ router.post('/', verifyToken, async (req, res) => {
 
 // ------------------ EMPLOYER GET APPLICATIONS ------------------
 router.get('/employer', verifyToken, async (req, res) => {
+  console.log(`🎯 [${new Date().toLocaleTimeString()}] GET /api/applications/employer called by user: ${req.user?.uid}`);
   try {
     const { uid } = req.user;
     const { status, jobId } = req.query;
@@ -179,7 +180,7 @@ router.get('/employer', verifyToken, async (req, res) => {
     const Resume = require('../models/Resume');
     const User = require('../models/User');
     
-    // Debug logs removed - system working correctly
+    console.log(`🚀 [${new Date().toLocaleTimeString()}] Processing ${applications.length} applications for employer`);
     
     const formattedApplications = await Promise.all(applications.map(async (app) => {
       // Try to get fresh resume data from Resume collection
@@ -217,21 +218,40 @@ router.get('/employer', verifyToken, async (req, res) => {
         // Fall back to stored resume data
       }
       
-      // Get profile picture from User model (settings profile picture) and convert to Base64
+      // Get profile picture from User model (should be stored as Base64 in database)
       let profilePicture = null;
       try {
         const jobSeekerUser = await User.findOne({ uid: app.jobSeekerUid }).select('profilePicture');
+        console.log(`🔍 User ${app.jobSeekerUid} (${currentResumeData?.personalInfo?.name || app.applicantName}):`);
+        
         if (jobSeekerUser?.profilePicture) {
-          const fs = require('fs');
-          const path = require('path');
-          const filePath = path.join(__dirname, '..', jobSeekerUser.profilePicture);
+          console.log(`   - Profile picture found in database`);
+          console.log(`   - Length: ${jobSeekerUser.profilePicture.length} chars`);
+          console.log(`   - Starts with: ${jobSeekerUser.profilePicture.substring(0, 50)}...`);
           
-          if (fs.existsSync(filePath)) {
-            const imageBuffer = fs.readFileSync(filePath);
-            const base64Image = imageBuffer.toString('base64');
-            const mimeType = path.extname(filePath).toLowerCase() === '.png' ? 'image/png' : 'image/jpeg';
-            profilePicture = `data:${mimeType};base64,${base64Image}`;
+          // Check if it's already a Base64 data URL
+          if (jobSeekerUser.profilePicture.startsWith('data:')) {
+            profilePicture = jobSeekerUser.profilePicture;
+            console.log(`   - ✅ Using Base64 data from database`);
+          } else {
+            // Legacy: Try to read from file system (fallback)
+            console.log(`   - 🔄 Legacy file path detected, trying to read from filesystem...`);
+            const fs = require('fs');
+            const path = require('path');
+            const filePath = path.join(__dirname, '..', jobSeekerUser.profilePicture);
+            
+            if (fs.existsSync(filePath)) {
+              const imageBuffer = fs.readFileSync(filePath);
+              const base64Image = imageBuffer.toString('base64');
+              const mimeType = path.extname(filePath).toLowerCase() === '.png' ? 'image/png' : 'image/jpeg';
+              profilePicture = `data:${mimeType};base64,${base64Image}`;
+              console.log(`   - ✅ Converted file to Base64`);
+            } else {
+              console.log(`   - ❌ Legacy file not found: ${filePath}`);
+            }
           }
+        } else {
+          console.log(`   - ℹ️ No profile picture in database`);
         }
       } catch (userError) {
         console.log('❌ Error fetching profile picture for application:', app._id, userError.message);

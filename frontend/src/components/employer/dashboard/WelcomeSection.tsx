@@ -23,7 +23,10 @@ export const WelcomeSection: React.FC<WelcomeSectionProps> = ({
       <div className={styles.welcomeAvatar}>
         {profilePicture ? (
           <img 
-            src={`http://localhost:3001/${profilePicture}`} 
+            src={profilePicture.startsWith('data:') 
+              ? profilePicture 
+              : `http://localhost:3001/${profilePicture}`
+            } 
             alt="Company logo" 
             className={styles.avatarImage}
           />
