@@ -56,16 +56,57 @@ const EmployerCard: React.FC<EmployerCardProps> = ({
     return colors[index];
   };
 
+  const getCompanyLogo = () => {
+    const profilePicture = employer.profilePicture || employer.userId.profilePicture;
+    
+    // Debug logging
+    console.log('EmployerCard - employer data:', employer);
+    console.log('EmployerCard - profilePicture:', profilePicture);
+    console.log('EmployerCard - employer.userId:', employer.userId);
+    
+    if (profilePicture) {
+      console.log('EmployerCard - rendering company logo');
+      return (
+        <div 
+          className="company-initials"
+          style={{ 
+            backgroundColor: 'transparent',
+            padding: 0,
+            overflow: 'hidden'
+          }}
+        >
+          <img 
+            src={profilePicture.startsWith('data:') ? profilePicture : `data:image/jpeg;base64,${profilePicture}`} 
+            alt="Company logo" 
+            style={{ 
+              width: '100%', 
+              height: '100%', 
+              objectFit: 'cover', 
+              borderRadius: '12px'
+            }}
+            onLoad={() => console.log('EmployerCard - Image loaded successfully')}
+            onError={(e) => console.error('EmployerCard - Image failed to load:', e)}
+          />
+        </div>
+      );
+    }
+    
+    console.log('EmployerCard - no profile picture, showing initials');
+    return (
+      <div 
+        className="company-initials"
+        style={{ backgroundColor: getInitialsColor() }}
+      >
+        {getCompanyInitials()}
+      </div>
+    );
+  };
+
   return (
     <div className="employer-card-compact" onClick={onClick}>
       <div className="card-header">
         <div className="company-avatar">
-          <div 
-            className="company-initials"
-            style={{ backgroundColor: getInitialsColor() }}
-          >
-            {getCompanyInitials()}
-          </div>
+          {getCompanyLogo()}
         </div>
         <div className="company-info">
           <h4 className="company-name">

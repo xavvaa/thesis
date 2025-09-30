@@ -43,6 +43,44 @@ const EmployerDetailsModal: React.FC<EmployerDetailsModalProps> = ({
     }
   };
 
+  const getCompanyLogo = () => {
+    const profilePicture = employer.profilePicture || employer.userId.profilePicture;
+    
+    if (profilePicture) {
+      return (
+        <div 
+          className="company-icon"
+          style={{ 
+            width: '48px', 
+            height: '48px', 
+            marginRight: '12px',
+            overflow: 'hidden',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <img 
+            src={profilePicture.startsWith('data:') ? profilePicture : `data:image/jpeg;base64,${profilePicture}`} 
+            alt="Company logo" 
+            style={{ 
+              width: '100%', 
+              height: '100%', 
+              objectFit: 'cover'
+            }}
+          />
+        </div>
+      );
+    }
+    
+    return (
+      <div className="company-icon">
+        <HiOutlineOfficeBuilding />
+      </div>
+    );
+  };
+
   return (
     <div className="modal-backdrop" onClick={handleBackdropClick}>
       <div className="employer-details-modal">
@@ -50,9 +88,7 @@ const EmployerDetailsModal: React.FC<EmployerDetailsModalProps> = ({
         <div className="modal-header">
           <div className="modal-title-section">
             <div className="company-header">
-              <div className="company-icon">
-                <HiOutlineOfficeBuilding />
-              </div>
+              {getCompanyLogo()}
               <div className="company-title-info">
                 <h2>{employer.companyDetails?.companyName || employer.userId.companyName}</h2>
                 <div className="company-subtitle">

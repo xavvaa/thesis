@@ -83,6 +83,7 @@ export interface PendingEmployer {
     email: string;
     companyName: string;
     createdAt: string;
+    profilePicture?: string;
   };
   accountStatus: string;
   verificationNotes?: string;
@@ -108,6 +109,7 @@ export interface PendingEmployer {
   // Legacy fields for backward compatibility
   businessPermitUrl?: string;
   dtiRegistrationUrl?: string;
+  profilePicture?: string;
 }
 
 export interface Job {

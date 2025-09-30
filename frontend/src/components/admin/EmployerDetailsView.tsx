@@ -57,6 +57,44 @@ const EmployerDetailsView: React.FC<EmployerDetailsViewProps> = ({
     return parts.join(', ');
   };
 
+  const getCompanyLogo = () => {
+    const profilePicture = employer.profilePicture || employer.userId.profilePicture;
+    
+    if (profilePicture) {
+      return (
+        <div 
+          className="company-icon"
+          style={{ 
+            width: '48px', 
+            height: '48px', 
+            marginRight: '12px',
+            overflow: 'hidden',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <img 
+            src={profilePicture.startsWith('data:') ? profilePicture : `data:image/jpeg;base64,${profilePicture}`} 
+            alt="Company logo" 
+            style={{ 
+              width: '100%', 
+              height: '100%', 
+              objectFit: 'cover'
+            }}
+          />
+        </div>
+      );
+    }
+    
+    return (
+      <div className="company-icon">
+        <HiOutlineOfficeBuilding />
+      </div>
+    );
+  };
+
   return (
     <div className="employer-details-view">
       {/* Header */}
@@ -67,9 +105,7 @@ const EmployerDetailsView: React.FC<EmployerDetailsViewProps> = ({
         </button>
         
         <div className="company-header">
-          <div className="company-icon">
-            <HiOutlineOfficeBuilding />
-          </div>
+          {getCompanyLogo()}
           <div className="company-title-info">
             <h1>{employer.companyDetails?.companyName || employer.userId.companyName}</h1>
             <div className="company-subtitle">

@@ -153,7 +153,7 @@ router.get('/employers', verifyToken, adminMiddleware, async (req, res) => {
 
     // Get all employers (or filtered by status) with full company details
     const employers = await Employer.find(query)
-      .populate('userId', 'email companyName createdAt')
+      .populate('userId', 'email companyName createdAt profilePicture')
       .sort({ createdAt: -1 });
 
     // Format employers with full company details and documents
@@ -220,13 +220,13 @@ router.get('/employers/pending', verifyToken, adminMiddleware, async (req, res) 
     // First, get employers with pending account status
     const pendingEmployers = await Employer.find({ 
       accountStatus: 'pending' 
-    }).populate('userId', 'email companyName createdAt').sort({ createdAt: -1 });
+    }).populate('userId', 'email companyName createdAt profilePicture').sort({ createdAt: -1 });
 
     // Also get employers who have pending documents (regardless of account status)
     const additionalEmployers = await Employer.find({
       documentVerificationStatus: 'pending',
       accountStatus: { $ne: 'pending' }
-    }).populate('userId', 'email companyName createdAt').sort({ createdAt: -1 });
+    }).populate('userId', 'email companyName createdAt profilePicture').sort({ createdAt: -1 });
 
     // Combine both lists
     const allEmployers = [...pendingEmployers, ...additionalEmployers];
