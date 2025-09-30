@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const JobSeeker = require('../models/JobSeeker');
 const User = require('../models/User');
-const { verifyToken } = require('../middleware/authMiddleware');
+const { verifyToken, requireRole } = require('../middleware/authMiddleware');
 const multer = require('multer');
 const path = require('path');
+const cloudStorageService = require('../services/cloudStorageService');
 
 // Configure multer for resume uploads
 const storage = multer.diskStorage({
@@ -30,6 +31,9 @@ const upload = multer({
     }
   }
 });
+
+// Cloud upload configuration for profile photos
+const cloudUpload = cloudStorageService.getUploadMiddleware();
 
 // @route   POST /api/jobseekers/resume-data
 // @desc    Save resume data to jobseeker profile
@@ -484,6 +488,76 @@ router.post('/education', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to add education'
+    });
+  }
+});
+
+// POST /api/jobseekers/upload-profile-photo - Upload profile photo to cloud storage
+router.post('/upload-profile-photo', verifyToken, requireRole('jobseeker'), cloudUpload.single('profilePhoto'), async (req, res) => {
+  const requestId = Math.random().toString(36).substr(2, 9);
+  console.log(`📸 [${requestId}] Profile photo upload request received`);
+  
+  try {
+    const jobseeker = await JobSeeker.findOne({ uid: req.user.uid });
+    
+    if (!jobseeker) {
+      return res.status(404).json({
+        success: false,
+        message: 'Jobseeker profile not found'
+      });
+    }
+
+    const uploadedFile = req.file;
+    
+    if (!uploadedFile) {
+      return res.status(400).json({
+        success: false,
+        message: 'No photo was uploaded'
+      });
+    }
+
+    console.log(`📸 [${requestId}] Uploading profile photo to cloud storage`);
+
+    try {
+      // Upload to cloud storage
+      const cloudResult = await cloudStorageService.uploadBuffer(
+        uploadedFile.buffer, 
+        uploadedFile.originalname, 
+        `profile-photos/${req.user.uid}`
+      );
+      
+      // Update jobseeker profile with cloud URL
+      jobseeker.profilePicture = cloudResult.url;
+      jobseeker.profilePicturePublicId = cloudResult.publicId;
+      await jobseeker.save();
+      
+      console.log(`✅ [${requestId}] Profile photo uploaded successfully: ${cloudResult.publicId}`);
+
+      res.json({
+        success: true,
+        message: 'Profile photo uploaded successfully to cloud storage',
+        data: {
+          cloudUrl: cloudResult.url,
+          publicId: cloudResult.publicId
+        }
+      });
+
+    } catch (uploadError) {
+      console.error(`❌ [${requestId}] Failed to upload profile photo:`, uploadError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to upload photo to cloud storage',
+        error: uploadError.message
+      });
+    }
+
+  } catch (error) {
+    console.error(`❌ [${requestId}] Error uploading profile photo:`, error);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Error uploading profile photo',
+      error: error.message
     });
   }
 });

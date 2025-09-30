@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { FiX, FiCheck, FiMapPin, FiPhone, FiMail, FiGlobe, FiUsers, FiCalendar, FiHome, FiFileText, FiDownload, FiEye, FiClock, FiUser } from 'react-icons/fi';
-import { HiOutlineOfficeBuilding, HiOutlineHeart, HiOutlineStar, HiOutlineInformationCircle } from 'react-icons/hi';
+import React from 'react';
+import { FiX, FiMapPin, FiMail, FiPhone, FiCalendar, FiFileText, FiDownload, FiEye, FiUsers, FiClock, FiHome, FiGlobe, FiUser, FiCheck } from 'react-icons/fi';
+import styles from './EmployerDetailsModal.module.css';
+import { getImageSrc } from '../../utils/imageUtils';
+import { HiOutlineHeart, HiOutlineStar, HiOutlineInformationCircle, HiOutlineOfficeBuilding } from 'react-icons/hi';
 import { PendingEmployer } from '../../types/admin';
 import DocumentViewer from './DocumentViewer';
 
@@ -46,6 +48,13 @@ const EmployerDetailsModal: React.FC<EmployerDetailsModalProps> = ({
   const getCompanyLogo = () => {
     const profilePicture = employer.profilePicture || employer.userId.profilePicture;
     
+    console.log('🏢 EmployerDetailsModal - Company logo data:', {
+      employerProfilePicture: employer.profilePicture,
+      userIdProfilePicture: employer.userId?.profilePicture,
+      finalProfilePicture: profilePicture,
+      companyName: employer.companyDetails?.companyName || employer.userId?.companyName
+    });
+    
     if (profilePicture) {
       return (
         <div 
@@ -62,18 +71,21 @@ const EmployerDetailsModal: React.FC<EmployerDetailsModalProps> = ({
           }}
         >
           <img 
-            src={profilePicture.startsWith('data:') ? profilePicture : `data:image/jpeg;base64,${profilePicture}`} 
+            src={getImageSrc(profilePicture)} 
             alt="Company logo" 
             style={{ 
               width: '100%', 
               height: '100%', 
               objectFit: 'cover'
             }}
+            onLoad={() => console.log('✅ EmployerDetailsModal - Company logo loaded successfully')}
+            onError={(e) => console.error('❌ EmployerDetailsModal - Company logo failed to load:', e)}
           />
         </div>
       );
     }
     
+    console.log('🏢 EmployerDetailsModal - No profile picture found, showing fallback icon');
     return (
       <div className="company-icon">
         <HiOutlineOfficeBuilding />

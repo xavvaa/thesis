@@ -7,22 +7,25 @@
  * @param imageData - Base64 string or data URL
  * @returns Properly formatted data URL
  */
-export const formatImageSrc = (imageData: string | null | undefined): string | undefined => {
-  if (!imageData) return undefined;
+export const getImageSrc = (imageData: string | null | undefined): string => {
+  if (!imageData) return '';
   
   // If it's already a data URL, return as is
   if (imageData.startsWith('data:')) {
     return imageData;
   }
   
-  // If it's a Base64 string, format it as a data URL
-  // Default to JPEG format, but could be enhanced to detect format
+  // If it's a cloud URL (Cloudinary, AWS, etc.), return as is
+  if (imageData.startsWith('http://') || imageData.startsWith('https://')) {
+    return imageData;
+  }
+  
+  // If it's a base64 string, convert to data URL (legacy support)
   return `data:image/jpeg;base64,${imageData}`;
 };
 
 /**
  * Gets initials from a full name
- * @param name - Full name string
  * @returns Uppercase initials
  */
 export const getInitials = (name: string): string => {

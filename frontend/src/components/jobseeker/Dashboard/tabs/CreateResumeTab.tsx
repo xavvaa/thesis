@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiDownload, FiSave, FiUser, FiBriefcase, FiFileText, FiPlus, FiMinus, FiEdit3, FiSave as FiSaveIcon, FiX, FiMail, FiPhone, FiMapPin, FiClock, FiCalendar, FiTrash2, FiStar, FiUpload } from 'react-icons/fi';
+import { FiDownload, FiSave, FiUser, FiBriefcase, FiFileText, FiPlus, FiMinus, FiEdit3, FiSave as FiSaveIcon, FiX, FiMail, FiPhone, FiMapPin, FiClock, FiCalendar, FiTrash2, FiStar, FiUpload, FiCheck } from 'react-icons/fi';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { auth } from '../../../../config/firebase';
 import psgc from "@dctsph/psgc";
+import jobseekerCloudService from '../../../../services/jobseekerCloudService';
 import styles from './CreateResumeTab.module.css';
 import dashboardStyles from '../../../../pages/jobseeker/Dashboard.module.css';
 
@@ -135,7 +136,7 @@ interface PersonalInfo {
   zipCode: string;
   age: string;
   birthday: string;
-  photo?: string; // Base64 encoded image
+  photo?: string; // Cloud storage URL or legacy base64
   // Readable location names (loaded from database)
   regionName?: string;
   provinceName?: string;
@@ -282,6 +283,8 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
   const [isPDFReady, setIsPDFReady] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [hasExistingResume, setHasExistingResume] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoUploadSuccess, setPhotoUploadSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // PSGC dropdown options
@@ -1422,11 +1425,11 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
     // Clear parent component data as well
     if (onResumeDataChange) {
       onResumeDataChange(emptyData);
-    };
+    }
   };
 
-  // Photo upload handler
-  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Photo upload handler - now uses cloud storage
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       // Validate file type
@@ -1441,12 +1444,29 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
         return;
       }
       
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64String = e.target?.result as string;
-        updatePersonalInfo('photo', base64String);
-      };
-      reader.readAsDataURL(file);
+      try {
+        // Show uploading state
+        setPhotoUploading(true);
+        
+        // Upload to cloud storage
+        const result = await jobseekerCloudService.uploadProfilePhoto(file);
+        
+        if (result.success && result.data) {
+          // Update with cloud URL
+          updatePersonalInfo('photo', result.data.cloudUrl);
+          setPhotoUploadSuccess(true);
+          
+          // Show success message briefly
+          setTimeout(() => setPhotoUploadSuccess(false), 3000);
+        } else {
+          throw new Error(result.message || 'Upload failed');
+        }
+      } catch (error) {
+        console.error('Photo upload error:', error);
+        alert(`Failed to upload photo: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      } finally {
+        setPhotoUploading(false);
+      }
     }
   };
 
@@ -1539,7 +1559,7 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
           {resumeData.personalInfo.photo ? (
             <div className={styles.photoPreview}>
               <img 
-                src={resumeData.personalInfo.photo} 
+                src={jobseekerCloudService.getOptimizedImageUrl(resumeData.personalInfo.photo, { width: 150, height: 150 })} 
                 alt="Profile" 
                 className={styles.photoImage}
               />
@@ -1547,8 +1567,10 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
                 <button 
                   onClick={triggerPhotoUpload}
                   className={styles.photoChangeButton}
+                  disabled={photoUploading}
                 >
-                  <FiUpload /> Change
+                  {photoUploading ? <div className={styles.spinner} /> : <FiUpload />} 
+                  {photoUploading ? 'Uploading...' : 'Change'}
                 </button>
                 <button 
                   onClick={handleRemovePhoto}
@@ -1560,9 +1582,26 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
             </div>
           ) : (
             <div className={styles.photoPlaceholder} onClick={triggerPhotoUpload}>
-              <FiUpload className={styles.photoPlaceholderIcon} />
-              <span className={styles.photoPlaceholderText}>Add photo</span>
-              <span className={styles.photoPlaceholderSubtext}>(optional)</span>
+              {photoUploading ? (
+                <>
+                  <div className={styles.spinner} />
+                  <span className={styles.photoPlaceholderText}>Uploading...</span>
+                </>
+              ) : (
+                <>
+                  <FiUpload className={styles.photoPlaceholderIcon} />
+                  <span className={styles.photoPlaceholderText}>Add photo</span>
+                  <span className={styles.photoPlaceholderSubtext}>(optional)</span>
+                </>
+              )}
+            </div>
+          )}
+          
+          {/* Photo Upload Success Message */}
+          {photoUploadSuccess && (
+            <div className={styles.photoSuccessMessage}>
+              <FiCheck className={styles.successIcon} />
+              Photo uploaded successfully!
             </div>
           )}
         </div>

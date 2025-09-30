@@ -1,7 +1,8 @@
-import React from 'react';
-import { FiMapPin, FiClock, FiBookmark, FiEye, FiBriefcase, FiTag } from 'react-icons/fi';
-import { Job } from '../../../types/Job';
+import React, { useState, useEffect } from 'react';
+import { FiMapPin, FiClock, FiDollarSign, FiBookmark, FiSearch, FiEye, FiBriefcase } from 'react-icons/fi';
 import styles from './JobsListView.module.css';
+import { getImageSrc } from '../../../utils/imageUtils';
+import { Job } from '../../../types/Job';
 
 interface JobsListViewProps {
   jobs: Job[];
@@ -102,7 +103,7 @@ export const JobsListView: React.FC<JobsListViewProps> = ({
     if (job.companyLogo) {
       return (
         <img 
-          src={job.companyLogo.startsWith('data:') ? job.companyLogo : `data:image/jpeg;base64,${job.companyLogo}`} 
+          src={getImageSrc(job.companyLogo)} 
           alt={`${job.company} logo`} 
           className={styles.companyLogoImage}
         />

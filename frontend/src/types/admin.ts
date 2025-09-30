@@ -29,7 +29,7 @@ export interface EmployerDocument {
   employerUid: string;
   documentType: 'business_permit' | 'dti_registration' | 'bir_certificate' | 'sec_certificate' | 'mayor_permit' | 'barangay_clearance' | 'other';
   documentName: string;
-  documentUrl: string;
+  cloudUrl: string; // Cloud storage URL (Cloudinary)
   fileSize: number;
   mimeType: string;
   uploadedAt: string;
@@ -41,6 +41,13 @@ export interface EmployerDocument {
   isRequired: boolean;
   expiryDate?: string;
   documentNumber?: string;
+  // Employer info for pending documents
+  employerInfo?: {
+    _id: string;
+    companyName: string;
+    email: string;
+    profilePicture?: string;
+  };
 }
 
 export interface CompanyDetails {

@@ -151,49 +151,57 @@ router.get('/employers', verifyToken, adminMiddleware, async (req, res) => {
       query.accountStatus = status;
     }
 
-    // Get all employers (or filtered by status) with full company details
     const employers = await Employer.find(query)
       .populate('userId', 'email companyName createdAt profilePicture')
       .sort({ createdAt: -1 });
 
     // Format employers with full company details and documents
-    const employersWithFullDetails = employers.map(employer => ({
-      _id: employer._id,
-      userId: employer.userId,
-      accountStatus: employer.accountStatus,
-      verificationNotes: employer.verificationNotes,
-      verifiedAt: employer.verifiedAt,
-      // Full company information
-      companyDetails: {
-        companyName: employer.companyName,
-        companyDescription: employer.companyDescription,
-        industry: employer.industry,
-        companySize: employer.companySize,
-        foundedYear: employer.foundedYear,
-        website: employer.website,
-        businessRegistrationNumber: employer.businessRegistrationNumber,
-        taxIdentificationNumber: employer.taxIdentificationNumber
-      },
-      // Contact person information
-      contactPerson: employer.contactPerson || {},
-      // Address information
-      address: employer.address || {},
-      // Social media and other details
-      socialMedia: employer.socialMedia || {},
-      benefits: employer.benefits || [],
-      companyValues: employer.companyValues || [],
-      workEnvironment: employer.workEnvironment,
-      // Documents and verification
-      documents: employer.documents || [],
-      documentVerificationStatus: employer.documentVerificationStatus || 'pending',
-      documentVerifiedAt: employer.documentVerifiedAt,
-      documentRejectionReason: employer.documentRejectionReason,
-      // Profile status
-      profileComplete: employer.profileComplete,
-      isActive: employer.isActive,
-      createdAt: employer.createdAt,
-      updatedAt: employer.updatedAt
-    }));
+    const employersWithFullDetails = employers.map(employer => {
+      const profilePicture = employer.profilePicture || employer.userId?.profilePicture;
+      console.log(`🏢 Admin API - Employer ${employer._id} profile picture:`, {
+        employerProfilePicture: employer.profilePicture,
+        userIdProfilePicture: employer.userId?.profilePicture,
+        finalProfilePicture: profilePicture,
+        companyName: employer.companyName || employer.userId?.companyName
+      });
+      
+      return {
+        _id: employer._id,
+        userId: employer.userId,
+        accountStatus: employer.accountStatus,
+        verificationNotes: employer.verificationNotes,
+        verifiedAt: employer.verifiedAt,
+        // Include profile picture at employer level
+        profilePicture: profilePicture,
+        // Full company information
+        companyDetails: {
+          companyName: employer.companyName || employer.userId?.companyName,
+          companyDescription: employer.companyDescription,
+          industry: employer.industry,
+          companySize: employer.companySize,
+          foundedYear: employer.foundedYear,
+          website: employer.website,
+          businessRegistrationNumber: employer.businessRegistrationNumber,
+          taxIdentificationNumber: employer.taxIdentificationNumber
+        },
+        contactPerson: employer.contactPerson || {},
+        address: employer.address || {},
+        socialMedia: employer.socialMedia || {},
+        benefits: employer.benefits || [],
+        companyValues: employer.companyValues || [],
+        workEnvironment: employer.workEnvironment,
+        // Documents and verification
+        documents: employer.documents || [],
+        documentVerificationStatus: employer.documentVerificationStatus || 'pending',
+        documentVerifiedAt: employer.documentVerifiedAt,
+        documentRejectionReason: employer.documentRejectionReason,
+        // Profile status
+        profileComplete: employer.profileComplete,
+        isActive: employer.isActive,
+        createdAt: employer.createdAt,
+        updatedAt: employer.updatedAt
+      };
+    });
 
     // Only include employers that have uploaded documents
     const employersWithDocs = employersWithFullDetails.filter(employer => 
@@ -694,6 +702,49 @@ router.post('/admins', verifyToken, superAdminMiddleware, async (req, res) => {
   }
 });
 
+// Get all pending documents for admin review
+router.get('/documents/pending', verifyToken, adminMiddleware, async (req, res) => {
+  try {
+    // Get all employers with pending documents
+    const employersWithPendingDocs = await Employer.find({
+      'documents.verificationStatus': 'pending'
+    }).populate('userId', 'email companyName profilePicture');
+
+    // Extract all pending documents with employer info
+    const pendingDocuments = [];
+    
+    employersWithPendingDocs.forEach(employer => {
+      const pendingDocs = employer.documents.filter(doc => 
+        doc.verificationStatus === 'pending'
+      );
+      
+      pendingDocs.forEach(doc => {
+        pendingDocuments.push({
+          ...doc.toObject(),
+          employerInfo: {
+            _id: employer._id,
+            companyName: employer.companyName || employer.userId?.companyName,
+            email: employer.userId?.email,
+            profilePicture: employer.profilePicture || employer.userId?.profilePicture
+          }
+        });
+      });
+    });
+
+    res.json({
+      success: true,
+      documents: pendingDocuments
+    });
+
+  } catch (error) {
+    console.error('Pending documents fetch error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error fetching pending documents' 
+    });
+  }
+});
+
 // Get documents for a specific employer
 router.get('/employers/:employerId/documents', verifyToken, adminMiddleware, async (req, res) => {
   try {
@@ -705,6 +756,22 @@ router.get('/employers/:employerId/documents', verifyToken, adminMiddleware, asy
       return res.status(404).json({
         success: false,
         message: 'Employer not found'
+      });
+    }
+
+    // Debug logging
+    console.log(`📄 Fetching documents for employer ${employerId}`);
+    console.log(`📄 Found ${employer.documents?.length || 0} documents`);
+    
+    if (employer.documents && employer.documents.length > 0) {
+      employer.documents.forEach((doc, index) => {
+        console.log(`📄 Document ${index + 1}:`, {
+          name: doc.documentName,
+          type: doc.documentType,
+          hasCloudUrl: !!doc.cloudUrl,
+          cloudUrl: doc.cloudUrl ? `${doc.cloudUrl.substring(0, 50)}...` : 'MISSING',
+          verificationStatus: doc.verificationStatus
+        });
       });
     }
 
@@ -2777,6 +2844,99 @@ router.get('/test-xlsx', verifyToken, adminMiddleware, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'XLSX test failed',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/admin/view-document/:documentId - Stream document for preview
+router.get('/view-document/:documentId', async (req, res) => {
+  // Handle authentication from query parameter (like employer endpoint)
+  const token = req.query.token || req.headers.authorization?.replace('Bearer ', '');
+  
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      message: 'Authentication required'
+    });
+  }
+  
+  try {
+    // Verify the token manually
+    const admin = require('../config/firebase');
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    req.user = decodedToken;
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid authentication token'
+    });
+  }
+  try {
+    const { documentId } = req.params;
+    
+    // Find employer with the document
+    const employer = await Employer.findOne({
+      'documents._id': documentId
+    });
+    
+    if (!employer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document not found'
+      });
+    }
+    
+    // Find the specific document
+    const document = employer.documents.find(doc => doc._id.toString() === documentId);
+    
+    if (!document || !document.cloudUrl) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document not available'
+      });
+    }
+    
+    try {
+      // Fetch the document from Cloudinary and stream it
+      const https = require('https');
+      const http = require('http');
+      const url = require('url');
+      
+      const parsedUrl = url.parse(document.cloudUrl);
+      const client = parsedUrl.protocol === 'https:' ? https : http;
+      
+      const request = client.get(document.cloudUrl, (response) => {
+        // Set appropriate headers for PDF viewing
+        res.setHeader('Content-Type', document.mimeType || 'application/pdf');
+        res.setHeader('Content-Disposition', 'inline; filename="' + document.documentName + '"');
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        
+        // Pipe the response directly to the client
+        response.pipe(res);
+      });
+      
+      request.on('error', (error) => {
+        console.error('Error fetching document from cloud:', error);
+        res.status(500).json({
+          success: false,
+          message: 'Error loading document'
+        });
+      });
+      
+    } catch (error) {
+      console.error('Error streaming document:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error loading document'
+      });
+    }
+    
+  } catch (error) {
+    console.error('Error fetching document for preview:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching document',
       error: error.message
     });
   }

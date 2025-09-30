@@ -41,6 +41,7 @@ import { RecentApplicants } from '../../components/employer/dashboard/RecentAppl
 import { ActiveJobPosts } from '../../components/employer/dashboard/ActiveJobPosts';
 import { ApplicantsView } from '../../components/employer/dashboard/ApplicantsView';
 import MobileHeader from '../../components/employer/dashboard/MobileHeader';
+import { getImageSrc } from '../../utils/imageUtils';
 // Removed mock data imports - using real backend data only
 import { 
   Applicant
@@ -1172,10 +1173,7 @@ const EmployerDashboard: React.FC = () => {
             >
               {userProfile?.profilePicture ? (
                 <img 
-                  src={userProfile.profilePicture.startsWith('data:') 
-                    ? userProfile.profilePicture 
-                    : `http://localhost:3001/${userProfile.profilePicture}`
-                  } 
+                  src={getImageSrc(userProfile.profilePicture)} 
                   alt="Company logo" 
                   className={layoutStyles.avatarImage}
                 />

@@ -18,7 +18,15 @@ const documentItemSchema = new mongoose.Schema({
   },
   documentUrl: {
     type: String,
-    required: true
+    required: false // Keep for backward compatibility with local files
+  },
+  cloudUrl: {
+    type: String, // Cloudinary/cloud storage URL (RECOMMENDED)
+    required: false
+  },
+  cloudPublicId: {
+    type: String, // Cloud storage public ID for management
+    required: false
   },
   fileSize: {
     type: Number,

@@ -19,6 +19,7 @@ import {
   FiGlobe 
 } from 'react-icons/fi';
 import { PendingEmployer } from '../../types/admin';
+import { getImageSrc } from '../../utils/imageUtils';
 import DocumentViewer from './DocumentViewer';
 
 interface EmployerDetailsViewProps {
@@ -60,6 +61,13 @@ const EmployerDetailsView: React.FC<EmployerDetailsViewProps> = ({
   const getCompanyLogo = () => {
     const profilePicture = employer.profilePicture || employer.userId.profilePicture;
     
+    console.log('🏢 EmployerDetailsView - Company logo data:', {
+      employerProfilePicture: employer.profilePicture,
+      userIdProfilePicture: employer.userId?.profilePicture,
+      finalProfilePicture: profilePicture,
+      companyName: employer.companyDetails?.companyName || employer.userId?.companyName
+    });
+    
     if (profilePicture) {
       return (
         <div 
@@ -76,18 +84,21 @@ const EmployerDetailsView: React.FC<EmployerDetailsViewProps> = ({
           }}
         >
           <img 
-            src={profilePicture.startsWith('data:') ? profilePicture : `data:image/jpeg;base64,${profilePicture}`} 
+            src={getImageSrc(profilePicture)} 
             alt="Company logo" 
             style={{ 
               width: '100%', 
               height: '100%', 
               objectFit: 'cover'
             }}
+            onLoad={() => console.log('✅ Company logo loaded successfully')}
+            onError={(e) => console.error('❌ Company logo failed to load:', e)}
           />
         </div>
       );
     }
     
+    console.log('🏢 No profile picture found, showing fallback icon');
     return (
       <div className="company-icon">
         <HiOutlineOfficeBuilding />

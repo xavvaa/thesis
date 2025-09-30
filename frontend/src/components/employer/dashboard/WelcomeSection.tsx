@@ -2,6 +2,7 @@ import React from 'react';
 import { FiPlus, FiUsers } from 'react-icons/fi';
 import styles from './WelcomeSection.module.css';
 import buttonStyles from './Buttons.module.css';
+import { getImageSrc } from '../../../utils/imageUtils';
 
 interface WelcomeSectionProps {
   userName: string;
@@ -23,10 +24,7 @@ export const WelcomeSection: React.FC<WelcomeSectionProps> = ({
       <div className={styles.welcomeAvatar}>
         {profilePicture ? (
           <img 
-            src={profilePicture.startsWith('data:') 
-              ? profilePicture 
-              : `http://localhost:3001/${profilePicture}`
-            } 
+            src={getImageSrc(profilePicture)} 
             alt="Company logo" 
             className={styles.avatarImage}
           />

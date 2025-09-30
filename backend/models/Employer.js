@@ -92,9 +92,13 @@ const EmployerSchema = new mongoose.Schema({
       type: String,
       required: true
     },
-    documentUrl: {
-      type: String,
+    cloudUrl: {
+      type: String, // Cloud storage URL (Cloudinary, AWS, etc.)
       required: true
+    },
+    cloudPublicId: {
+      type: String, // Cloud storage public ID for management
+      required: false
     },
     fileSize: {
       type: Number,

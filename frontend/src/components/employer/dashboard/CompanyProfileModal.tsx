@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiX, FiHome, FiMail, FiPhone, FiMapPin, FiGlobe, FiUpload, FiTrash2 } from 'react-icons/fi';
 import styles from './SettingsModal.module.css';
+import { getImageSrc } from '../../../utils/imageUtils';
 
 interface CompanyProfileModalProps {
   isOpen: boolean;
@@ -113,45 +114,40 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
     setUploadError(null);
 
     try {
-      // Convert file to base64
-      const base64String = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result as string;
-          // Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
-          const base64 = result.split(',')[1];
-          resolve(base64);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      // Create FormData for cloud upload
+      const formData = new FormData();
+      formData.append('profilePicture', file);
 
-      const response = await fetch('http://localhost:3001/api/users/profile-picture', {
+      const response = await fetch('http://localhost:3001/api/users/profile-picture-cloud', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${await (await import('../../../config/firebase')).auth.currentUser?.getIdToken()}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${await (await import('../../../config/firebase')).auth.currentUser?.getIdToken()}`
+          // Don't set Content-Type for FormData - browser will set it with boundary
         },
-        body: JSON.stringify({
-          profilePicture: base64String,
-          mimeType: file.type
-        })
+        body: formData
       });
 
       if (response.ok) {
         const result = await response.json();
-        console.log('Upload response:', result); // Debug log
-        setProfilePicture(result.profilePicture);
-        setUploadError('');
+        console.log('✅ Upload response:', result); // Debug log
         
-        // Dispatch global event to update profile picture across components
-        window.dispatchEvent(new CustomEvent('profilePictureUpdated', {
-          detail: { profilePicture: result.profilePicture }
-        }));
-        
-        console.log('Profile picture uploaded successfully:', result.profilePicture);
+        if (result.success && result.profilePicture) {
+          setProfilePicture(result.profilePicture);
+          setUploadError('');
+          
+          // Dispatch global event to update profile picture across components
+          window.dispatchEvent(new CustomEvent('profilePictureUpdated', {
+            detail: { profilePicture: result.profilePicture }
+          }));
+          
+          console.log('✅ Profile picture uploaded successfully:', result.profilePicture);
+        } else {
+          console.error('❌ Upload response missing data:', result);
+          setUploadError('Upload response was invalid');
+        }
       } else {
         const errorData = await response.json();
+        console.error('❌ Upload failed:', errorData);
         setUploadError(errorData.error || 'Failed to upload profile picture');
       }
     } catch (error) {
@@ -234,11 +230,15 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
                 <div className={styles.profilePictureCircle}>
                   {profilePicture ? (
                     <img 
-                      src={profilePicture.startsWith('data:') ? profilePicture : `data:image/jpeg;base64,${profilePicture}`} 
+                      src={getImageSrc(profilePicture)} 
                       alt="Company Logo" 
                       className={styles.profilePictureImage}
-                      onLoad={() => console.log('Image loaded successfully')}
-                      onError={(e) => console.error('Image failed to load:', e)}
+                      onLoad={() => console.log('✅ Image loaded successfully')}
+                      onError={(e) => {
+                        console.error('❌ Image failed to load:', e);
+                        console.error('❌ Failed image URL:', profilePicture);
+                        setUploadError('Image failed to load. Please try uploading again.');
+                      }}
                     />
                   ) : (
                     <span className={styles.profilePictureInitials}>

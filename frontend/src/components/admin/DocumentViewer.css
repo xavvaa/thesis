@@ -412,3 +412,239 @@
     width: calc(100% - 40px);
   }
 }
+
+/* Document Preview Modal */
+.document-preview-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.document-preview-content {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  max-width: 95vw;
+  max-height: 95vh;
+  width: 1000px;
+  height: 800px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.document-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e9ecef;
+  background: #f8f9fa;
+}
+
+.document-preview-header h3 {
+  margin: 0;
+  color: #212529;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.close-preview-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.close-preview-btn:hover {
+  background: #e9ecef;
+  color: #495057;
+}
+
+.document-preview-body {
+  flex: 1;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.preview-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.preview-btn.secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.preview-btn.secondary:hover {
+  background: #545b62;
+  transform: translateY(-1px);
+}
+
+.unsupported-preview {
+  text-align: center;
+  color: #6c757d;
+  padding: 40px;
+}
+
+.unsupported-preview p {
+  margin: 16px 0;
+  font-size: 16px;
+}
+
+.document-preview-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e9ecef;
+  background: #f8f9fa;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.download-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.download-btn:hover {
+  background: #0056b3;
+  transform: translateY(-1px);
+}
+
+/* Company Logo Styles */
+.company-logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.company-logo-image {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 2px solid #e9ecef;
+}
+
+.company-logo-fallback {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c757d;
+  font-size: 20px;
+}
+
+.employer-info {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.company-name {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.company-email {
+  margin: 0;
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.document-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.missing-url-warning {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 6px;
+  color: #856404;
+  font-size: 12px;
+  margin: 8px 0;
+}
+
+.missing-url-warning svg {
+  font-size: 14px;
+  color: #f39c12;
+}
+
+@media (max-width: 768px) {
+  .document-preview-modal {
+    padding: 10px;
+  }
+  
+  .document-preview-content {
+    width: 100%;
+    max-width: none;
+    max-height: 95vh;
+  }
+  
+  .document-preview-header {
+    padding: 16px;
+  }
+  
+  .document-preview-body {
+    padding: 16px;
+  }
+  
+  .document-preview-footer {
+    padding: 12px 16px;
+  }
+  
+  .company-logo-image,
+  .company-logo-fallback {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .company-logo-fallback {
+    font-size: 16px;
+  }
+}

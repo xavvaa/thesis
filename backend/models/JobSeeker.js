@@ -55,6 +55,14 @@ const JobSeekerSchema = new mongoose.Schema({
     country: { type: String, default: 'Philippines' }
   },
   
+  // Profile Picture
+  profilePicture: {
+    type: String // Cloud storage URL
+  },
+  profilePicturePublicId: {
+    type: String // Cloudinary public ID for management
+  },
+  
   // Professional Information
   jobTitle: {
     type: String

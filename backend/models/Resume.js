@@ -48,7 +48,7 @@ const ResumeSchema = new mongoose.Schema({
     phone: String,
     age: String,
     birthday: String,
-    photo: String, // Base64 encoded image
+    photo: String, // Cloud storage URL or legacy base64
     // Address information
     address: String,
     zipCode: String,

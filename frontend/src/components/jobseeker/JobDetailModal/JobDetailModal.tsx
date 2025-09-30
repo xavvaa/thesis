@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
-import { FiArrowLeft, FiMapPin, FiX, FiGlobe, FiUsers, FiCalendar, FiHome, FiBriefcase, FiClock, FiStar, FiBookmark, FiTrendingUp } from 'react-icons/fi'
-import styles from './JobDetailModal.module.css'
+import React from 'react';
+import { FiX, FiMapPin, FiClock, FiDollarSign, FiUsers, FiCalendar, FiBriefcase, FiTrendingUp, FiStar, FiHome, FiGlobe, FiBookmark } from 'react-icons/fi';
+import styles from './JobDetailModal.module.css';
+import { getImageSrc } from '../../../utils/imageUtils';
 
 import { Job } from '../../../types/Job';
 
@@ -16,7 +17,7 @@ const getCompanyLogo = (company: string, companyLogo?: string) => {
     return (
       <div className={styles.companyLogo}>
         <img 
-          src={companyLogo.startsWith('data:') ? companyLogo : `data:image/jpeg;base64,${companyLogo}`} 
+          src={getImageSrc(companyLogo)} 
           alt={`${company} logo`} 
           className={styles.companyLogoImage}
         />

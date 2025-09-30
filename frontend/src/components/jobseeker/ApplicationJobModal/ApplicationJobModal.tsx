@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
-import { FiArrowLeft, FiMapPin, FiX, FiGlobe, FiUsers, FiCalendar, FiHome, FiBriefcase, FiClock, FiStar, FiBookmark, FiTrendingUp, FiCheck, FiXCircle, FiEye } from 'react-icons/fi'
-import styles from './ApplicationJobModal.module.css'
+import React from 'react';
+import { FiX, FiMapPin, FiClock, FiDollarSign, FiCalendar, FiFileText, FiDownload, FiCheck, FiXCircle, FiBriefcase, FiTrendingUp, FiHome, FiUsers } from 'react-icons/fi';
+import styles from './ApplicationJobModal.module.css';
+import { getImageSrc } from '../../../utils/imageUtils';
 
 import { Job } from '../../../types/Job';
 
@@ -36,7 +37,7 @@ const getCompanyLogo = (company: string, companyLogo?: string) => {
   console.log('ApplicationJobModal - companyLogo:', companyLogo);
   
   if (companyLogo) {
-    const imageSrc = companyLogo.startsWith('data:') ? companyLogo : `data:image/jpeg;base64,${companyLogo}`;
+    const imageSrc = getImageSrc(companyLogo);
     console.log('ApplicationJobModal - rendering image with base64 data');
     return (
       <div className={styles.companyLogo}>

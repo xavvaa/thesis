@@ -1,6 +1,7 @@
 import React from 'react'
 import { FiSliders, FiMenu, FiBell } from 'react-icons/fi'
 import styles from './MobileHeader.module.css'
+import { getImageSrc } from '../../../utils/imageUtils'
 
 interface MobileHeaderProps {
   pageTitle: string
@@ -69,10 +70,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
           <div className={styles.userAvatar} aria-label="User profile">
             {profilePicture ? (
               <img 
-                src={profilePicture.startsWith('data:') 
-                  ? profilePicture 
-                  : `http://localhost:3001/${profilePicture}`
-                } 
+                src={getImageSrc(profilePicture)} 
                 alt="Company logo" 
                 className={styles.avatarImage}
               />

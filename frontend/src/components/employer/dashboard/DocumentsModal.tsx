@@ -26,7 +26,8 @@ interface ExistingDocument {
 interface BackendDocument {
   documentType: string;
   documentName: string;
-  documentUrl: string;
+  documentUrl?: string; // Legacy field
+  cloudUrl?: string; // New cloud storage URL
   uploadedAt: string;
   verificationStatus?: string;
 }
@@ -46,6 +47,10 @@ export const DocumentsModal: React.FC<DocumentsModalProps> = ({
   const [uploadStatus, setUploadStatus] = useState<{[key: string]: 'idle' | 'uploading' | 'success' | 'error'}>({});
   const [existingDocuments, setExistingDocuments] = useState<{[key: string]: ExistingDocument}>({});
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
+  const [errorMessages, setErrorMessages] = useState<{[key: string]: string}>({});
+  const [previewDocument, setPreviewDocument] = useState<{type: string, url: string, name: string} | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   // Load existing documents from backend
   useEffect(() => {
@@ -82,7 +87,7 @@ export const DocumentsModal: React.FC<DocumentsModalProps> = ({
                 name: doc.documentName,
                 uploadDate: doc.uploadedAt,
                 size: 'Unknown', // Backend doesn't store file size
-                url: `http://localhost:3001/${doc.documentUrl}`,
+                url: doc.cloudUrl || `http://localhost:3001/${doc.documentUrl}`,
                 verificationStatus: doc.verificationStatus || employer.documentVerificationStatus
               };
             });
@@ -125,28 +130,103 @@ export const DocumentsModal: React.FC<DocumentsModalProps> = ({
     }
   ];
 
-  const handleFileUpload = (key: string, file: File) => {
+  const handleFileUpload = async (key: string, file: File) => {
     setUploadStatus(prev => ({ ...prev, [key]: 'uploading' }));
     
-    // Simulate upload process
-    setTimeout(() => {
-      setDocuments(prev => ({ ...prev, [key]: file }));
-      setUploadStatus(prev => ({ ...prev, [key]: 'success' }));
-    }, 1500);
+    try {
+      // Create FormData for individual document upload
+      const formData = new FormData();
+      formData.append(key, file);
+      
+      // Get Firebase auth token
+      const { auth } = require('../../../config/firebase');
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      
+      const token = await user.getIdToken();
+      
+      // Upload single document to cloud storage
+      const response = await fetch('http://localhost:3001/api/employers/upload-single-document', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setUploadStatus(prev => ({ ...prev, [key]: 'success' }));
+        setErrorMessages(prev => ({ ...prev, [key]: '' })); // Clear error message
+        
+        // Update existing documents list with the uploaded document
+        setExistingDocuments(prev => ({
+          ...prev,
+          [key]: {
+            name: file.name,
+            uploadDate: new Date().toISOString(),
+            size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+            url: result.data.cloudUrl,
+            verificationStatus: 'pending'
+          }
+        }));
+        
+        // Clear the temporary documents state so it shows the existing document
+        setDocuments(prev => ({ ...prev, [key]: null }));
+        
+        // Show success message
+        setSuccessMessage(`${file.name} uploaded successfully! Your document has been saved to the cloud.`);
+        setShowSuccessModal(true);
+        
+        // Auto-close success modal after 3 seconds
+        setTimeout(() => {
+          setShowSuccessModal(false);
+          setSuccessMessage('');
+        }, 3000);
+      } else {
+        throw new Error(result.message || 'Upload failed');
+      }
+    } catch (error) {
+      console.error('Document upload error:', error);
+      setUploadStatus(prev => ({ ...prev, [key]: 'error' }));
+      setErrorMessages(prev => ({ ...prev, [key]: error instanceof Error ? error.message : 'Upload failed. Please try again.' }));
+    }
   };
 
   const handleFileChange = (key: string, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Validate file type - PDF only
-      if (file.type !== 'application/pdf') {
+      // Clear previous error
+      setErrorMessages(prev => ({ ...prev, [key]: '' }));
+      
+      console.log('File details:', {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        sizeInMB: (file.size / 1024 / 1024).toFixed(2)
+      });
+      
+      // Validate file type - PDF only (check both MIME type and extension)
+      const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      if (!isPDF) {
         setUploadStatus(prev => ({ ...prev, [key]: 'error' }));
+        setErrorMessages(prev => ({ ...prev, [key]: `Invalid file type: ${file.type}. Please upload PDF files only.` }));
         return;
       }
       
       // Validate file size (max 10MB for PDFs)
-      if (file.size > 10 * 1024 * 1024) {
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
         setUploadStatus(prev => ({ ...prev, [key]: 'error' }));
+        setErrorMessages(prev => ({ ...prev, [key]: `File size too large: ${fileSizeMB}MB. Please upload PDF files under 10MB only.` }));
         return;
       }
       
@@ -154,9 +234,61 @@ export const DocumentsModal: React.FC<DocumentsModalProps> = ({
     }
   };
 
+  const handleViewDocument = async (documentType: string) => {
+    try {
+      console.log('🔍 Attempting to preview document:', documentType);
+      
+      // Get Firebase auth token
+      const { auth } = require('../../../config/firebase');
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      
+      const token = await user.getIdToken();
+      
+      // Create the authenticated URL for the PDF
+      const url = `http://localhost:3001/api/employers/view-document/${documentType}?token=${token}`;
+      
+      // Get document name for preview
+      const document = existingDocuments[documentType];
+      const documentName = document?.name || `${documentType}.pdf`;
+      
+      // Set preview state to show the PDF in modal
+      setPreviewDocument({
+        type: documentType,
+        url: url,
+        name: documentName
+      });
+      
+      console.log('📄 Opening PDF preview for:', documentName);
+      
+    } catch (error) {
+      console.error('❌ Error viewing document:', error);
+      alert(`Unable to preview document: ${error.message}`);
+    }
+  };
+
+  const handleClosePreview = () => {
+    setPreviewDocument(null);
+  };
+
   const handleSave = () => {
     onSave(documents);
-    onClose();
+    
+    // Show success message for saving changes
+    setSuccessMessage('All changes have been saved successfully!');
+    setShowSuccessModal(true);
+    
+    // Close modal after a short delay
+    setTimeout(() => {
+      onClose();
+    }, 1500);
+  };
+
+  const handleCloseSuccessModal = () => {
+    setShowSuccessModal(false);
+    setSuccessMessage('');
   };
 
   const getStatusIcon = (key: string) => {
@@ -224,7 +356,7 @@ export const DocumentsModal: React.FC<DocumentsModalProps> = ({
                     <div className={styles.spinner} />
                     <span>Loading documents...</span>
                   </div>
-                ) : existingDocuments[docType.key] && !documents[docType.key as keyof DocumentsData] ? (
+                ) : existingDocuments[docType.key] ? (
                   <div className={styles.existingDocument}>
                     <div className={styles.documentPreview}>
                       <FiFileText className={styles.pdfIcon} />
@@ -239,14 +371,12 @@ export const DocumentsModal: React.FC<DocumentsModalProps> = ({
                           )}
                         </div>
                       </div>
-                      <a 
-                        href={existingDocuments[docType.key].url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
+                      <button 
+                        onClick={() => handleViewDocument(docType.key)}
                         className={styles.viewButton}
                       >
-                        View PDF
-                      </a>
+                        Preview PDF
+                      </button>
                     </div>
                   </div>
                 ) : !isLoadingDocuments && (
@@ -283,7 +413,7 @@ export const DocumentsModal: React.FC<DocumentsModalProps> = ({
 
                 {uploadStatus[docType.key] === 'error' && (
                   <div className={styles.errorMessage}>
-                    Invalid file type or size. Please upload PDF files under 10MB only.
+                    {errorMessages[docType.key] || 'Upload failed. Please try again.'}
                   </div>
                 )}
               </div>
@@ -301,6 +431,60 @@ export const DocumentsModal: React.FC<DocumentsModalProps> = ({
           </button>
         </div>
       </div>
+
+      {/* PDF Preview Modal */}
+      {previewDocument && (
+        <div className={styles.previewOverlay}>
+          <div className={styles.previewModal}>
+            <div className={styles.previewHeader}>
+              <h3 className={styles.previewTitle}>
+                <FiFileText className={styles.previewIcon} />
+                {previewDocument.name}
+              </h3>
+              <button 
+                onClick={handleClosePreview}
+                className={styles.previewCloseButton}
+              >
+                <FiX />
+              </button>
+            </div>
+            <div className={styles.previewContent}>
+              <iframe
+                src={previewDocument.url}
+                className={styles.pdfViewer}
+                title={`Preview of ${previewDocument.name}`}
+              />
+            </div>
+            <div className={styles.previewActions}>
+              <button 
+                onClick={() => window.open(previewDocument.url, '_blank')}
+                className={styles.openInNewTabButton}
+              >
+                Open in New Tab
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className={styles.successOverlay}>
+          <div className={styles.successModal}>
+            <div className={styles.successIcon}>
+              <FiCheck />
+            </div>
+            <h3 className={styles.successTitle}>Success!</h3>
+            <p className={styles.successMessage}>{successMessage}</p>
+            <button 
+              onClick={handleCloseSuccessModal}
+              className={styles.successButton}
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,14 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
+const cloudStorageService = require('../services/cloudStorageService');
 const Employer = require('../models/Employer');
 const { verifyToken } = require('../middleware/authMiddleware');
 const { requireRole } = require('../middleware/roleBasedAccess');
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
+// Configure multer for cloud uploads (memory storage)
+const memoryStorage = multer.memoryStorage();
+
+// Legacy disk storage for backward compatibility
+const diskStorage = multer.diskStorage({
   destination: function (req, file, cb) {
     const uploadDir = 'uploads/employer-documents';
     if (!fs.existsSync(uploadDir)) {
@@ -31,8 +35,18 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-const upload = multer({ 
-  storage: storage,
+// Cloud upload (memory storage)
+const cloudUpload = multer({ 
+  storage: memoryStorage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+});
+
+// Legacy disk upload
+const diskUpload = multer({ 
+  storage: diskStorage,
   fileFilter: fileFilter,
   limits: {
     fileSize: 10 * 1024 * 1024 // 10MB limit
@@ -156,8 +170,463 @@ router.put('/profile', verifyToken, requireRole('employer'), async (req, res) =>
   }
 });
 
-// POST /api/employers/upload-documents - Upload verification documents
-router.post('/upload-documents', verifyToken, requireRole('employer'), upload.fields([
+// POST /api/employers/upload-documents-cloud - Cloud-based document upload (RECOMMENDED)
+router.post('/upload-documents-cloud', verifyToken, requireRole('employer'), cloudUpload.fields([
+  { name: 'companyProfile', maxCount: 1 },
+  { name: 'businessPermit', maxCount: 1 },
+  { name: 'philjobnetRegistration', maxCount: 1 },
+  { name: 'doleNoPendingCase', maxCount: 1 }
+]), async (req, res) => {
+  const requestId = Math.random().toString(36).substr(2, 9);
+  console.log(`☁️ [${requestId}] Cloud document upload request received`);
+  
+  try {
+    const employer = await Employer.findOne({ uid: req.user.uid });
+    
+    if (!employer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employer profile not found'
+      });
+    }
+
+    const uploadedFiles = req.files;
+    
+    if (!uploadedFiles || Object.keys(uploadedFiles).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No documents were uploaded'
+      });
+    }
+
+    // Validate required documents
+    const requiredDocuments = ['companyProfile', 'businessPermit', 'philjobnetRegistration', 'doleNoPendingCase'];
+    for (const docType of requiredDocuments) {
+      if (!uploadedFiles[docType] || uploadedFiles[docType].length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Missing required document: ${docType}`
+        });
+      }
+    }
+
+    console.log(`☁️ [${requestId}] Uploading ${Object.keys(uploadedFiles).length} documents to cloud storage`);
+
+    // Upload files to cloud storage and create documents array
+    const documentsArray = [];
+    
+    for (const [docType, files] of Object.entries(uploadedFiles)) {
+      if (files && files.length > 0) {
+        const file = files[0];
+        
+        try {
+          // Upload to cloud storage
+          const cloudResult = await cloudStorageService.uploadBuffer(
+            file.buffer, 
+            file.originalname, 
+            `${req.user.uid}/${docType}`
+          );
+          
+          documentsArray.push({
+            documentType: docType,
+            documentName: file.originalname,
+            cloudUrl: cloudResult.url,
+            cloudPublicId: cloudResult.publicId,
+            fileSize: file.size,
+            mimeType: file.mimetype,
+            uploadedAt: new Date(),
+            isRequired: true
+          });
+          
+          console.log(`✅ [${requestId}] Uploaded ${docType} to cloud: ${cloudResult.publicId}`);
+        } catch (uploadError) {
+          console.error(`❌ [${requestId}] Failed to upload ${docType}:`, uploadError);
+          return res.status(500).json({
+            success: false,
+            message: `Failed to upload ${docType} to cloud storage`,
+            error: uploadError.message
+          });
+        }
+      }
+    }
+
+    // Update employer with company details and documents
+    const {
+      contactPersonFirstName,
+      contactPersonLastName,
+      contactNumber,
+      companyDescription,
+      companyAddress,
+      natureOfBusiness
+    } = req.body;
+
+    if (contactPersonFirstName || contactPersonLastName) {
+      const fullName = [contactPersonFirstName, contactPersonLastName]
+        .filter(name => name && name.trim())
+        .join(' ');
+      
+      employer.contactPerson = {
+        ...employer.contactPerson,
+        firstName: contactPersonFirstName || '',
+        lastName: contactPersonLastName || '',
+        fullName: fullName
+      };
+    }
+    
+    if (contactNumber) {
+      employer.contactPerson = {
+        ...employer.contactPerson,
+        phoneNumber: contactNumber
+      };
+    }
+    
+    if (companyDescription) employer.companyDescription = companyDescription;
+    if (companyAddress) {
+      employer.address = {
+        ...employer.address,
+        street: companyAddress
+      };
+    }
+    if (natureOfBusiness) employer.natureOfBusiness = natureOfBusiness;
+
+    // Store documents in employer record
+    employer.documents = documentsArray;
+    employer.documentVerificationStatus = 'pending';
+    employer.profileComplete = true;
+
+    await employer.save();
+    
+    console.log(`✅ [${requestId}] Documents saved successfully to database`);
+
+    res.json({
+      success: true,
+      message: 'Documents uploaded successfully to cloud storage',
+      data: {
+        employerId: employer._id,
+        documentsCount: documentsArray.length,
+        cloudUrls: documentsArray.map(doc => ({
+          type: doc.documentType,
+          url: doc.cloudUrl,
+          uploadedAt: doc.uploadedAt
+        })),
+        profileStatus: {
+          contactPerson: !!(contactPersonFirstName || contactPersonLastName),
+          contactNumber: !!contactNumber,
+          companyDescription: !!companyDescription,
+          companyAddress: !!companyAddress,
+          natureOfBusiness: !!natureOfBusiness
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error(`❌ [${requestId}] Error uploading documents:`, error);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Error uploading documents to cloud storage',
+      error: error.message
+    });
+  }
+});
+
+// POST /api/employers/upload-single-document - Upload single document to cloud storage
+router.post('/upload-single-document', verifyToken, requireRole('employer'), cloudUpload.fields([
+  { name: 'companyProfile', maxCount: 1 },
+  { name: 'businessPermit', maxCount: 1 },
+  { name: 'philjobnetRegistration', maxCount: 1 },
+  { name: 'doleNoPendingCase', maxCount: 1 }
+]), async (req, res) => {
+  const requestId = Math.random().toString(36).substr(2, 9);
+  console.log(`📄 [${requestId}] Single document upload request received`);
+  console.log(`📄 [${requestId}] User:`, req.user?.uid);
+  console.log(`📄 [${requestId}] Files received:`, Object.keys(req.files || {}));
+  
+  try {
+    const employer = await Employer.findOne({ uid: req.user.uid });
+    
+    if (!employer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employer profile not found'
+      });
+    }
+
+    const uploadedFiles = req.files;
+    
+    if (!uploadedFiles || Object.keys(uploadedFiles).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No document was uploaded'
+      });
+    }
+
+    console.log(`📄 [${requestId}] Uploading single document to cloud storage`);
+
+    // Process the single uploaded document
+    let uploadedDocument = null;
+    let documentType = null;
+    
+    for (const [docType, files] of Object.entries(uploadedFiles)) {
+      if (files && files.length > 0) {
+        const file = files[0];
+        documentType = docType;
+        
+        try {
+          // Validate cloud storage service
+          console.log(`☁️ [${requestId}] Validating cloud storage service...`);
+          cloudStorageService.validateConfig();
+          
+          // Upload to cloud storage
+          console.log(`☁️ [${requestId}] Uploading to cloud storage: ${file.originalname} (${file.size} bytes)`);
+          const cloudResult = await cloudStorageService.uploadBuffer(
+            file.buffer, 
+            file.originalname, 
+            `${req.user.uid}/${docType}`
+          );
+          
+          uploadedDocument = {
+            documentType: docType,
+            documentName: file.originalname,
+            cloudUrl: cloudResult.url,
+            cloudPublicId: cloudResult.publicId,
+            fileSize: file.size,
+            mimeType: file.mimetype,
+            uploadedAt: new Date(),
+            isRequired: true
+          };
+          
+          console.log(`✅ [${requestId}] Uploaded ${docType} to cloud: ${cloudResult.publicId}`);
+          break; // Only process one document
+        } catch (uploadError) {
+          console.error(`❌ [${requestId}] Failed to upload ${docType}:`, uploadError);
+          return res.status(500).json({
+            success: false,
+            message: `Failed to upload ${docType} to cloud storage`,
+            error: uploadError.message
+          });
+        }
+      }
+    }
+
+    if (!uploadedDocument) {
+      return res.status(400).json({
+        success: false,
+        message: 'No valid document found to upload'
+      });
+    }
+
+    // Update or add the document in employer's documents array
+    if (!employer.documents) {
+      employer.documents = [];
+    }
+
+    // Remove existing document of the same type
+    employer.documents = employer.documents.filter(doc => doc.documentType !== documentType);
+    
+    // Add the new document
+    employer.documents.push(uploadedDocument);
+    
+    // Update verification status to pending if all required documents are present
+    const requiredDocuments = ['companyProfile', 'businessPermit', 'philjobnetRegistration', 'doleNoPendingCase'];
+    const uploadedTypes = employer.documents.map(doc => doc.documentType);
+    const allRequiredPresent = requiredDocuments.every(type => uploadedTypes.includes(type));
+    
+    if (allRequiredPresent) {
+      employer.documentVerificationStatus = 'pending';
+    }
+
+    await employer.save();
+    
+    console.log(`✅ [${requestId}] Single document saved successfully to database`);
+
+    res.json({
+      success: true,
+      message: 'Document uploaded successfully to cloud storage',
+      data: {
+        documentType: uploadedDocument.documentType,
+        cloudUrl: uploadedDocument.cloudUrl,
+        uploadedAt: uploadedDocument.uploadedAt,
+        allRequiredPresent
+      }
+    });
+
+  } catch (error) {
+    console.error(`❌ [${requestId}] Error uploading single document:`, error);
+    console.error(`❌ [${requestId}] Error stack:`, error.stack);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Error uploading document to cloud storage',
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
+
+// GET /api/employers/view-document/:documentType - View document with proper access control
+router.get('/view-document/:documentType', async (req, res) => {
+  // Handle token from header or query parameter
+  let token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token && req.query.token) {
+    token = req.query.token;
+    req.headers.authorization = `Bearer ${token}`;
+  }
+  
+  // Apply middleware manually
+  try {
+    await new Promise((resolve, reject) => {
+      verifyToken(req, res, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+    
+    await new Promise((resolve, reject) => {
+      requireRole('employer')(req, res, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+  } catch (authError) {
+    return res.status(401).json({
+      success: false,
+      message: 'Authentication failed',
+      error: authError.message
+    });
+  }
+  const requestId = Math.random().toString(36).substr(2, 9);
+  console.log(`👁️ [${requestId}] Document view request for type: ${req.params.documentType}`);
+  
+  try {
+    const employer = await Employer.findOne({ uid: req.user.uid });
+    
+    if (!employer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employer profile not found'
+      });
+    }
+
+    const documentType = req.params.documentType;
+    const document = employer.documents?.find(doc => doc.documentType === documentType);
+    
+    if (!document) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document not found'
+      });
+    }
+
+    let documentUrl = document.cloudUrl;
+    console.log(`🔍 [${requestId}] Document cloudUrl:`, documentUrl);
+    console.log(`🔍 [${requestId}] Document cloudPublicId:`, document.cloudPublicId);
+    
+    // If we have a cloudPublicId, generate a proper public URL
+    if (document.cloudPublicId) {
+      try {
+        const publicUrl = cloudStorageService.generatePublicUrl(document.cloudPublicId);
+        console.log(`🌐 [${requestId}] Generated public URL for document: ${publicUrl}`);
+        documentUrl = publicUrl; // Use generated public URL
+      } catch (error) {
+        console.error(`❌ [${requestId}] Failed to generate public URL:`, error);
+        // Fall back to original cloudUrl if public URL generation fails
+      }
+    }
+    
+    if (!documentUrl) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document URL not available - cloud storage required'
+      });
+    }
+
+    console.log(`✅ [${requestId}] Document URL provided: ${documentUrl.substring(0, 50)}...`);
+    
+    // Always fetch and serve the content directly to avoid CORS issues
+    try {
+      const https = require('https');
+      const http = require('http');
+      const url = require('url');
+      
+      const parsedUrl = url.parse(documentUrl);
+      const client = parsedUrl.protocol === 'https:' ? https : http;
+      
+      console.log(`📥 [${requestId}] Fetching document from: ${parsedUrl.protocol}//${parsedUrl.host}`);
+      
+      const request = client.get(documentUrl, (response) => {
+        console.log(`📡 [${requestId}] Response status: ${response.statusCode}`);
+        console.log(`📡 [${requestId}] Response headers:`, response.headers);
+        
+        if (response.statusCode !== 200) {
+          console.error(`❌ [${requestId}] HTTP ${response.statusCode}: ${response.statusMessage}`);
+          
+          // Try to read the error response body
+          let errorBody = '';
+          response.on('data', chunk => errorBody += chunk);
+          response.on('end', () => {
+            console.error(`❌ [${requestId}] Error response body:`, errorBody);
+            return res.status(response.statusCode).json({
+              success: false,
+              message: `Failed to fetch document: ${response.statusMessage}`,
+              details: errorBody
+            });
+          });
+          return;
+        }
+        
+        console.log(`✅ [${requestId}] Document fetched successfully, streaming to client`);
+        
+        // Set appropriate headers for PDF
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${document.documentName}"`);
+        res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+        res.setHeader('Access-Control-Allow-Origin', '*'); // Allow CORS
+        
+        // Stream the PDF content directly to the response
+        response.pipe(res);
+      });
+      
+      request.on('error', (error) => {
+        console.error(`❌ [${requestId}] Request error:`, error);
+        res.status(500).json({
+          success: false,
+          message: 'Failed to fetch document',
+          error: error.message
+        });
+      });
+      
+      request.setTimeout(30000, () => {
+        console.error(`❌ [${requestId}] Request timeout`);
+        request.destroy();
+        res.status(408).json({
+          success: false,
+          message: 'Document request timeout'
+        });
+      });
+      
+    } catch (fetchError) {
+      console.error(`❌ [${requestId}] Error fetching document:`, fetchError);
+      res.status(500).json({
+        success: false,
+        message: 'Error accessing document',
+        error: fetchError.message
+      });
+    }
+
+  } catch (error) {
+    console.error(`❌ [${requestId}] Error viewing document:`, error);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Error accessing document',
+      error: error.message
+    });
+  }
+});
+
+// Keep the old file-based upload for backward compatibility
+router.post('/upload-documents', verifyToken, requireRole('employer'), diskUpload.fields([
   { name: 'companyProfile', maxCount: 1 },
   { name: 'businessPermit', maxCount: 1 },
   { name: 'philjobnetRegistration', maxCount: 1 },
@@ -219,7 +688,7 @@ router.post('/upload-documents', verifyToken, requireRole('employer'), upload.fi
         documentsArray.push({
           documentType: docType,
           documentName: file.originalname,
-          documentUrl: file.path,
+          cloudUrl: '', // Will be updated after cloud upload
           fileSize: file.size,
           mimeType: file.mimetype,
           uploadedAt: new Date(),
@@ -351,7 +820,7 @@ router.get('/documents/pending', verifyToken, requireRole('admin'), async (req, 
         _id: doc._id,
         documentType: doc.documentType,
         documentName: doc.documentName,
-        documentUrl: `${req.protocol}://${req.get('host')}/${doc.documentUrl}`,
+        cloudUrl: doc.cloudUrl,
         fileSize: doc.fileSize,
         uploadedAt: doc.uploadedAt,
         verificationStatus: doc.verificationStatus,
@@ -483,6 +952,109 @@ router.put('/documents/:documentId/verify', verifyToken, requireRole('admin'), a
     res.status(500).json({
       success: false,
       message: 'Error verifying document',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/employers/documents/:documentId - Get document by ID (Base64 version)
+router.get('/documents/:documentId', verifyToken, async (req, res) => {
+  try {
+    const { documentId } = req.params;
+    
+    // Find employer with the document
+    const employer = await Employer.findOne({
+      'documents._id': documentId
+    });
+    
+    if (!employer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document not found'
+      });
+    }
+    
+    // Find the specific document
+    const document = employer.documents.find(doc => doc._id.toString() === documentId);
+    
+    if (!document) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document not found'
+      });
+    }
+    
+    // Check if user has permission to view this document
+    if (req.user.role !== 'admin' && req.user.role !== 'superadmin' && employer.uid !== req.user.uid) {
+      return res.status(403).json({
+        message: 'Access denied'
+      });
+    }
+    
+    // Return document data
+    if (document.cloudUrl) {
+      // Cloud storage format (RECOMMENDED)
+      res.json({
+        success: true,
+        document: {
+          id: document._id,
+          name: document.documentName,
+          type: document.documentType,
+          mimeType: document.mimeType,
+          fileSize: document.fileSize,
+          url: document.cloudUrl,
+          uploadedAt: document.uploadedAt
+        }
+      });
+    } else {
+      return res.status(404).json({
+        success: false,
+        message: 'Document not available - cloud URL missing'
+      });
+    }
+    
+  } catch (error) {
+    console.error('Error fetching document:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching document',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/employers/documents - Get all documents for current employer
+router.get('/documents', verifyToken, requireRole('employer'), async (req, res) => {
+  try {
+    const employer = await Employer.findOne({ uid: req.user.uid });
+    
+    if (!employer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employer profile not found'
+      });
+    }
+    
+    const documents = (employer.documents || []).map(doc => ({
+      id: doc._id,
+      name: doc.documentName,
+      type: doc.documentType,
+      mimeType: doc.mimeType,
+      fileSize: doc.fileSize,
+      uploadedAt: doc.uploadedAt,
+      hasData: !!doc.cloudUrl
+    }));
+    
+    res.json({
+      success: true,
+      documents
+    });
+    
+  } catch (error) {
+    console.error('Error fetching documents:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching documents',
       error: error.message
     });
   }

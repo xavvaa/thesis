@@ -1,8 +1,8 @@
 import React from 'react';
 import { Applicant } from '@/types/dashboard';
-import { FiEye, FiDownload, FiCalendar, FiUser, FiCheck, FiX, FiMail, FiPhone } from 'react-icons/fi';
-// import { formatImageSrc, getInitials } from '@/utils/imageUtils';
+import { FiMail, FiPhone, FiMapPin, FiCalendar, FiFileText, FiEye, FiUser, FiDownload, FiCheck, FiX } from 'react-icons/fi';
 import styles from './ApplicantCard.module.css';
+import { getImageSrc } from '../../../utils/imageUtils';
 
 interface ApplicantCardProps {
   applicant: Applicant;
@@ -18,11 +18,6 @@ export const ApplicantCard: React.FC<ApplicantCardProps> = ({
   onViewResume,
 }) => {
   // Temporary inline functions
-  const formatImageSrc = (imageData: string | null | undefined): string | undefined => {
-    if (!imageData) return undefined;
-    if (imageData.startsWith('data:')) return imageData;
-    return `data:image/jpeg;base64,${imageData}`;
-  };
 
   const getInitials = (name: string): string => {
     return name.split(' ').map((n) => n[0]).join('').toUpperCase();
@@ -34,7 +29,7 @@ export const ApplicantCard: React.FC<ApplicantCardProps> = ({
         <div className={styles.avatar}>
           {applicant.avatar ? (
             <img 
-              src={formatImageSrc(applicant.avatar)} 
+              src={getImageSrc(applicant.avatar)} 
               alt={applicant.name} 
             />
           ) : (

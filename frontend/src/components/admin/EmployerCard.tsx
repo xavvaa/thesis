@@ -1,5 +1,7 @@
 import React from 'react';
-import { FiMapPin, FiPhone, FiMail, FiFileText, FiChevronRight } from 'react-icons/fi';
+import { FiMapPin, FiUsers, FiCalendar, FiEye, FiMail, FiPhone, FiFileText, FiChevronRight } from 'react-icons/fi';
+import styles from './EmployerCard.module.css';
+import { getImageSrc } from '../../utils/imageUtils';
 import { PendingEmployer } from '../../types/admin';
 
 interface EmployerCardProps {
@@ -76,7 +78,7 @@ const EmployerCard: React.FC<EmployerCardProps> = ({
           }}
         >
           <img 
-            src={profilePicture.startsWith('data:') ? profilePicture : `data:image/jpeg;base64,${profilePicture}`} 
+            src={getImageSrc(profilePicture)} 
             alt="Company logo" 
             style={{ 
               width: '100%', 

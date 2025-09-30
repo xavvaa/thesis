@@ -1,6 +1,7 @@
 import React from 'react'
-import { FiBookmark, FiMapPin, FiDollarSign, FiClock, FiBriefcase, FiTrendingUp, FiCheck, FiX } from 'react-icons/fi'
+import { FiMapPin, FiClock, FiDollarSign, FiUsers, FiCalendar, FiCheck, FiX, FiBookmark, FiTrendingUp, FiBriefcase } from 'react-icons/fi';
 import styles from './JobCard.module.css'
+import { getImageSrc } from '../../../utils/imageUtils'
 import { Job } from '../../../types/Job'
 
 interface JobCardProps {
@@ -87,7 +88,7 @@ const JobCard: React.FC<JobCardProps> = ({
       <div className={styles.companyLogo}>
         {companyLogo ? (
           <img 
-            src={companyLogo.startsWith('data:') ? companyLogo : `data:image/jpeg;base64,${companyLogo}`} 
+            src={getImageSrc(companyLogo)} 
             alt={`${company} logo`} 
             className={styles.companyLogoImage}
           />
