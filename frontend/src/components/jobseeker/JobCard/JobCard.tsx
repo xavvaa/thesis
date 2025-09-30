@@ -87,7 +87,7 @@ const JobCard: React.FC<JobCardProps> = ({
       <div className={styles.companyLogo}>
         {companyLogo ? (
           <img 
-            src={`http://localhost:3001/${companyLogo}`} 
+            src={companyLogo.startsWith('data:') ? companyLogo : `data:image/jpeg;base64,${companyLogo}`} 
             alt={`${company} logo`} 
             className={styles.companyLogoImage}
           />

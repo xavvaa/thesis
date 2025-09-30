@@ -36,15 +36,16 @@ const getCompanyLogo = (company: string, companyLogo?: string) => {
   console.log('ApplicationJobModal - companyLogo:', companyLogo);
   
   if (companyLogo) {
-    console.log('ApplicationJobModal - rendering image with URL:', `http://localhost:3001/${companyLogo}`);
+    const imageSrc = companyLogo.startsWith('data:') ? companyLogo : `data:image/jpeg;base64,${companyLogo}`;
+    console.log('ApplicationJobModal - rendering image with base64 data');
     return (
       <div className={styles.companyLogo}>
         <img 
-          src={`http://localhost:3001/${companyLogo}`} 
+          src={imageSrc} 
           alt={`${company} logo`} 
           className={styles.companyLogoImage}
           onLoad={() => console.log('ApplicationJobModal - Image loaded successfully')}
-          onError={(e) => console.error('ApplicationJobModal - Image failed to load:', e, `http://localhost:3001/${companyLogo}`)}
+          onError={(e) => console.error('ApplicationJobModal - Image failed to load:', e)}
         />
       </div>
     );

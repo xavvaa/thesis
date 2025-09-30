@@ -73,7 +73,7 @@ export const JobsListView: React.FC<JobsListViewProps> = ({
     if (job.companyLogo) {
       return (
         <img 
-          src={`http://localhost:3001/${job.companyLogo}`} 
+          src={job.companyLogo.startsWith('data:') ? job.companyLogo : `data:image/jpeg;base64,${job.companyLogo}`} 
           alt={`${job.company} logo`} 
           className={styles.companyLogoImage}
         />

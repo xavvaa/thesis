@@ -113,15 +113,29 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
     setUploadError(null);
 
     try {
-      const formData = new FormData();
-      formData.append('profilePicture', file);
+      // Convert file to base64
+      const base64String = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          // Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
+          const base64 = result.split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
 
       const response = await fetch('http://localhost:3001/api/users/profile-picture', {
         method: 'POST',
-        body: formData,
         headers: {
-          'Authorization': `Bearer ${await (await import('../../../config/firebase')).auth.currentUser?.getIdToken()}`
-        }
+          'Authorization': `Bearer ${await (await import('../../../config/firebase')).auth.currentUser?.getIdToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          profilePicture: base64String,
+          mimeType: file.type
+        })
       });
 
       if (response.ok) {
@@ -220,11 +234,11 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
                 <div className={styles.profilePictureCircle}>
                   {profilePicture ? (
                     <img 
-                      src={`http://localhost:3001/${profilePicture}`} 
+                      src={profilePicture.startsWith('data:') ? profilePicture : `data:image/jpeg;base64,${profilePicture}`} 
                       alt="Company Logo" 
                       className={styles.profilePictureImage}
                       onLoad={() => console.log('Image loaded successfully')}
-                      onError={(e) => console.error('Image failed to load:', e, `http://localhost:3001/${profilePicture}`)}
+                      onError={(e) => console.error('Image failed to load:', e)}
                     />
                   ) : (
                     <span className={styles.profilePictureInitials}>
