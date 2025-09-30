@@ -75,14 +75,22 @@ class CloudStorageService {
       throw new Error('Failed to upload file to cloud storage');
     }
   }
-  async uploadBuffer(buffer, filename, folder = 'documents') {
+  async uploadBuffer(buffer, filename, folder = 'documents', mimeType = null) {
     try {
+      console.log(`🔧 uploadBuffer called with: filename=${filename}, folder=${folder}, mimeType=${mimeType}`);
+      
+      // Determine resource type based on file type
+      const isImage = mimeType && mimeType.startsWith('image/');
+      const resourceType = isImage ? 'image' : 'raw';
+      
+      console.log(`🔧 Resource type determined: ${resourceType} (isImage: ${isImage})`);
+      
       return new Promise((resolve, reject) => {
         cloudinary.uploader.upload_stream(
           {
             folder: `employer-documents/${folder}`,
-            resource_type: 'raw', // Use 'raw' for PDFs and documents
-            public_id: `${Date.now()}_${filename.replace('.pdf', '')}`, // Remove extension from filename
+            resource_type: resourceType, // Use 'image' for images, 'raw' for documents
+            public_id: `${Date.now()}_${filename.replace(/\.[^/.]+$/, '')}`, // Remove any extension from filename
             access_mode: 'public', // Ensure public access
             type: 'upload', // Specify upload type
             invalidate: true, // Clear CDN cache

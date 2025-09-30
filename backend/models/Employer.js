@@ -94,7 +94,7 @@ const EmployerSchema = new mongoose.Schema({
     },
     cloudUrl: {
       type: String, // Cloud storage URL (Cloudinary, AWS, etc.)
-      required: true
+      required: false // Allow legacy documents without cloud URLs
     },
     cloudPublicId: {
       type: String, // Cloud storage public ID for management

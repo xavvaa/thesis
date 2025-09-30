@@ -224,7 +224,8 @@ router.post('/upload-documents-cloud', verifyToken, requireRole('employer'), clo
           const cloudResult = await cloudStorageService.uploadBuffer(
             file.buffer, 
             file.originalname, 
-            `${req.user.uid}/${docType}`
+            `${req.user.uid}/${docType}`,
+            file.mimetype
           );
           
           documentsArray.push({
@@ -375,14 +376,17 @@ router.post('/upload-single-document', verifyToken, requireRole('employer'), clo
         try {
           // Validate cloud storage service
           console.log(`☁️ [${requestId}] Validating cloud storage service...`);
+          console.log(`☁️ [${requestId}] File mimetype: ${file.mimetype}`);
           cloudStorageService.validateConfig();
+          console.log(`☁️ [${requestId}] Cloud storage validation passed`);
           
           // Upload to cloud storage
           console.log(`☁️ [${requestId}] Uploading to cloud storage: ${file.originalname} (${file.size} bytes)`);
           const cloudResult = await cloudStorageService.uploadBuffer(
             file.buffer, 
             file.originalname, 
-            `${req.user.uid}/${docType}`
+            `${req.user.uid}/${docType}`,
+            file.mimetype
           );
           
           uploadedDocument = {
