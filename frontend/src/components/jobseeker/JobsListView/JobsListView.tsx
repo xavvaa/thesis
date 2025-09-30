@@ -69,6 +69,35 @@ export const JobsListView: React.FC<JobsListViewProps> = ({
       .toUpperCase();
   };
 
+  const formatPostedDate = (dateString: string | undefined) => {
+    if (!dateString) return 'Not specified';
+    
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Not specified';
+      
+      const now = new Date();
+      const diffTime = Math.abs(now.getTime() - date.getTime());
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 0) return 'Today';
+      if (diffDays === 1) return 'Yesterday';
+      if (diffDays < 7) return `${diffDays} days ago`;
+      if (diffDays < 14) return '1 week ago';
+      if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+      if (diffDays < 60) return '1 month ago';
+      if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+      
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    } catch (error) {
+      return 'Not specified';
+    }
+  };
+
   const getCompanyAvatar = (job: Job) => {
     if (job.companyLogo) {
       return (
@@ -107,7 +136,7 @@ export const JobsListView: React.FC<JobsListViewProps> = ({
       )}
       <div className={styles.listHeader}>
         <div className={styles.headerCell}>#</div>
-        <div className={styles.headerCell}>Company Name</div>
+        <div className={styles.headerCell}>Top Jobs</div>
         <div className={styles.headerCell}>Required Skills</div>
         <div className={styles.headerCell}>My Skills</div>
         <div className={styles.headerCell}>
@@ -143,8 +172,12 @@ export const JobsListView: React.FC<JobsListViewProps> = ({
                   {getCompanyAvatar(job)}
                 </div>
                 <div className={styles.companyInfo}>
-                  <div className={styles.companyName}>{job.company}</div>
-                  <div className={styles.jobTitle}>{job.title}</div>
+                  <div className={styles.companyName}>{job.title}</div>
+                  <div className={styles.jobTitle}>{job.company}</div>
+                  <div className={styles.postedDate}>
+                    <FiClock className={styles.clockIcon} />
+                    {formatPostedDate(job.postedDate || job.posted)}
+                  </div>
                 </div>
               </div>
               
