@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import styles from './Dashboard.module.css'
 import { FiHome, FiBriefcase, FiFileText, FiUser, FiBookmark, FiMapPin, FiDollarSign, FiClock, FiBell, FiMenu, FiX, FiFilter, FiSliders, FiLogOut, FiEdit3 } from 'react-icons/fi'
+import { getImageSrc } from '../../utils/imageUtils'
 import FilterModal from '../../components/jobseeker/FilterModal/FilterModal'
 import SearchBar from '../../components/jobseeker/SearchBar/SearchBar'
 import ResumeUploadPrompt from '../../components/ResumeUploadPrompt';
@@ -865,10 +866,7 @@ const Dashboard: React.FC = () => {
             >
               {userProfile?.profilePicture ? (
                 <img 
-                  src={userProfile.profilePicture.startsWith('data:') 
-                    ? userProfile.profilePicture 
-                    : `http://localhost:3001/${userProfile.profilePicture}`
-                  } 
+                  src={getImageSrc(userProfile.profilePicture)} 
                   alt="Profile" 
                   style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
                 />

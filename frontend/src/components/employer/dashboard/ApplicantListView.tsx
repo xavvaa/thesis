@@ -2,7 +2,7 @@ import React, { useMemo, useCallback } from 'react';
 import { Applicant } from '@/types/dashboard';
 import { Job } from '@/types/Job';
 import { FiEye } from 'react-icons/fi';
-// import { formatImageSrc, getInitials } from '@/utils/imageUtils';
+import { getImageSrc, getInitials } from '../../../utils/imageUtils';
 import styles from './ApplicantListView.module.css';
 
 interface ApplicantListViewProps {
@@ -19,16 +19,7 @@ export const ApplicantListView: React.FC<ApplicantListViewProps> = ({
   selectedJobId
 }) => {
  
-  // Temporary inline functions
-  const formatImageSrc = (imageData: string | null | undefined): string | undefined => {
-    if (!imageData) return undefined;
-    if (imageData.startsWith('data:')) return imageData;
-    return `data:image/jpeg;base64,${imageData}`;
-  };
-
-  const getInitials = (name: string): string => {
-    return name.split(' ').map((n) => n[0]).join('').toUpperCase();
-  };
+  // Using shared utilities for consistent image and text handling
 
   // TF-IDF calculation based on the specific job each applicant applied to
   const calculateTfidfScore = useCallback((applicant: Applicant): number => {
@@ -112,7 +103,7 @@ export const ApplicantListView: React.FC<ApplicantListViewProps> = ({
                 <div className={styles.avatar}>
                   {applicant.avatar ? (
                     <img 
-                      src={formatImageSrc(applicant.avatar)} 
+                      src={getImageSrc(applicant.avatar)} 
                       alt={applicant.name} 
                     />
                   ) : (

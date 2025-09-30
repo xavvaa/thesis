@@ -11,21 +11,7 @@ const cloudStorageService = require('../services/cloudStorageService');
 // Configure multer for cloud uploads (memory storage)
 const memoryStorage = multer.memoryStorage();
 
-// Legacy disk storage for backward compatibility
-const diskStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = 'uploads/profile-pictures';
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    // Generate unique filename with timestamp and original extension
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, req.user.uid + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Legacy disk storage removed - now using cloud storage only
 
 const fileFilter = (req, file, cb) => {
   // Accept only image files
@@ -45,14 +31,7 @@ const cloudUpload = multer({
   }
 });
 
-// Legacy disk upload
-const upload = multer({ 
-  storage: diskStorage,
-  fileFilter: fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  }
-});
+// Legacy disk upload removed - now using cloud storage only
 
 // @route   POST /api/users
 // @desc    Create a new user
@@ -133,7 +112,6 @@ router.get('/cloud-test', verifyToken, async (req, res) => {
     console.error('Cloud test error:', error);
     res.status(500).json({
       success: false,
-      error: error.message,
       message: 'Cloud storage configuration issue'
     });
   }
@@ -147,6 +125,8 @@ router.post('/profile-picture-cloud', verifyToken, cloudUpload.single('profilePi
   console.log(`🖼️ [${requestId}] Profile picture upload request received`);
   
   try {
+    const { uid } = req.user;
+    
     if (!req.file) {
       console.log(`❌ [${requestId}] No file uploaded`);
       return res.status(400).json({
@@ -159,24 +139,23 @@ router.post('/profile-picture-cloud', verifyToken, cloudUpload.single('profilePi
       originalname: req.file.originalname,
       mimetype: req.file.mimetype,
       size: req.file.size,
-      uid: req.user.uid
+      buffer: req.file.buffer ? 'Present' : 'Missing'
     });
 
-    // Validate Cloudinary configuration
-    try {
-      cloudStorageService.validateConfig();
-      console.log(`✅ [${requestId}] Cloudinary config validated`);
-    } catch (configError) {
-      console.error(`❌ [${requestId}] Cloudinary config error:`, configError);
-      return res.status(500).json({
+    // Find user in database
+    const user = await User.findOne({ uid });
+    if (!user) {
+      console.log(`❌ [${requestId}] User not found: ${uid}`);
+      return res.status(404).json({
         success: false,
-        error: 'Cloud storage not configured properly'
+        error: 'User not found'
       });
     }
 
-    // Upload to cloud storage
-    console.log(`☁️ [${requestId}] Uploading to cloud storage...`);
-    const cloudResult = await cloudStorageService.uploadBuffer(
+    console.log(`👤 [${requestId}] User found: ${user.email}`);
+
+    // Upload to cloud storage with image-specific settings
+    const cloudResult = await cloudStorageService.uploadImageBuffer(
       req.file.buffer,
       req.file.originalname,
       `profile-pictures/${req.user.uid}`
@@ -184,49 +163,102 @@ router.post('/profile-picture-cloud', verifyToken, cloudUpload.single('profilePi
     
     console.log(`✅ [${requestId}] Cloud upload successful:`, {
       url: cloudResult.url,
-      publicId: cloudResult.publicId
+      publicId: cloudResult.publicId,
+      bytes: cloudResult.bytes
     });
 
-    // Update user profile with cloud URL
-    console.log(`💾 [${requestId}] Updating user profile in database...`);
-    const user = await User.findOneAndUpdate(
-      { uid: req.user.uid },
-      { profilePicture: cloudResult.url },
-      { new: true }
-    );
+    // Delete old profile picture from cloud if it exists
+    if (user.profilePicture && user.profilePicture.startsWith('https://res.cloudinary.com')) {
+      try {
+        // Extract public ID from old URL to delete it
+        const urlParts = user.profilePicture.split('/');
+        const publicIdWithExtension = urlParts[urlParts.length - 1];
+        const publicId = publicIdWithExtension.split('.')[0];
+        await cloudStorageService.deleteFile(publicId);
+        console.log(`🗑️ [${requestId}] Old profile picture deleted from cloud`);
+      } catch (deleteError) {
+        console.log(`⚠️ [${requestId}] Could not delete old profile picture:`, deleteError.message);
+      }
+    }
 
+    // Update user with cloud URL
+    user.profilePicture = cloudResult.url;
+    await user.save();
+    
+    console.log(`💾 [${requestId}] User profile updated with cloud URL`);
+
+    res.json({
+      success: true,
+      message: 'Profile picture uploaded successfully',
+      data: {
+        profilePicture: cloudResult.url,
+        cloudUrl: cloudResult.url,
+        publicId: cloudResult.publicId
+      }
+    });
+  } catch (error) {
+    console.error(`❌ [${requestId}] Upload error:`, error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to upload profile picture'
+    });
+  }
+});
+
+// @route   DELETE /api/users/profile-picture-cloud
+// @desc    Remove profile picture from cloud storage
+// @access  Private
+router.delete('/profile-picture-cloud', verifyToken, async (req, res) => {
+  const requestId = Math.random().toString(36).substr(2, 9);
+  console.log(`🗑️ [${requestId}] Profile picture removal request received`);
+  
+  try {
+    const { uid } = req.user;
+    
+    const user = await User.findOne({ uid });
     if (!user) {
-      console.log(`❌ [${requestId}] User not found in database`);
+      console.log(`❌ [${requestId}] User not found: ${uid}`);
       return res.status(404).json({
         success: false,
         error: 'User not found'
       });
     }
 
-    console.log(`✅ [${requestId}] Profile picture saved successfully`);
+    console.log(`👤 [${requestId}] User found: ${user.email}`);
+
+    // Delete profile picture from cloud if it exists
+    if (user.profilePicture && user.profilePicture.startsWith('https://res.cloudinary.com')) {
+      try {
+        // Extract public ID from cloud URL to delete it
+        const urlParts = user.profilePicture.split('/');
+        const publicIdWithExtension = urlParts[urlParts.length - 1];
+        const publicId = publicIdWithExtension.split('.')[0];
+        await cloudStorageService.deleteFile(publicId);
+        console.log(`✅ [${requestId}] Profile picture deleted from cloud`);
+      } catch (deleteError) {
+        console.log(`⚠️ [${requestId}] Could not delete profile picture from cloud:`, deleteError.message);
+      }
+    }
+
+    // Remove profile picture from user record
+    user.profilePicture = null;
+    await user.save();
+    
+    console.log(`💾 [${requestId}] User profile updated - profile picture removed`);
+
     res.json({
       success: true,
-      profilePicture: cloudResult.url,
-      message: 'Profile picture uploaded successfully'
+      message: 'Profile picture removed successfully'
     });
-
   } catch (error) {
-    console.error(`❌ [${requestId}] Cloud profile picture upload error:`, error);
+    console.error(`❌ [${requestId}] Remove error:`, error);
     res.status(500).json({
       success: false,
-      error: `Failed to upload profile picture: ${error.message}`
+      error: error.message || 'Failed to remove profile picture'
     });
   }
 });
 
-// @route   POST /api/users/profile-picture
-// @desc    Upload profile picture (legacy)
-// @access  Private
-router.post('/profile-picture', verifyToken, upload.single('profilePicture'), userController.uploadProfilePicture);
-
-// @route   DELETE /api/users/profile-picture
-// @desc    Remove profile picture
-// @access  Private
-router.delete('/profile-picture', verifyToken, userController.removeProfilePicture);
+// Legacy profile picture endpoints removed - use /profile-picture-cloud instead
 
 module.exports = router;

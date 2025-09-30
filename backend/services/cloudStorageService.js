@@ -107,6 +107,45 @@ class CloudStorageService {
     }
   }
 
+  // Upload image buffer to Cloudinary (for profile pictures)
+  async uploadImageBuffer(buffer, filename, folder = 'profile-pictures') {
+    try {
+      return new Promise((resolve, reject) => {
+        cloudinary.uploader.upload_stream(
+          {
+            folder: `jobseeker-profiles/${folder}`,
+            resource_type: 'image', // Use 'image' for profile pictures
+            public_id: `${Date.now()}_${filename.replace(/\.[^/.]+$/, '')}`, // Remove extension from filename
+            access_mode: 'public', // Ensure public access
+            type: 'upload', // Specify upload type
+            invalidate: true, // Clear CDN cache
+            transformation: [
+              { width: 400, height: 400, crop: 'fill', gravity: 'face' }, // Optimize for profile pictures
+              { quality: 'auto', fetch_format: 'auto' } // Auto optimization
+            ]
+          },
+          (error, result) => {
+            if (error) {
+              reject(error);
+            } else {
+              resolve({
+                url: result.secure_url,
+                publicId: result.public_id,
+                format: result.format,
+                bytes: result.bytes,
+                width: result.width,
+                height: result.height,
+              });
+            }
+          }
+        ).end(buffer);
+      });
+    } catch (error) {
+      console.error('Cloudinary image buffer upload error:', error);
+      throw new Error('Failed to upload image buffer to cloud storage');
+    }
+  }
+
   // Delete file from Cloudinary
   async deleteFile(publicId) {
     try {

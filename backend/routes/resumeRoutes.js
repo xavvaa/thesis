@@ -6,7 +6,7 @@ const { verifyToken } = require('../middleware/authMiddleware');
 const Resume = require('../models/Resume');
 const MLResume = require('../models/MLResume');
 const JobSeeker = require('../models/JobSeeker');
-const { getImageUrl, isCloudUrl, migrateResumePhotoToCloud } = require('../utils/imageUtils');
+const { getImageUrl, isCloudUrl } = require('../utils/imageUtils');
 
 // Transform database resume data to jobseeker format
 function transformToJobseekerFormat(resumeData, application) {
@@ -513,7 +513,7 @@ router.post('/create', verifyToken, async (req, res) => {
         phone: resumeData.personalInfo.phone,
         age: resumeData.personalInfo.age,
         birthday: resumeData.personalInfo.birthday,
-        photo: resumeData.personalInfo.photo || '', // Now stores cloud URL or legacy base64
+        photo: resumeData.personalInfo.photo || '', // Cloud URL only
         // Store address and PSGC codes in grouped location object
         address: resumeData.personalInfo.address,
         zipCode: resumeData.personalInfo.zipCode,
@@ -578,7 +578,7 @@ router.post('/create', verifyToken, async (req, res) => {
           phone: resumeData.personalInfo.phone,
           age: resumeData.personalInfo.age,
           birthday: resumeData.personalInfo.birthday,
-          photo: resumeData.personalInfo.photo || '', // Now stores cloud URL or legacy base64
+          photo: resumeData.personalInfo.photo || '', // Cloud URL only
           // Store address and PSGC codes in grouped location object
           address: resumeData.personalInfo.address,
           zipCode: resumeData.personalInfo.zipCode,

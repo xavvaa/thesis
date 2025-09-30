@@ -218,37 +218,19 @@ router.get('/employer', verifyToken, async (req, res) => {
         // Fall back to stored resume data
       }
       
-      // Get profile picture from User model (should be stored as Base64 in database)
+      // Get profile picture from User model (cloud URLs only)
       let profilePicture = null;
       try {
         const jobSeekerUser = await User.findOne({ uid: app.jobSeekerUid }).select('profilePicture');
         console.log(`🔍 User ${app.jobSeekerUid} (${currentResumeData?.personalInfo?.name || app.applicantName}):`);
         
         if (jobSeekerUser?.profilePicture) {
-          console.log(`   - Profile picture found in database`);
-          console.log(`   - Length: ${jobSeekerUser.profilePicture.length} chars`);
-          console.log(`   - Starts with: ${jobSeekerUser.profilePicture.substring(0, 50)}...`);
-          
-          // Check if it's already a Base64 data URL
-          if (jobSeekerUser.profilePicture.startsWith('data:')) {
+          // Only accept cloud URLs
+          if (jobSeekerUser.profilePicture.startsWith('https://') || jobSeekerUser.profilePicture.startsWith('http://')) {
             profilePicture = jobSeekerUser.profilePicture;
-            console.log(`   - ✅ Using Base64 data from database`);
+            console.log(`   - ✅ Using cloud URL: ${jobSeekerUser.profilePicture.substring(0, 50)}...`);
           } else {
-            // Legacy: Try to read from file system (fallback)
-            console.log(`   - 🔄 Legacy file path detected, trying to read from filesystem...`);
-            const fs = require('fs');
-            const path = require('path');
-            const filePath = path.join(__dirname, '..', jobSeekerUser.profilePicture);
-            
-            if (fs.existsSync(filePath)) {
-              const imageBuffer = fs.readFileSync(filePath);
-              const base64Image = imageBuffer.toString('base64');
-              const mimeType = path.extname(filePath).toLowerCase() === '.png' ? 'image/png' : 'image/jpeg';
-              profilePicture = `data:${mimeType};base64,${base64Image}`;
-              console.log(`   - ✅ Converted file to Base64`);
-            } else {
-              console.log(`   - ❌ Legacy file not found: ${filePath}`);
-            }
+            console.log(`   - ⚠️ Non-cloud URL detected, ignoring legacy data`);
           }
         } else {
           console.log(`   - ℹ️ No profile picture in database`);

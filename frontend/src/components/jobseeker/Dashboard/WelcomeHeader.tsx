@@ -1,5 +1,6 @@
 import React from 'react';
 import styles from './WelcomeHeader.module.css';
+import { getImageSrc } from '../../../utils/imageUtils';
 
 interface WelcomeHeaderProps {
   userName: string | undefined;
@@ -23,10 +24,7 @@ const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ userName, profilePicture 
       <div className={styles.welcomeAvatar}>
         {profilePicture ? (
           <img 
-            src={profilePicture.startsWith('data:') 
-              ? profilePicture 
-              : `http://localhost:3001/${profilePicture}`
-            } 
+            src={getImageSrc(profilePicture)} 
             alt="Profile" 
             style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
           />

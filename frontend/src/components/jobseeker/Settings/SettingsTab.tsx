@@ -6,6 +6,7 @@ import { apiService } from '../../../services/apiService';
 import ResumeEditModal from '../../ResumeEditModal/ResumeEditModal';
 import { useNavigate } from 'react-router-dom';
 import PDFPreview from '../../shared/PDFPreview';
+import { getImageSrc } from '../../../utils/imageUtils';
 
 interface JobseekerProfile {
   _id?: string;
@@ -282,15 +283,16 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ onNavigate }) => {
       
       if (response.success && response.data) {
         console.log('Upload response:', response.data);
-        console.log('New profile picture path:', response.data.profilePicture);
-        setProfile(prev => prev ? { ...prev, profilePicture: response.data.profilePicture } : null);
+        const cloudUrl = response.data.cloudUrl || response.data.profilePicture;
+        console.log('New profile picture cloud URL:', cloudUrl);
+        setProfile(prev => prev ? { ...prev, profilePicture: cloudUrl } : null);
         
         // Trigger a custom event to notify other components of the profile update
         window.dispatchEvent(new CustomEvent('profilePictureUpdated', {
-          detail: { profilePicture: response.data.profilePicture }
+          detail: { profilePicture: cloudUrl }
         }));
         
-        setSuccess('Profile picture updated successfully!');
+        setSuccess('Profile picture uploaded to cloud storage successfully!');
       } else {
         setError(response.error || 'Failed to upload profile picture');
       }
@@ -629,10 +631,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ onNavigate }) => {
                     <div className={styles.currentPicture}>
                       {profile.profilePicture ? (
                         <img 
-                        src={profile.profilePicture.startsWith('data:') 
-                          ? profile.profilePicture 
-                          : `http://localhost:3001/${profile.profilePicture}`
-                        } 
+                          src={getImageSrc(profile.profilePicture)} 
                           alt="Profile" 
                           style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
                         />
@@ -1297,7 +1296,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ onNavigate }) => {
                     <div className={styles.currentPicture}>
                       {profile.profilePicture ? (
                         <img 
-                          src={`http://localhost:3001/${profile.profilePicture}`} 
+                          src={getImageSrc(profile.profilePicture)} 
                           alt="Profile" 
                           style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
                         />

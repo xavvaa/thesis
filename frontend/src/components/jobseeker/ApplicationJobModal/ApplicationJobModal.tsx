@@ -38,7 +38,7 @@ const getCompanyLogo = (company: string, companyLogo?: string) => {
   
   if (companyLogo) {
     const imageSrc = getImageSrc(companyLogo);
-    console.log('ApplicationJobModal - rendering image with base64 data');
+    console.log('ApplicationJobModal - rendering company logo');
     return (
       <div className={styles.companyLogo}>
         <img 

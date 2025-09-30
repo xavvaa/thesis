@@ -152,7 +152,7 @@ class ApiService {
     // Remove Content-Type to let browser set it with boundary for FormData
     delete (headers as any)['Content-Type'];
     
-    const response = await fetch(`${API_BASE_URL}/users/profile-picture`, {
+    const response = await fetch(`${API_BASE_URL}/users/profile-picture-cloud`, {
       method: 'POST',
       headers,
       body: formData
@@ -163,7 +163,7 @@ class ApiService {
 
   async removeProfilePicture(): Promise<ApiResponse> {
     const headers = await this.getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/users/profile-picture`, {
+    const response = await fetch(`${API_BASE_URL}/users/profile-picture-cloud`, {
       method: 'DELETE',
       headers
     });

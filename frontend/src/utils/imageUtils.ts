@@ -3,25 +3,21 @@
  */
 
 /**
- * Formats a Base64 image string to be used as a data URL
- * @param imageData - Base64 string or data URL
- * @returns Properly formatted data URL
+ * Formats image URLs for display - supports only cloud URLs
+ * @param imageData - Cloud URL only
+ * @returns Cloud URL or empty string
  */
 export const getImageSrc = (imageData: string | null | undefined): string => {
   if (!imageData) return '';
   
-  // If it's already a data URL, return as is
-  if (imageData.startsWith('data:')) {
-    return imageData;
-  }
-  
-  // If it's a cloud URL (Cloudinary, AWS, etc.), return as is
+  // Cloud URLs (Cloudinary, AWS, etc.) - Return as-is
   if (imageData.startsWith('http://') || imageData.startsWith('https://')) {
     return imageData;
   }
   
-  // If it's a base64 string, convert to data URL (legacy support)
-  return `data:image/jpeg;base64,${imageData}`;
+  // No legacy support - only cloud URLs accepted
+  console.warn('Non-cloud URL detected, ignoring:', imageData.substring(0, 50));
+  return '';
 };
 
 /**
@@ -37,22 +33,13 @@ export const getInitials = (name: string): string => {
 };
 
 /**
- * Validates if a string is a valid Base64 image
+ * Validates if a string is a valid cloud image URL
  * @param str - String to validate
- * @returns True if valid Base64 image
+ * @returns True if valid cloud URL
  */
-export const isValidBase64Image = (str: string): boolean => {
+export const isValidCloudImageUrl = (str: string): boolean => {
   if (!str) return false;
   
-  // Check if it's a data URL
-  if (str.startsWith('data:image/')) {
-    return true;
-  }
-  
-  // Check if it's a valid Base64 string
-  try {
-    return btoa(atob(str)) === str;
-  } catch (err) {
-    return false;
-  }
+  // Only accept cloud URLs
+  return str.startsWith('http://') || str.startsWith('https://');
 };
