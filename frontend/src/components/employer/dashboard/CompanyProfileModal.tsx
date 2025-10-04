@@ -29,7 +29,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<CompanyProfileData>({
     companyName: '',
-    industry: 'Technology',
+    industry: 'Information Technology',
     website: '',
     email: '',
     phone: '',
@@ -49,7 +49,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
       // Set default values when no initial data
       setFormData({
         companyName: '',
-        industry: 'Technology',
+        industry: 'Information Technology',
         website: '',
         email: '',
         phone: '',
@@ -297,18 +297,22 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
                   onChange={(e) => handleInputChange('industry', e.target.value)}
                   required
                 >
-                  <option value="Technology">Technology & IT</option>
-                  <option value="Business Process Outsourcing">Business Process Outsourcing (BPO)</option>
-                  <option value="Healthcare">Healthcare & Medical</option>
-                  <option value="Finance">Banking & Finance</option>
-                  <option value="Education">Education & Training</option>
-                  <option value="Manufacturing">Manufacturing & Production</option>
-                  <option value="Retail">Retail & E-commerce</option>
-                  <option value="Real Estate">Real Estate & Construction</option>
-                  <option value="Tourism">Tourism & Hospitality</option>
-                  <option value="Food & Beverage">Food & Beverage</option>
-                  <option value="Transportation">Transportation & Logistics</option>
-                  <option value="Government">Government & Public Service</option>
+                  <option value="">Select industry</option>
+                  <option value="Information Technology">Information Technology</option>
+                  <option value="Healthcare">Healthcare</option>
+                  <option value="Manufacturing">Manufacturing</option>
+                  <option value="Retail">Retail</option>
+                  <option value="Construction">Construction</option>
+                  <option value="Education">Education</option>
+                  <option value="Finance">Finance</option>
+                  <option value="Hospitality">Hospitality</option>
+                  <option value="Transportation">Transportation</option>
+                  <option value="Real Estate">Real Estate</option>
+                  <option value="Agriculture">Agriculture</option>
+                  <option value="Business Process Outsourcing">Business Process Outsourcing</option>
+                  <option value="Telecommunications">Telecommunications</option>
+                  <option value="Government">Government</option>
+                  <option value="Non-Profit">Non-Profit</option>
                   <option value="Other">Other</option>
                 </select>
               </div>
