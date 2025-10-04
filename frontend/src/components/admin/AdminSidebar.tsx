@@ -5,7 +5,6 @@ import {
   FiFileText, 
   FiTrendingUp, 
   FiLogOut,
-  FiSettings,
   FiUserCheck,
   FiBarChart2,
   FiDownload,
@@ -46,9 +45,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     );
   }
 
-  navItems.push(
-    { id: 'settings' as AdminTab, icon: FiSettings, label: 'Settings' }
-  );
 
   return (
     <div className="admin-sidebar">

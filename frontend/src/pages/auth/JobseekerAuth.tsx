@@ -7,7 +7,6 @@ import styles from "./AuthPage.module.css"
 import RoleAgreementModal, { type UserRole } from "../../components/RoleAgreementModal"
 import TermsModal from "../../components/TermsModal"
 import SuccessModal from '../../components/SuccessModal'
-import ResumeEditModal from '../../components/ResumeEditModal/ResumeEditModal'
 import { FormErrors, JobseekerFormData } from "./shared/authTypes"
 import { validateEmail, validatePassword, validateName, validateConfirmPassword } from "./shared/authValidation"
 import firebaseAuthService from "../../services/firebaseAuthService"
@@ -26,7 +25,6 @@ const JobseekerAuth: React.FC = () => {
   const [loginData, setLoginData] = useState({ email: "", password: "" })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [resumeFile, setResumeFile] = useState<File | null>(null)
   const [fieldTouched, setFieldTouched] = useState<{ [key: string]: boolean }>({})
   const [realTimeErrors, setRealTimeErrors] = useState<FormErrors>({})
   const [showTermsModal, setShowTermsModal] = useState(false)
@@ -34,8 +32,6 @@ const JobseekerAuth: React.FC = () => {
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [privacyAccepted, setPrivacyAccepted] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [showResumeEditModal, setShowResumeEditModal] = useState(false)
-  const [parsedResumeData, setParsedResumeData] = useState(null)
 
   const [formData, setFormData] = useState<JobseekerFormData>({
     email: "",
@@ -212,8 +208,6 @@ const JobseekerAuth: React.FC = () => {
         newErrors.confirmPassword = "Passwords do not match"
       }
 
-      // Resume is now optional - no validation required
-
       if (!termsAccepted) {
         newErrors.terms = "You must accept the terms and conditions"
       }
@@ -300,65 +294,6 @@ const JobseekerAuth: React.FC = () => {
     validateField(name, value)
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const allowedTypes = ["application/pdf"]
-      if (!allowedTypes.includes(file.type)) {
-        setErrors(prev => ({ ...prev, resume: "Please upload only PDF files." }))
-        e.target.value = ""
-        return
-      }
-
-      if (!file.name.toLowerCase().endsWith(".pdf")) {
-        setErrors(prev => ({ ...prev, resume: "Please upload only PDF files." }))
-        e.target.value = ""
-        return
-      }
-
-      if (file.size > 10 * 1024 * 1024) {
-        setErrors(prev => ({ ...prev, resume: "File size must be less than 10MB for optimal OCR processing." }))
-        e.target.value = ""
-        return
-      }
-
-      setResumeFile(file)
-      setErrors(prev => ({ ...prev, resume: undefined }))
-      setSuccessMessage("Resume uploaded successfully!")
-    }
-  }
-
-  const handleFileUpload = async () => {
-    if (!resumeFile) return
-
-    setIsUploading(true)
-    try {
-
-      const response = await apiService.uploadResume(resumeFile)
-      
-      if (response.success) {
-        
-        // If resume data was parsed, show edit modal
-        if (response.data.resumeData) {
-          setParsedResumeData(response.data.resumeData)
-          setShowResumeEditModal(true)
-          setSuccessMessage("Resume uploaded! Please review the extracted information.")
-        } else {
-          setSuccessMessage("Resume uploaded successfully!")
-        }
-        
-        return response.data // Return the upload result for use in registration
-      } else {
-        throw new Error(response.error || "Failed to upload resume")
-      }
-    } catch (error: any) {
-      console.error("Resume upload failed:", error)
-      setErrors(prev => ({ ...prev, resume: error.message || "Failed to upload resume. Please try again." }))
-      throw error // Re-throw to handle in registration flow
-    } finally {
-      setIsUploading(false)
-    }
-  }
 
   const validateLoginForm = () => {
     const newErrors: FormErrors = {}
@@ -434,11 +369,6 @@ const JobseekerAuth: React.FC = () => {
     }
   }
 
-  const handleLoginSuccessModalClose = () => {
-    setShowSuccessModal(false)
-    navigate("/jobseeker/dashboard")
-  }
-
   const handleBasicRegistration = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validateForm()) return
@@ -487,27 +417,25 @@ const JobseekerAuth: React.FC = () => {
         middleName: formData.middleName,
         emailVerified: false
       })
-      
+
       if (!profileResponse.success) {
+        // Delete the Firebase account if backend profile creation fails
+        try {
+          await firebaseResponse.user.delete()
+        } catch (deleteError) {
+          await firebaseAuthService.signOut()
+        }
         throw new Error(profileResponse.error || "Failed to create user profile")
       }
 
-      // Upload resume if provided (optional) - now that user is authenticated
-      if (resumeFile) {
-        try {
-          await handleFileUpload()
-        } catch (resumeError) {
-          // Don't fail registration if resume upload fails - user can upload later
-          console.warn("Resume upload failed during registration:", resumeError)
-          setSuccessMessage("Account created successfully! Resume upload failed, but you can upload it later from your dashboard.")
-        }
-      }
+      // Send email verification
+      await firebaseAuthService.sendEmailVerification()
       
       // Redirect to email verification page
       navigate(`/auth/verify-email?email=${encodeURIComponent(formData.email)}&role=jobseeker`)
       
     } catch (error: any) {
-      console.error('Registration error:', error);
+      console.error('Registration error:', error)
       
       // If Firebase throws "email already in use" error, show a more helpful message
       let errorMessage = error.message || 'Registration failed. Please try again.'
@@ -518,40 +446,10 @@ const JobseekerAuth: React.FC = () => {
       setErrors(prev => ({
         ...prev,
         general: errorMessage
-      }));
+      }))
     } finally {
-      setIsUploading(false);
+      setIsUploading(false)
     }
-  }
-
-  const handleSuccessModalClose = () => {
-    setShowSuccessModal(false)
-    navigate("/jobseeker/dashboard")
-  }
-
-  const handleResumeEditSave = async (editedResumeData: any) => {
-    try {
-      // Save the edited resume data to backend
-      const response = await apiService.post('/jobseekers/resume-data', {
-        resumeData: editedResumeData
-      })
-      
-      if (response.success) {
-        setShowResumeEditModal(false)
-        setSuccessMessage("Resume data saved successfully!")
-        setParsedResumeData(editedResumeData)
-      } else {
-        throw new Error(response.error || "Failed to save resume data")
-      }
-    } catch (error: any) {
-      console.error("Failed to save resume data:", error)
-      setErrors(prev => ({ ...prev, resume: error.message || "Failed to save resume data. Please try again." }))
-    }
-  }
-
-  const handleResumeEditClose = () => {
-    setShowResumeEditModal(false)
-    // Keep the original parsed data if user cancels
   }
 
   return (
@@ -564,7 +462,6 @@ const JobseekerAuth: React.FC = () => {
             </div>
             <div className={styles.journeyText}>
               <h2>Start Your Journey with Us</h2>
-              <p>Upload your PDF resume for AI-powered job matching with OCR technology</p>
             </div>
             <div className={styles.decorativeCircle1}></div>
             <div className={styles.decorativeCircle2}></div>
@@ -706,7 +603,7 @@ const JobseekerAuth: React.FC = () => {
               <form onSubmit={handleBasicRegistration} className={styles.form}>
                 <h1 className={styles.formTitle}>Get Started Now</h1>
                 <p className={styles.formSubtitle}>
-                  Upload your PDF resume and let our OCR technology extract your skills for personalized job matching.
+                  Create your account and start exploring job opportunities tailored to your career goals.
                 </p>
 
                 <div className={styles.inputGroup}>
@@ -877,34 +774,6 @@ const JobseekerAuth: React.FC = () => {
                   )}
                 </div>
 
-                <div className={styles.inputGroup}>
-                  <label className={styles.inputLabel}>Upload Resume (PDF Only) - Optional</label>
-                  <p className={styles.documentDescription}>
-                    Optionally upload your PDF resume for OCR processing and AI-powered job matching. You can skip this step and add your resume later in your dashboard.
-                  </p>
-                  <label className={styles.uploadLabel}>
-                    <input
-                      type="file"
-                      accept="application/pdf"
-                      onChange={handleFileChange}
-                      className={styles.fileInput}
-                    />
-                    <div className={`${styles.uploadArea} ${resumeFile ? styles.success : ""} ${errors.resume ? styles.error : ""}`}>
-                      <div className={styles.uploadIcon}>
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z" />
-                        </svg>
-                      </div>
-                      <div className={styles.uploadText}>
-                        <span className={styles.uploadMainText}>
-                          {resumeFile ? resumeFile.name : "Choose PDF Resume"}
-                        </span>
-                        <span className={styles.uploadHint}>PDF files only - OCR will extract your information</span>
-                      </div>
-                    </div>
-                  </label>
-                  {errors.resume && <div className={styles.inputError}>{errors.resume}</div>}
-                </div>
 
                 <div className={styles.termsSection}>
                   <div className={styles.checkboxGroup}>

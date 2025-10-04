@@ -10,7 +10,6 @@ import {
   SuperAdminJobsTab,
   UsersTab,
   AdminManagementTab,
-  SystemSettingsTab,
   AnalyticsTab,
   ReportsTab,
   JobseekersTab,
@@ -178,10 +177,6 @@ const SuperAdminDashboard: React.FC = () => {
         title: 'Admin Management',
         subtitle: 'Manage administrator accounts and permissions'
       },
-      'settings': {
-        title: 'System Settings',
-        subtitle: 'Configure system parameters and preferences'
-      },
     };
 
     return tabMap[tab] || { title: 'Dashboard', subtitle: 'System management' };
@@ -284,9 +279,6 @@ const SuperAdminDashboard: React.FC = () => {
           />
         )}
 
-        {activeTab === 'settings' && (
-          <SystemSettingsTab />
-        )}
 
       </div>
     </div>

@@ -57,13 +57,12 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ onNavigate }) => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<JobseekerProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [isEditingPreferences, setIsEditingPreferences] = useState(false);
   const [editedProfile, setEditedProfile] = useState<JobseekerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState<'profile' | 'resume' | 'preferences' | 'privacy' | 'account'>('profile');
+  const [activeSection, setActiveSection] = useState<'profile' | 'resume' | 'privacy' | 'account'>('profile');
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
@@ -76,12 +75,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ onNavigate }) => {
     inAppAlerts: true,
     jobMatches: true,
     applicationUpdates: true
-  });
-  const [jobPreferences, setJobPreferences] = useState({
-    jobTypes: [] as string[],
-    locations: '',
-    remoteWork: false,
-    jobAlerts: true
   });
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -134,7 +127,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ onNavigate }) => {
   const handleLogout = async () => {
     try {
       await firebaseAuthService.signOut();
-      navigate('/auth');
+      navigate('/auth/jobseeker');
     } catch (error) {
       console.error('Logout error:', error);
       setError('Failed to logout. Please try again.');
@@ -546,13 +539,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ onNavigate }) => {
           >
             <FiFileText />
             Resume & Documents
-          </button>
-          <button
-            className={`${styles.navButton} ${activeSection === 'preferences' ? styles.active : ''}`}
-            onClick={() => setActiveSection('preferences')}
-          >
-            <FiStar />
-            Job Preferences
           </button>
           <button
             className={`${styles.navButton} ${activeSection === 'privacy' ? styles.active : ''}`}
@@ -1000,287 +986,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ onNavigate }) => {
             </div>
           )}
 
-          {activeSection === 'preferences' && (
-            <div className={styles.preferencesSection}>
-              <div className={styles.sectionHeader}>
-                <h2>Job Preferences</h2>
-                <p className={styles.sectionDescription}>Customize your job search preferences to receive better matches</p>
-                <div className={styles.sectionActions}>
-                  {!isEditingPreferences ? (
-                    <button 
-                      className={styles.editButton}
-                      onClick={() => setIsEditingPreferences(true)}
-                    >
-                      <FiEdit2 />
-                      Edit Preferences
-                    </button>
-                  ) : (
-                    <div className={styles.editActions}>
-                      <button 
-                        className={styles.saveButton}
-                        onClick={async () => {
-                          await handleSave();
-                          setIsEditingPreferences(false);
-                        }}
-                        disabled={saving}
-                      >
-                        <FiSave />
-                        {saving ? 'Saving...' : 'Save'}
-                      </button>
-                      <button 
-                        className={styles.cancelButton}
-                        onClick={() => {
-                          setEditedProfile(profile);
-                          setIsEditingPreferences(false);
-                        }}
-                      >
-                        <FiX />
-                        Cancel
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className={styles.preferencesContent}>
-                {/* Job Search Criteria */}
-                <div className={styles.preferenceGroup}>
-                  <div className={styles.groupHeader}>
-                    <FiStar className={styles.groupIcon} />
-                    <h3>Job Search Criteria</h3>
-                  </div>
-                  
-                  <div className={styles.preferenceGrid}>
-                    <div className={styles.formGroup}>
-                      <label className={styles.boldLabel}>
-                        <FiStar className={styles.labelIcon} />
-                        Desired Job Title
-                      </label>
-                      {isEditingPreferences ? (
-                        <input
-                          type="text"
-                          className={styles.input}
-                          placeholder="e.g., Software Developer, Marketing Manager"
-                          value={editedProfile?.jobTitle || ''}
-                          onChange={(e) => handleInputChange('jobTitle', e.target.value)}
-                        />
-                      ) : (
-                        <div className={styles.displayValue}>
-                          <FiStar className={styles.fieldIcon} />
-                          {profile?.jobTitle || 'Not specified'}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className={styles.formGroup}>
-                      <label className={styles.boldLabel}>
-                        <FiMapPin className={styles.labelIcon} />
-                        Preferred Locations
-                      </label>
-                      {isEditingPreferences ? (
-                        <input
-                          type="text"
-                          className={styles.input}
-                          placeholder="e.g., Manila, Cebu, Davao, Remote"
-                          value={editedProfile?.preferredLocations || ''}
-                          onChange={(e) => handleInputChange('preferredLocations', e.target.value)}
-                        />
-                      ) : (
-                        <div className={styles.displayValue}>
-                          <FiMapPin className={styles.fieldIcon} />
-                          {profile?.preferredLocations || 'Not specified'}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className={styles.formGroup}>
-                      <label className={styles.boldLabel}>
-                        <FiDollarSign className={styles.labelIcon} />
-                        Salary Range (₱)
-                      </label>
-                      {isEditingPreferences ? (
-                        <div className={styles.salaryInputs}>
-                          <input
-                            type="number"
-                            value={editedProfile?.salaryExpectation?.min || ''}
-                            onChange={(e) => handleInputChange('salaryExpectation.min', parseInt(e.target.value) || 0)}
-                            className={styles.input}
-                            placeholder="Minimum"
-                          />
-                          <span className={styles.salaryDivider}>to</span>
-                          <input
-                            type="number"
-                            value={editedProfile?.salaryExpectation?.max || ''}
-                            onChange={(e) => handleInputChange('salaryExpectation.max', parseInt(e.target.value) || 0)}
-                            className={styles.input}
-                            placeholder="Maximum"
-                          />
-                        </div>
-                      ) : (
-                        <div className={styles.displayValue}>
-                          <FiDollarSign className={styles.fieldIcon} />
-                          {profile?.salaryExpectation ? 
-                            `₱${profile.salaryExpectation.min?.toLocaleString()} - ₱${profile.salaryExpectation.max?.toLocaleString()}`
-                            : 'Not specified'
-                          }
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Employment Preferences */}
-                <div className={styles.preferenceGroup}>
-                  <div className={styles.groupHeader}>
-                    <FiSettings className={styles.groupIcon} />
-                    <h3>Employment Preferences</h3>
-                  </div>
-                  
-                  <div className={styles.preferenceGrid}>
-                    <div className={styles.formGroup}>
-                      <label className={styles.boldLabel}>
-                        <FiSettings className={styles.labelIcon} />
-                        Job Types
-                      </label>
-                      {isEditingPreferences ? (
-                        <div className={styles.checkboxGrid}>
-                          {['Full-time', 'Part-time', 'Contract', 'Freelance', 'Internship'].map(type => (
-                            <label key={type} className={styles.checkboxItem}>
-                              <input
-                                type="checkbox"
-                                checked={editedProfile?.preferredJobTypes?.includes(type) || false}
-                                onChange={(e) => {
-                                  const currentTypes = editedProfile?.preferredJobTypes || [];
-                                  if (e.target.checked) {
-                                    handleInputChange('preferredJobTypes', [...currentTypes, type]);
-                                  } else {
-                                    handleInputChange('preferredJobTypes', currentTypes.filter(t => t !== type));
-                                  }
-                                }}
-                                className={styles.checkbox}
-                              />
-                              <span className={styles.checkboxLabel}>{type}</span>
-                            </label>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className={styles.displayValue}>
-                          <FiSettings className={styles.fieldIcon} />
-                          {profile?.preferredJobTypes?.length > 0 ? 
-                            profile.preferredJobTypes.join(', ') : 'Not specified'
-                          }
-                        </div>
-                      )}
-                    </div>
-
-                    <div className={styles.formGroup}>
-                      <label className={styles.boldLabel}>
-                        <FiGlobe className={styles.labelIcon} />
-                        Work Arrangement
-                      </label>
-                      {isEditingPreferences ? (
-                        <div className={styles.toggleGroup}>
-                          <div className={styles.toggleItem}>
-                            <span className={styles.toggleText}>Open to Remote Work</span>
-                            <label className={styles.toggle}>
-                              <input
-                                type="checkbox"
-                                checked={editedProfile?.remoteWork || false}
-                                onChange={(e) => handleInputChange('remoteWork', e.target.checked)}
-                              />
-                              <span className={styles.slider}></span>
-                            </label>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className={styles.displayValue}>
-                          <FiGlobe className={styles.fieldIcon} />
-                          {profile?.remoteWork ? 'Yes, open to remote work' : 'Prefers office-based work'}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Skills & Expertise */}
-                <div className={styles.preferenceGroup}>
-                  <div className={styles.groupHeader}>
-                    <FiUser className={styles.groupIcon} />
-                    <h3>Skills & Expertise</h3>
-                  </div>
-                  
-                  <div className={styles.skillsSection}>
-                    {isEditingPreferences && (
-                      <div className={styles.addSkillForm}>
-                        <div className={styles.skillInputs}>
-                          <input
-                            type="text"
-                            value={newSkill.name}
-                            onChange={(e) => setNewSkill({...newSkill, name: e.target.value})}
-                            className={styles.input}
-                            placeholder="Add a skill (e.g., JavaScript, Project Management)"
-                          />
-                          <select
-                            value={newSkill.level}
-                            onChange={(e) => setNewSkill({...newSkill, level: e.target.value})}
-                            className={styles.select}
-                          >
-                            <option value="beginner">Beginner</option>
-                            <option value="intermediate">Intermediate</option>
-                            <option value="advanced">Advanced</option>
-                            <option value="expert">Expert</option>
-                          </select>
-                          <button 
-                            type="button"
-                            className={styles.addSkillButton}
-                            onClick={() => {
-                              if (newSkill.name.trim()) {
-                                const currentSkills = editedProfile?.skills || [];
-                                handleInputChange('skills', [...currentSkills, newSkill]);
-                                setNewSkill({ name: '', level: 'beginner' });
-                              }
-                            }}
-                          >
-                            <FiPlus />
-                            Add
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div className={styles.skillsList}>
-                      {(profile?.skills || []).map((skill, index) => (
-                        <div key={index} className={styles.skillTag}>
-                          <span className={styles.skillName}>{skill.name}</span>
-                          <span className={styles.skillLevel}>{skill.level}</span>
-                          {isEditingPreferences && (
-                            <button
-                              type="button"
-                              className={styles.removeSkillButton}
-                              onClick={() => {
-                                const updatedSkills = (editedProfile?.skills || []).filter((_, i) => i !== index);
-                                handleInputChange('skills', updatedSkills);
-                              }}
-                            >
-                              <FiX />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                      {(!profile?.skills || profile.skills.length === 0) && (
-                        <div className={styles.displayValue}>
-                          <FiUser className={styles.fieldIcon} />
-                          No skills added yet
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-
-              </div>
-            </div>
-          )}
 
           {activeSection === 'account' && (
             <div className={styles.accountSection}>
