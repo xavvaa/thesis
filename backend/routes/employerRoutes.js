@@ -288,7 +288,7 @@ router.post('/upload-documents-cloud', verifyToken, requireRole('employer'), clo
         street: companyAddress
       };
     }
-    if (natureOfBusiness) employer.natureOfBusiness = natureOfBusiness;
+    if (natureOfBusiness) employer.industry = natureOfBusiness;
 
     // Store documents in employer record
     employer.documents = documentsArray;
