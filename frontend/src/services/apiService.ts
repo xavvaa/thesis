@@ -105,6 +105,30 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  async sendOTP(email: string): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/auth/send-otp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email })
+    });
+    
+    return this.handleResponse(response);
+  }
+
+  async verifyOTP(email: string, otp: string): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email, otp })
+    });
+    
+    return this.handleResponse(response);
+  }
+
   async verifyToken(): Promise<ApiResponse> {
     const headers = await this.getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/auth/verify`, {

@@ -8,6 +8,7 @@ import VerificationPending from './pages/auth/VerificationPending';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import EmailVerificationPage from './pages/auth/EmailVerificationPage';
+import OTPVerificationPage from './pages/auth/OTPVerificationPage';
 import JobSeekerDashboard from './pages/jobseeker/Dashboard';
 import EmployerDashboard from './pages/employer/Dashboard';
 import AdminAuth from './pages/admin/AdminAuth';
@@ -28,6 +29,7 @@ function App() {
         <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth/verify-email" element={<EmailVerificationPage />} />
+        <Route path="/auth/verify-otp" element={<OTPVerificationPage />} />
 
         {/* Admin routes without layout */}
         <Route path="/admin/auth" element={<AdminAuth />} />

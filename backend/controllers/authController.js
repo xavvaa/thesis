@@ -3,6 +3,7 @@ const JobSeeker = require('../models/JobSeeker');
 const Employer = require('../models/Employer');
 const admin = require('../config/firebase');
 const { filterDataByRole } = require('../middleware/roleBasedAccess');
+const emailService = require('../services/emailService');
 
 const authController = {
   // Create user profile after Firebase registration
@@ -67,7 +68,7 @@ const authController = {
         uid,
         email: email.toLowerCase(),
         role,
-        emailVerified: emailVerified || false,
+        emailVerified: false, // Always set to false initially to require OTP verification
         registrationStatus: 'pending',
         canLogin: false
       };
@@ -523,6 +524,135 @@ const authController = {
       res.status(500).json({
         success: false,
         error: error.message || 'Failed to check email'
+      });
+    }
+  },
+
+  // Send OTP for email verification
+  async sendOTP(req, res) {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          error: 'Email address is required'
+        });
+      }
+
+      const user = await User.findOne({ email: email.toLowerCase() });
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          error: 'User not found with this email address'
+        });
+      }
+
+      // Allow OTP sending even if email is already verified (for Google OAuth users)
+      // This ensures all users go through our OTP verification process
+      if (user.emailVerified && user.registrationStatus === 'verified') {
+        return res.status(400).json({
+          success: false,
+          error: 'Email is already verified and account is active'
+        });
+      }
+
+      // Generate 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      // Store OTP in user record
+      user.emailVerificationOTP = otp;
+      user.emailVerificationOTPExpires = otpExpires;
+      await user.save();
+
+      // Send OTP via email
+      const emailResult = await emailService.sendOTPEmail(email, otp, user.role);
+      
+      if (!emailResult.success) {
+        console.error('Failed to send OTP email:', emailResult.error);
+        // Still return success to user but log the email failure
+        // In production, you might want to return an error here
+      }
+
+      console.log(`OTP for ${email}: ${otp}`); // Keep for development
+
+      res.json({
+        success: true,
+        message: 'OTP sent successfully to your email',
+        // Remove this in production - only for development
+        developmentOTP: process.env.NODE_ENV === 'development' ? otp : undefined
+      });
+
+    } catch (error) {
+      console.error('Send OTP error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to send OTP'
+      });
+    }
+  },
+
+  // Verify OTP for email verification
+  async verifyOTP(req, res) {
+    try {
+      const { email, otp } = req.body;
+      
+      if (!email || !otp) {
+        return res.status(400).json({
+          success: false,
+          error: 'Email and OTP are required'
+        });
+      }
+
+      const user = await User.findOne({ 
+        email: email.toLowerCase(),
+        emailVerificationOTP: otp,
+        emailVerificationOTPExpires: { $gt: Date.now() }
+      });
+
+      if (!user) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid or expired OTP'
+        });
+      }
+
+      // Verify the user's email and clear OTP fields
+      user.verifyEmail();
+      user.emailVerificationOTP = undefined;
+      user.emailVerificationOTPExpires = undefined;
+      await user.save();
+
+      // Also update Firebase user's email verification status
+      try {
+        await admin.auth().updateUser(user.uid, {
+          emailVerified: true
+        });
+        console.log(`✅ Firebase email verification updated for user: ${user.uid}`);
+      } catch (firebaseError) {
+        console.error('❌ Failed to update Firebase email verification:', firebaseError);
+        // Don't fail the request if Firebase update fails, as database is already updated
+      }
+
+      res.json({
+        success: true,
+        message: 'Email verified successfully. You can now log in.',
+        user: {
+          uid: user.uid,
+          email: user.email,
+          role: user.role,
+          emailVerified: user.emailVerified,
+          registrationStatus: user.registrationStatus,
+          canLogin: user.canLogin
+        }
+      });
+
+    } catch (error) {
+      console.error('OTP verification error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to verify OTP'
       });
     }
   }

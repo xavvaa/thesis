@@ -2,26 +2,36 @@ const nodemailer = require('nodemailer');
 
 class EmailService {
   constructor() {
-    // Configure transporter - supports both Gmail and custom SMTP
-    const emailConfig = {
-      auth: {
-        user: process.env.EMAIL_USER || 'your-email@gmail.com',
-        pass: process.env.EMAIL_PASS || 'your-app-password'
+    this.isConfigured = false;
+    
+    // Check if email configuration is provided
+    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+      // Configure transporter - supports both Gmail and custom SMTP
+      const emailConfig = {
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS
+        }
+      };
+
+      // Check if using Gmail or custom SMTP
+      if (process.env.EMAIL_USER.includes('@gmail.com')) {
+        // Use Gmail service
+        emailConfig.service = 'gmail';
+      } else {
+        // Use custom SMTP settings
+        emailConfig.host = process.env.SMTP_HOST || 'smtp.gmail.com';
+        emailConfig.port = process.env.SMTP_PORT || 587;
+        emailConfig.secure = process.env.SMTP_SECURE === 'true' || false;
       }
-    };
 
-    // Check if using Gmail or custom SMTP
-    if (process.env.EMAIL_USER && process.env.EMAIL_USER.includes('@gmail.com')) {
-      // Use Gmail service
-      emailConfig.service = 'gmail';
+      this.transporter = nodemailer.createTransport(emailConfig);
+      this.isConfigured = true;
     } else {
-      // Use custom SMTP settings
-      emailConfig.host = process.env.SMTP_HOST || 'smtp.gmail.com';
-      emailConfig.port = process.env.SMTP_PORT || 587;
-      emailConfig.secure = process.env.SMTP_SECURE === 'true' || false;
+      console.log('⚠️  Email service not configured. OTP codes will only be logged to console.');
+      console.log('📧 To enable email sending, configure EMAIL_USER and EMAIL_PASS in your .env file.');
+      this.transporter = null;
     }
-
-    this.transporter = nodemailer.createTransport(emailConfig);
   }
 
   async sendEmployerApprovalEmail(employerEmail, companyName) {
@@ -139,6 +149,75 @@ class EmailService {
       return { success: true, messageId: result.messageId };
     } catch (error) {
       console.error('❌ Error sending rejection email:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async sendOTPEmail(email, otp, userRole = 'user') {
+    // If email service is not configured, just return success (OTP will be logged to console)
+    if (!this.isConfigured) {
+      console.log(`📧 Email service not configured. OTP for ${email}: ${otp}`);
+      return { success: true, message: 'Email service not configured - OTP logged to console' };
+    }
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER || 'noreply@peso.gov.ph',
+      to: email,
+      subject: 'PESO - Email Verification Code',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background-color: #3b82f6; color: white; padding: 20px; text-align: center;">
+            <h1>Email Verification</h1>
+          </div>
+          
+          <div style="padding: 30px; background-color: #f9f9f9;">
+            <h2>Verify Your Email Address</h2>
+            
+            <p>Thank you for registering with PESO! To complete your ${userRole} account setup, please verify your email address using the code below:</p>
+            
+            <div style="background-color: white; padding: 30px; border-radius: 8px; margin: 30px 0; text-align: center; border: 2px solid #3b82f6;">
+              <h2 style="color: #3b82f6; font-size: 36px; letter-spacing: 8px; margin: 0; font-family: 'Courier New', monospace;">
+                ${otp}
+              </h2>
+              <p style="color: #666; margin: 10px 0 0 0; font-size: 14px;">
+                Enter this 6-digit code in the verification page
+              </p>
+            </div>
+            
+            <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0; color: #92400e;">
+                <strong>⏰ Important:</strong> This code will expire in 10 minutes for security reasons.
+              </p>
+            </div>
+            
+            <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3>Security Tips:</h3>
+              <ul>
+                <li>🔒 Never share this code with anyone</li>
+                <li>🚫 PESO staff will never ask for your verification code</li>
+                <li>⚠️ If you didn't request this code, please ignore this email</li>
+              </ul>
+            </div>
+            
+            <p>If you're having trouble with verification, you can request a new code from the verification page.</p>
+            
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+            
+            <p style="color: #666; font-size: 14px;">
+              This is an automated message from PESO. Please do not reply to this email.<br>
+              If you need assistance, please contact our support team.
+            </p>
+          </div>
+        </div>
+      `
+    };
+
+    try {
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log(`✅ OTP email sent successfully to ${email}:`, result.messageId);
+      return { success: true, messageId: result.messageId };
+    } catch (error) {
+      console.error(`❌ Error sending OTP email to ${email}:`, error);
       return { success: false, error: error.message };
     }
   }

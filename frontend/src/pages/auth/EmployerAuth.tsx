@@ -156,8 +156,14 @@ const EmployerAuth: React.FC = () => {
             throw new Error(profileResponse.error || "Failed to create user profile")
           }
           
-          // Always redirect to documents page for Google signup (same as email signup flow)
-          navigate('/auth/employer/documents')
+          // Send OTP for email verification (Google accounts also need verification)
+          const otpResponse = await apiService.sendOTP(response.user.email!);
+          if (!otpResponse.success) {
+            throw new Error(otpResponse.error || "Failed to send verification OTP");
+          }
+          
+          // Always redirect to OTP verification for Google sign-ups
+          navigate(`/auth/verify-otp?email=${encodeURIComponent(response.user.email!)}&role=employer`)
         } else {
           throw new Error(response.error || "Failed to sign up with Google")
         }
@@ -166,11 +172,21 @@ const EmployerAuth: React.FC = () => {
         const tempResponse = await firebaseAuthService.signInWithGoogle("employer")
         
         if (tempResponse.success && tempResponse.user) {
-          
-          // Check if this email has role conflicts
+          // Check if this email is registered in our backend
           const emailCheck = await apiService.checkEmailExists(tempResponse.user.email!, 'employer')
           
-          if (emailCheck.success && emailCheck.data.exists && emailCheck.data.crossRoleConflict) {
+          // If user doesn't exist in backend, they need to register first
+          if (!emailCheck.success || !emailCheck.data.exists) {
+            await firebaseAuthService.signOut()
+            showError({
+              code: 'account-not-found',
+              message: "No account found with this Google email. Please register first by clicking 'Sign up with Google' above."
+            })
+            return
+          }
+          
+          // Check for role conflicts
+          if (emailCheck.data.crossRoleConflict) {
             await firebaseAuthService.signOut()
             showError({
               code: 'role-mismatch',
@@ -179,11 +195,18 @@ const EmployerAuth: React.FC = () => {
             return
           }
           
-          
           // Check if user is verified and redirect accordingly
-          if (!tempResponse.user.emailVerified) {
-            // Don't sign out, redirect to email verification page
-            navigate(`/auth/verify-email?email=${encodeURIComponent(tempResponse.user.email!)}&role=employer`)
+          if (!emailCheck.data.user.emailVerified) {
+            // Send OTP for verification and redirect to OTP page
+            const otpResponse = await apiService.sendOTP(tempResponse.user.email!);
+            if (otpResponse.success) {
+              navigate(`/auth/verify-otp?email=${encodeURIComponent(tempResponse.user.email!)}&role=employer`)
+            } else {
+              showError({
+                code: 'otp-send-failed',
+                message: "Failed to send verification code. Please try again."
+              })
+            }
             return
           }
           
@@ -385,7 +408,7 @@ const EmployerAuth: React.FC = () => {
           await firebaseAuthService.signOut()
           showError({
             code: 'account-not-verified',
-            message: "Please verify your email before logging in. Check your inbox for the verification link."
+            message: "Please verify your email before logging in. Check your inbox for the verification code."
           })
           return
         }
@@ -517,8 +540,14 @@ const EmployerAuth: React.FC = () => {
         throw new Error(profileResponse.error || "Failed to create user profile")
       }
       
-      // Redirect to email verification page
-      navigate(`/auth/verify-email?email=${encodeURIComponent(formData.email)}&role=employer`)
+      // Send OTP for email verification
+      const otpResponse = await apiService.sendOTP(formData.email);
+      if (!otpResponse.success) {
+        throw new Error(otpResponse.error || "Failed to send verification OTP");
+      }
+      
+      // Redirect to OTP verification page
+      navigate(`/auth/verify-otp?email=${encodeURIComponent(formData.email)}&role=employer`)
 
     } catch (error: any) {
       console.error('Registration error:', error);

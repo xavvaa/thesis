@@ -86,7 +86,7 @@ const JobseekerAuth: React.FC = () => {
             } else {
               setErrors(prev => ({ 
                 ...prev, 
-                general: "An account with this email exists but is not verified. Please check your email for the verification link or try logging in with your email and password." 
+                general: "An account with this email exists but is not verified. Please check your email for the verification code or try logging in with your email and password." 
               }))
             }
             return
@@ -112,12 +112,14 @@ const JobseekerAuth: React.FC = () => {
             throw new Error(profileResponse.error || "Failed to create user profile")
           }
           
-          // Redirect to email verification page if not verified, otherwise to dashboard
-          if (!response.user.emailVerified) {
-            navigate(`/auth/verify-email?email=${encodeURIComponent(response.user.email!)}&role=jobseeker`)
-          } else {
-            navigate('/jobseeker/dashboard')
+          // Send OTP for email verification (Google accounts also need verification)
+          const otpResponse = await apiService.sendOTP(response.user.email!);
+          if (!otpResponse.success) {
+            throw new Error(otpResponse.error || "Failed to send verification OTP");
           }
+          
+          // Always redirect to OTP verification for Google sign-ups
+          navigate(`/auth/verify-otp?email=${encodeURIComponent(response.user.email!)}&role=jobseeker`)
         } else {
           throw new Error(response.error || "Failed to sign up with Google")
         }
@@ -126,10 +128,21 @@ const JobseekerAuth: React.FC = () => {
         const tempResponse = await firebaseAuthService.signInWithGoogle("jobseeker")
         
         if (tempResponse.success && tempResponse.user) {
-          // Check if this email has role conflicts
+          // Check if this email is registered in our backend
           const emailCheck = await apiService.checkEmailExists(tempResponse.user.email!, 'jobseeker')
           
-          if (emailCheck.success && emailCheck.data.exists && emailCheck.data.crossRoleConflict) {
+          // If user doesn't exist in backend, they need to register first
+          if (!emailCheck.success || !emailCheck.data.exists) {
+            await firebaseAuthService.signOut()
+            setErrors(prev => ({ 
+              ...prev, 
+              general: "No account found with this Google email. Please register first by clicking 'Sign up with Google' above." 
+            }))
+            return
+          }
+          
+          // Check for role conflicts
+          if (emailCheck.data.crossRoleConflict) {
             await firebaseAuthService.signOut()
             setErrors(prev => ({ 
               ...prev, 
@@ -139,13 +152,21 @@ const JobseekerAuth: React.FC = () => {
           }
           
           // Check if user is verified and redirect accordingly
-          if (!tempResponse.user.emailVerified) {
-            // Don't sign out, redirect to email verification page
-            navigate(`/auth/verify-email?email=${encodeURIComponent(tempResponse.user.email!)}&role=jobseeker`)
+          if (!emailCheck.data.user.emailVerified) {
+            // Send OTP for verification and redirect to OTP page
+            const otpResponse = await apiService.sendOTP(tempResponse.user.email!);
+            if (otpResponse.success) {
+              navigate(`/auth/verify-otp?email=${encodeURIComponent(tempResponse.user.email!)}&role=jobseeker`)
+            } else {
+              setErrors(prev => ({ 
+                ...prev, 
+                general: "Failed to send verification code. Please try again." 
+              }))
+            }
             return
           }
           
-          // Navigate to dashboard
+          // Navigate to dashboard only if user exists and is verified
           navigate("/jobseeker/dashboard")
         } else {
           setErrors(prev => ({ 
@@ -345,7 +366,7 @@ const JobseekerAuth: React.FC = () => {
           await firebaseAuthService.signOut()
           setErrors(prev => ({ 
             ...prev, 
-            general: "Please verify your email before logging in. Check your inbox for the verification link." 
+            general: "Please verify your email before logging in. Check your inbox for the verification code." 
           }))
           return
         }
@@ -428,11 +449,14 @@ const JobseekerAuth: React.FC = () => {
         throw new Error(profileResponse.error || "Failed to create user profile")
       }
 
-      // Send email verification
-      await firebaseAuthService.sendEmailVerification()
+      // Send OTP for email verification
+      const otpResponse = await apiService.sendOTP(formData.email);
+      if (!otpResponse.success) {
+        throw new Error(otpResponse.error || "Failed to send verification OTP");
+      }
       
-      // Redirect to email verification page
-      navigate(`/auth/verify-email?email=${encodeURIComponent(formData.email)}&role=jobseeker`)
+      // Redirect to OTP verification page
+      navigate(`/auth/verify-otp?email=${encodeURIComponent(formData.email)}&role=jobseeker`)
       
     } catch (error: any) {
       console.error('Registration error:', error)

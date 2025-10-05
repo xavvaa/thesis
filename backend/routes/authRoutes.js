@@ -42,6 +42,16 @@ router.get('/check-email/:email', authController.checkEmailExists);
 // @access  Public
 router.get('/check-email/:email', authController.checkEmailExists);
 
+// @route   POST /api/auth/send-otp
+// @desc    Send OTP for email verification
+// @access  Public
+router.post('/send-otp', authController.sendOTP);
+
+// @route   POST /api/auth/verify-otp
+// @desc    Verify OTP for email verification
+// @access  Public
+router.post('/verify-otp', authController.verifyOTP);
+
 // Configure multer for employer document uploads during registration
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
