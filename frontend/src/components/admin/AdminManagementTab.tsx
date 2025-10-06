@@ -116,8 +116,8 @@ const AdminManagementTab: React.FC<AdminManagementTabProps> = ({
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                     required
                   >
+                    <option value="pesostaff">PESO Staff</option>
                     <option value="admin">Admin</option>
-                    <option value="superadmin">Super Admin</option>
                   </select>
                 </div>
 
@@ -185,7 +185,7 @@ const AdminManagementTab: React.FC<AdminManagementTabProps> = ({
                   <h4>{admin.adminName || 'Unnamed Admin'}</h4>
                   <span className={`role-badge ${admin.role}`}>
                     <HiShieldCheck />
-                    {admin.role === 'superadmin' ? 'Super Admin' : 'Admin'}
+                    {admin.role === 'admin' ? 'Admin' : 'PESO Staff'}
                   </span>
                 </div>
               </div>

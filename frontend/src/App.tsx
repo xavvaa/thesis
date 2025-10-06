@@ -33,8 +33,8 @@ function App() {
 
         {/* Admin routes without layout */}
         <Route path="/admin/auth" element={<AdminAuth />} />
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
+        <Route path="/admin/dashboard" element={<SuperAdminDashboard />} />
+        <Route path="/pesostaff/dashboard" element={<AdminDashboard />} />
 
         {/* Protected routes with layout */}
         <Route path="/" element={<MainLayout />}>

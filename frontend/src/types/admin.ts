@@ -13,7 +13,7 @@ export interface AdminUser {
   _id?: string;
   uid: string;
   email: string;
-  role: 'admin' | 'superadmin';
+  role: 'pesostaff' | 'admin';
   adminName: string;
   adminLevel?: string;
   department?: string;

@@ -47,7 +47,7 @@ const AdminDashboard: React.FC = () => {
     try {
       const [statsData, employersData, jobsData] = await Promise.all([
         adminService.getDashboardStats(),
-        adminService.getAllEmployers(), // Changed to get all employers instead of just pending
+        adminService.getAllEmployers(), // Fetch all employers for PESO staff dashboard
         adminService.getJobs({ limit: 10 })
       ]);
 

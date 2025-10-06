@@ -18,12 +18,12 @@ const adminSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['admin', 'superadmin'],
+    enum: ['pesostaff', 'admin'],
     required: true
   },
   adminLevel: {
     type: String,
-    enum: ['admin', 'superadmin'],
+    enum: ['pesostaff', 'admin'],
     required: true
   },
   department: {

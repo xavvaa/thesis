@@ -72,10 +72,10 @@ const AdminAuth: React.FC<AdminAuthProps> = () => {
         localStorage.setItem('adminToken', idToken);
         
         // Navigate to appropriate dashboard
-        if (data.admin.role === 'superadmin') {
-          navigate('/superadmin/dashboard');
-        } else {
+        if (data.admin.role === 'admin') {
           navigate('/admin/dashboard');
+        } else {
+          navigate('/pesostaff/dashboard');
         }
       } else {
         setError(data.message || 'Access denied. Admin privileges required.');

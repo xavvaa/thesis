@@ -41,7 +41,7 @@ class AdminService {
     return data.stats;
   }
 
-  // ===== SUPERADMIN ONLY METHODS =====
+  // ===== ADMIN ONLY METHODS =====
 
   async getUsers(params?: { page?: number; limit?: number; role?: string; status?: string; search?: string }): Promise<any> {
     const queryParams = new URLSearchParams();
@@ -425,7 +425,7 @@ class AdminService {
     email: string;
     adminName: string;
     department: string;
-    role: 'admin' | 'superadmin';
+    role: 'pesostaff' | 'admin';
     password: string;
   }): Promise<AdminUser> {
     const response = await fetch(`${this.baseUrl}/admins`, {
@@ -435,7 +435,7 @@ class AdminService {
         email: adminData.email,
         adminName: adminData.adminName,
         department: adminData.department,
-        role: adminData.role,
+        adminLevel: adminData.role, // Backend expects adminLevel
         password: adminData.password
       }),
     });

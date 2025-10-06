@@ -23,7 +23,7 @@ const adminMiddleware = async (req, res, next) => {
     if (!adminUser) {
       adminUser = await User.findOne({ 
         uid: req.user.uid,
-        role: { $in: ['admin', 'superadmin'] },
+        role: { $in: ['pesostaff', 'admin'] },
         isActive: true,
         registrationStatus: 'verified'
       });
@@ -63,7 +63,7 @@ const superAdminMiddleware = async (req, res, next) => {
     // First check Admin collection
     let superAdminUser = await Admin.findOne({ 
       uid: req.user.uid,
-      role: 'superadmin',
+      role: 'admin',
       isActive: true,
       registrationStatus: 'verified'
     });
@@ -72,7 +72,7 @@ const superAdminMiddleware = async (req, res, next) => {
     if (!superAdminUser) {
       superAdminUser = await User.findOne({ 
         uid: req.user.uid,
-        role: 'superadmin',
+        role: 'admin',
         isActive: true,
         registrationStatus: 'verified'
       });
@@ -81,19 +81,19 @@ const superAdminMiddleware = async (req, res, next) => {
     if (!superAdminUser) {
       return res.status(403).json({
         success: false,
-        message: 'Super admin access required or account not verified'
+        message: 'Admin access required or account not verified'
       });
     }
 
 
-    // Attach super admin user data to request for use in routes
+    // Attach admin user data to request for use in routes
     req.adminUser = superAdminUser;
     next();
   } catch (error) {
-    console.error('Super admin middleware error:', error);
+    console.error('Admin middleware error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error in super admin authorization'
+      message: 'Server error in admin authorization'
     });
   }
 };

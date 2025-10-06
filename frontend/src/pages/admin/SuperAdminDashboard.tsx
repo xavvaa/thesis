@@ -43,8 +43,8 @@ const SuperAdminDashboard: React.FC = () => {
     }
 
     const admin = JSON.parse(storedAdmin);
-    if (admin.role !== 'superadmin') {
-      navigate('/admin/dashboard');
+    if (admin.role !== 'admin') {
+      navigate('/pesostaff/dashboard');
       return;
     }
 
@@ -56,15 +56,15 @@ const SuperAdminDashboard: React.FC = () => {
     try {
       const [statsData, employersData, jobsData, usersResponse] = await Promise.all([
         adminService.getDashboardStats(),
-        adminService.getAllEmployers(), // Changed to get all employers instead of just pending
+        adminService.getAllEmployers(), // Fetch all employers for admin dashboard
         adminService.getJobs({ limit: 10 }),
-        adminService.getUsers({ role: 'admin' })
+        adminService.getAdminUsers() // Fetch all admin users (both pesostaff and admin)
       ]);
 
       setStats(statsData);
       setPendingEmployers(employersData);
       setJobs(jobsData.jobs || []);
-      setAdminUsers(usersResponse.users || []);
+      setAdminUsers(usersResponse || []);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -204,7 +204,7 @@ const SuperAdminDashboard: React.FC = () => {
     return (
       <div className="admin-loading">
         <div className="loading-spinner"></div>
-        <p>Loading super admin dashboard...</p>
+        <p>Loading admin dashboard...</p>
       </div>
     );
   }

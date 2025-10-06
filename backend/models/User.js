@@ -13,7 +13,7 @@ const UserSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['jobseeker', 'employer', 'admin', 'superadmin'],
+    enum: ['jobseeker', 'employer', 'pesostaff', 'admin'],
     required: true
   },
   
@@ -36,19 +36,19 @@ const UserSchema = new mongoose.Schema({
     required: function() { return this.role === 'employer'; }
   },
   
-  // Admin specific fields (only populated if role is 'admin' or 'superadmin')
+  // Admin specific fields (only populated if role is 'pesostaff' or 'admin')
   adminName: {
     type: String,
-    required: function() { return this.role === 'admin' || this.role === 'superadmin'; }
+    required: function() { return this.role === 'pesostaff' || this.role === 'admin'; }
   },
   adminLevel: {
     type: String,
-    enum: ['admin', 'superadmin'],
-    required: function() { return this.role === 'admin' || this.role === 'superadmin'; }
+    enum: ['pesostaff', 'admin'],
+    required: function() { return this.role === 'pesostaff' || this.role === 'admin'; }
   },
   department: {
     type: String,
-    required: function() { return this.role === 'admin' || this.role === 'superadmin'; }
+    required: function() { return this.role === 'pesostaff' || this.role === 'admin'; }
   },
   
   // Common authentication fields
@@ -106,9 +106,9 @@ const UserSchema = new mongoose.Schema({
         return ['view_jobs', 'apply_jobs', 'manage_profile', 'upload_resume'];
       } else if (this.role === 'employer') {
         return ['post_jobs', 'view_applications', 'manage_company', 'verify_documents'];
+      } else if (this.role === 'pesostaff') {
+        return ['verify_employers', 'manage_jobs', 'view_analytics', 'manage_users'];
       } else if (this.role === 'admin') {
-        return ['verify_employers', 'manage_jobs', 'view_analytics', 'manage_users', 'generate_reports'];
-      } else if (this.role === 'superadmin') {
         return ['all_permissions', 'manage_admins', 'system_settings', 'verify_employers', 'manage_jobs', 'view_analytics', 'manage_users', 'generate_reports', 'delete_users', 'system_backup'];
       }
       return [];
@@ -164,7 +164,7 @@ UserSchema.methods.getRoleSpecificData = function() {
     return {
       companyName: this.companyName
     };
-  } else if (this.role === 'admin' || this.role === 'superadmin') {
+  } else if (this.role === 'pesostaff' || this.role === 'admin') {
     return {
       adminName: this.adminName,
       adminLevel: this.adminLevel,

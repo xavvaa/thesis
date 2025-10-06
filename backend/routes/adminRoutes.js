@@ -31,7 +31,7 @@ router.post('/login', verifyToken, async (req, res) => {
     if (!adminUser) {
       const userAdmin = await User.findOne({ 
         uid: uid,
-        role: { $in: ['admin', 'superadmin'] },
+        role: { $in: ['pesostaff', 'admin'] },
         isActive: true
       });
       
@@ -702,6 +702,100 @@ router.post('/admins', verifyToken, superAdminMiddleware, async (req, res) => {
   }
 });
 
+// Admin only: Update admin user
+router.put('/users/:userId', verifyToken, superAdminMiddleware, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { email, adminName, department, role, adminLevel } = req.body;
+
+    // Find admin in Admin collection
+    const adminUser = await Admin.findOne({ uid: userId });
+    if (!adminUser) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Admin user not found' 
+      });
+    }
+
+    // Check if email is being changed and if it already exists
+    if (email && email.toLowerCase() !== adminUser.email) {
+      const existingAdmin = await Admin.findOne({ email: email.toLowerCase() });
+      if (existingAdmin) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Email already exists' 
+        });
+      }
+
+      // Update email in Firebase
+      try {
+        await admin.auth().updateUser(userId, {
+          email: email.toLowerCase()
+        });
+      } catch (firebaseError) {
+        console.error('❌ Firebase email update failed:', firebaseError);
+        return res.status(500).json({ 
+          success: false, 
+          message: 'Failed to update email in Firebase: ' + firebaseError.message 
+        });
+      }
+    }
+
+    // Update admin in MongoDB
+    if (email) adminUser.email = email.toLowerCase();
+    if (adminName) adminUser.adminName = adminName;
+    if (department !== undefined) adminUser.department = department;
+    if (role) {
+      adminUser.role = role;
+      adminUser.adminLevel = role;
+    }
+    if (adminLevel) {
+      adminUser.adminLevel = adminLevel;
+      adminUser.role = adminLevel;
+    }
+
+    adminUser.updatedAt = new Date();
+    await adminUser.save();
+
+    // Also update in User collection for backward compatibility
+    await User.updateOne(
+      { uid: userId },
+      {
+        $set: {
+          email: adminUser.email,
+          adminName: adminUser.adminName,
+          department: adminUser.department,
+          role: adminUser.role,
+          adminLevel: adminUser.adminLevel,
+          updatedAt: new Date()
+        }
+      }
+    );
+
+    res.json({
+      success: true,
+      message: 'Admin user updated successfully',
+      admin: {
+        uid: adminUser.uid,
+        email: adminUser.email,
+        role: adminUser.role,
+        adminName: adminUser.adminName,
+        adminLevel: adminUser.adminLevel,
+        department: adminUser.department,
+        isActive: adminUser.isActive,
+        updatedAt: adminUser.updatedAt
+      }
+    });
+
+  } catch (error) {
+    console.error('Admin update error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error updating admin user: ' + error.message 
+    });
+  }
+});
+
 // Get all pending documents for admin review
 router.get('/documents/pending', verifyToken, adminMiddleware, async (req, res) => {
   try {
@@ -1171,7 +1265,7 @@ router.get('/analytics/system', verifyToken, superAdminMiddleware, async (req, r
       verifiedEmployers
     ] = await Promise.all([
       User.countDocuments(),
-      User.countDocuments({ role: { $in: ['admin', 'superadmin'] } }),
+      User.countDocuments({ role: { $in: ['pesostaff', 'admin'] } }),
       Employer.countDocuments(),
       JobSeeker.countDocuments(),
       Job.countDocuments(),
@@ -1433,8 +1527,8 @@ router.post('/reports/generate', verifyToken, superAdminMiddleware, async (req, 
         reportData = {
           summary: {
             totalAdmins: adminStats.reduce((sum, stat) => sum + stat.count, 0),
-            superAdmins: adminStats.find(s => s._id === 'superadmin')?.count || 0,
-            regularAdmins: adminStats.find(s => s._id === 'admin')?.count || 0
+            admins: adminStats.find(s => s._id === 'admin')?.count || 0,
+            pesoStaff: adminStats.find(s => s._id === 'pesostaff')?.count || 0
           },
           details: includeDetails ? await Admin.find({ 
             lastLogin: { $gte: start, $lte: end } 

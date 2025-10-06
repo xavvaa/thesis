@@ -39,7 +39,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     { id: 'generate-reports' as AdminTab, icon: FiDownload, label: 'Generate Reports' },
   ];
 
-  if (adminUser.role === 'superadmin') {
+  if (adminUser.role === 'admin') {
     navItems.push(
       { id: 'admin-management' as AdminTab, icon: HiShieldCheck, label: 'Admin Management' }
     );
@@ -57,10 +57,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
           />
           <h2>PESO Admin</h2>
         </div>
-        {adminUser.role === 'superadmin' && (
+        {adminUser.role === 'admin' && (
           <div className="admin-role-badge">
             <HiSparkles className="role-icon" />
-            SUPERADMIN
+            ADMIN
           </div>
         )}
       </div>
