@@ -677,4 +677,52 @@ router.post('/saved-jobs/:jobId', verifyToken, async (req, res) => {
   }
 });
 
+// @route   POST /api/jobseekers/upload-resume-photo
+// @desc    Upload resume photo to cloud storage (separate from profile picture)
+// @access  Private
+router.post('/upload-resume-photo', verifyToken, profilePhotoUpload.single('resumePhoto'), async (req, res) => {
+  const requestId = Math.random().toString(36).substr(2, 9);
+  console.log(`📷 [${requestId}] Resume photo upload request received`);
+
+  try {
+    const { uid } = req.user;
+    const uploadedFile = req.file;
+
+    if (!uploadedFile) {
+      return res.status(400).json({
+        success: false,
+        message: 'No resume photo was uploaded'
+      });
+    }
+
+    console.log(`📷 [${requestId}] Uploading resume photo to cloud storage`);
+
+    // Upload to cloud storage using image-specific method with resume-photos folder
+    const cloudResult = await cloudStorageService.uploadImageBuffer(
+      uploadedFile.buffer, 
+      uploadedFile.originalname, 
+      `resume-photos/${req.user.uid}`
+    );
+    
+    console.log(`✅ [${requestId}] Resume photo uploaded successfully: ${cloudResult.publicId}`);
+
+    // Note: We don't update any user profile here - this is just for resume use
+    res.json({
+      success: true,
+      message: 'Resume photo uploaded successfully',
+      data: {
+        cloudUrl: cloudResult.url,
+        publicId: cloudResult.publicId
+      }
+    });
+
+  } catch (error) {
+    console.error(`❌ [${requestId}] Resume photo upload error:`, error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to upload resume photo'
+    });
+  }
+});
+
 module.exports = router;
