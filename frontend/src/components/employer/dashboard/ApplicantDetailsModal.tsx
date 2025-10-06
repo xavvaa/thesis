@@ -28,10 +28,13 @@ interface ApplicationData {
   };
   resumeData: {
     personalInfo: {
+      firstName: string;
+      lastName: string;
       name: string;
       email: string;
       phone: string;
       address: string;
+      photo?: string;
     };
     summary: string;
     skills: string[];

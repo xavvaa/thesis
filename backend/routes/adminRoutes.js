@@ -1924,22 +1924,29 @@ router.post('/reports/generate', verifyToken, superAdminMiddleware, async (req, 
     // Handle PDF generation
     if (format === 'pdf') {
       try {
+        console.log('Starting PDF generation for report type:', reportType);
         const reportName = getReportDisplayName(reportType);
+        console.log('Report name:', reportName);
+        
         const pdfBuffer = await pdfReportService.generateReportPDF(finalReportData, reportName);
+        console.log('PDF buffer generated, size:', pdfBuffer.length, 'bytes');
         
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${reportName}_${startDate}_to_${endDate}.pdf"`);
         res.setHeader('Content-Length', pdfBuffer.length);
         
+        console.log('Sending PDF buffer to client');
         return res.send(pdfBuffer);
       } catch (pdfError) {
         console.error('PDF generation error:', pdfError);
+        console.error('Error stack:', pdfError.stack);
         // Fallback to JSON response if PDF generation fails
         return res.json({
           success: true,
           report: finalReportData,
           message: 'Report generated successfully (PDF generation failed, returning JSON)',
-          pdfError: pdfError.message
+          pdfError: pdfError.message,
+          errorStack: pdfError.stack
         });
       }
     }

@@ -3,20 +3,30 @@
  */
 
 /**
- * Get cloud image URL - accepts only cloud URLs
- * @param {string} imageData - Cloud URL only
- * @returns {string} - Cloud URL or empty string
+ * Get image URL - accepts cloud URLs and data URLs for backward compatibility
+ * @param {string} imageData - Cloud URL or data URL
+ * @returns {string} - Image URL or empty string
  */
 const getImageUrl = (imageData) => {
   if (!imageData) return '';
   
-  // Only accept cloud URLs
+  // Accept cloud URLs (preferred)
   if (imageData.startsWith('http://') || imageData.startsWith('https://')) {
     return imageData;
   }
   
-  // Reject non-cloud URLs
-  console.warn('Non-cloud URL detected, ignoring:', imageData.substring(0, 50));
+  // Accept data URLs for backward compatibility (existing Base64 photos)
+  if (imageData.startsWith('data:')) {
+    return imageData;
+  }
+  
+  // Convert legacy Base64 to data URL for backward compatibility
+  if (imageData.length > 100 && !imageData.includes('http') && !imageData.includes('data:')) {
+    return `data:image/jpeg;base64,${imageData}`;
+  }
+  
+  // Reject invalid data
+  console.warn('Invalid image data detected, ignoring:', imageData.substring(0, 50));
   return '';
 };
 

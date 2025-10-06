@@ -32,8 +32,23 @@ const upload = multer({
   }
 });
 
-// Cloud upload configuration for profile photos
-const cloudUpload = cloudStorageService.getUploadMiddleware();
+// Memory storage for profile photo uploads (like user routes)
+const memoryStorage = multer.memoryStorage();
+
+const profilePhotoUpload = multer({
+  storage: memoryStorage,
+  fileFilter: (req, file, cb) => {
+    // Accept only image files
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit for profile photos
+  }
+});
 
 // @route   POST /api/jobseekers/resume-data
 // @desc    Save resume data to jobseeker profile
@@ -493,7 +508,7 @@ router.post('/education', verifyToken, async (req, res) => {
 });
 
 // POST /api/jobseekers/upload-profile-photo - Upload profile photo to cloud storage
-router.post('/upload-profile-photo', verifyToken, requireRole('jobseeker'), cloudUpload.single('profilePhoto'), async (req, res) => {
+router.post('/upload-profile-photo', verifyToken, requireRole('jobseeker'), profilePhotoUpload.single('profilePhoto'), async (req, res) => {
   const requestId = Math.random().toString(36).substr(2, 9);
   console.log(`📸 [${requestId}] Profile photo upload request received`);
   
@@ -509,6 +524,13 @@ router.post('/upload-profile-photo', verifyToken, requireRole('jobseeker'), clou
 
     const uploadedFile = req.file;
     
+    console.log(`📸 [${requestId}] File details:`, {
+      originalname: uploadedFile?.originalname,
+      mimetype: uploadedFile?.mimetype,
+      size: uploadedFile?.size,
+      buffer: uploadedFile?.buffer ? 'Present' : 'Missing'
+    });
+    
     if (!uploadedFile) {
       return res.status(400).json({
         success: false,
@@ -519,11 +541,12 @@ router.post('/upload-profile-photo', verifyToken, requireRole('jobseeker'), clou
     console.log(`📸 [${requestId}] Uploading profile photo to cloud storage`);
 
     try {
-      // Upload to cloud storage
+      // Upload to cloud storage with proper mimeType
       const cloudResult = await cloudStorageService.uploadBuffer(
         uploadedFile.buffer, 
         uploadedFile.originalname, 
-        `profile-photos/${req.user.uid}`
+        `profile-photos/${req.user.uid}`,
+        uploadedFile.mimetype
       );
       
       // Update jobseeker profile with cloud URL

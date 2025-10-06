@@ -133,21 +133,75 @@ const AdminDashboard: React.FC = () => {
     return tabMap[tab] || { title: 'Dashboard', subtitle: 'System management' };
   };
 
-  const generateSystemReport = () => {
-    // System report generation
-    const reportData = {
-      timestamp: new Date().toISOString(),
-      stats,
-      systemHealth: 'Good'
-    };
-    
-    const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `peso-system-report-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const generateSystemReport = async () => {
+    try {
+      // Map active tab to report type
+      const tabToReportType: { [key: string]: string } = {
+        'overview': 'dashboard-overview',
+        'employers': 'employer-verification',
+        'jobs': 'job-postings',
+        'jobseekers': 'jobseekers-summary',
+        'compliance': 'compliance-overview',
+        'skills-analytics': 'job-demand-analytics'
+      };
+
+      const reportType = tabToReportType[activeTab] || 'dashboard-overview';
+      
+      // Set date range to last 30 days
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 30);
+      
+      const formatDate = (date: Date) => date.toISOString().split('T')[0];
+
+      // Generate PDF report
+      const response = await fetch('http://localhost:3001/api/admin/reports/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        },
+        body: JSON.stringify({
+          reportType: reportType,
+          startDate: formatDate(startDate),
+          endDate: formatDate(endDate),
+          format: 'pdf',
+          includeDetails: true
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate report');
+      }
+
+      // Check if response is PDF or JSON (fallback)
+      const contentType = response.headers.get('Content-Type');
+      
+      if (contentType && contentType.includes('application/pdf')) {
+        // Handle PDF response
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${activeTab}-report-${formatDate(endDate)}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        // Handle JSON fallback
+        const data = await response.json();
+        console.warn('PDF generation failed, downloading JSON:', data.pdfError);
+        const blob = new Blob([JSON.stringify(data.report, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${activeTab}-report-${formatDate(endDate)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('Error generating report:', error);
+      alert('Failed to generate report. Please try again.');
+    }
   };
 
   const handleLogout = () => {

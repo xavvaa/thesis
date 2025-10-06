@@ -1,7 +1,7 @@
 class JobseekerCloudService {
   private baseUrl = 'http://localhost:3001/api';
 
-  // Upload profile photo to cloud storage
+  // Upload profile photo to cloud storage only
   async uploadProfilePhoto(file: File): Promise<{ success: boolean; data?: { cloudUrl: string }; message?: string }> {
     try {
       // Create FormData for file upload
@@ -17,6 +17,8 @@ class JobseekerCloudService {
 
       const token = await user.getIdToken();
 
+      console.log('🔧 Uploading to jobseeker endpoint:', `${this.baseUrl}/jobseekers/upload-profile-photo`);
+
       const response = await fetch(`${this.baseUrl}/jobseekers/upload-profile-photo`, {
         method: 'POST',
         headers: {
@@ -25,13 +27,23 @@ class JobseekerCloudService {
         body: formData
       });
 
+      console.log('🔧 Response status:', response.status);
+      console.log('🔧 Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to upload photo');
+        const errorText = await response.text();
+        console.error('🔧 Response error text:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
       const result = await response.json();
-      return result;
+      console.log('🔧 Response result:', result);
+
+      if (result.success) {
+        return result;
+      } else {
+        throw new Error(result.message || 'Upload failed');
+      }
 
     } catch (error) {
       console.error('Profile photo upload error:', error);

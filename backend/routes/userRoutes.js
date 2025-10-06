@@ -190,6 +190,7 @@ router.post('/profile-picture-cloud', verifyToken, cloudUpload.single('profilePi
     res.json({
       success: true,
       message: 'Profile picture uploaded successfully',
+      profilePicture: cloudResult.url, // Frontend expects this at root level
       data: {
         profilePicture: cloudResult.url,
         cloudUrl: cloudResult.url,

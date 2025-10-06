@@ -9,6 +9,12 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Log configuration status
+console.log('🔧 Cloudinary Configuration Status:');
+console.log('- Cloud Name:', process.env.CLOUDINARY_CLOUD_NAME ? '✅ Set' : '❌ Missing');
+console.log('- API Key:', process.env.CLOUDINARY_API_KEY ? '✅ Set' : '❌ Missing');
+console.log('- API Secret:', process.env.CLOUDINARY_API_SECRET ? '✅ Set' : '❌ Missing');
+
 // Configure Cloudinary storage for multer
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
@@ -79,31 +85,56 @@ class CloudStorageService {
     try {
       console.log(`🔧 uploadBuffer called with: filename=${filename}, folder=${folder}, mimeType=${mimeType}`);
       
-      // Determine resource type based on file type
+      // Validate Cloudinary configuration first
+      if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+        throw new Error('Cloudinary configuration is missing. Please check your environment variables.');
+      }
+      
+      // Determine resource type and folder based on file type
       const isImage = mimeType && mimeType.startsWith('image/');
       const resourceType = isImage ? 'image' : 'raw';
       
+      // Use different folder structure for profile photos
+      const cloudFolder = folder.includes('profile-photos') ? `jobseeker-profiles/${folder}` : `employer-documents/${folder}`;
+      
       console.log(`🔧 Resource type determined: ${resourceType} (isImage: ${isImage})`);
+      console.log(`🔧 Upload folder: ${cloudFolder}`);
       
       return new Promise((resolve, reject) => {
+        const uploadOptions = {
+          folder: cloudFolder,
+          resource_type: resourceType,
+          public_id: `${Date.now()}_${filename.replace(/\.[^/.]+$/, '')}`,
+          access_mode: 'public',
+          type: 'upload',
+          invalidate: true,
+        };
+        
+        // Add image-specific transformations for profile photos
+        if (isImage && folder.includes('profile-photos')) {
+          uploadOptions.transformation = [
+            { width: 400, height: 400, crop: 'fill', gravity: 'face' },
+            { quality: 'auto', fetch_format: 'auto' }
+          ];
+        }
+        
+        console.log(`🔧 Upload options:`, uploadOptions);
+        
         cloudinary.uploader.upload_stream(
-          {
-            folder: `employer-documents/${folder}`,
-            resource_type: resourceType, // Use 'image' for images, 'raw' for documents
-            public_id: `${Date.now()}_${filename.replace(/\.[^/.]+$/, '')}`, // Remove any extension from filename
-            access_mode: 'public', // Ensure public access
-            type: 'upload', // Specify upload type
-            invalidate: true, // Clear CDN cache
-          },
+          uploadOptions,
           (error, result) => {
             if (error) {
+              console.error('❌ Cloudinary upload error:', error);
               reject(error);
             } else {
+              console.log('✅ Cloudinary upload success:', result.public_id);
               resolve({
                 url: result.secure_url,
                 publicId: result.public_id,
                 format: result.format,
                 bytes: result.bytes,
+                width: result.width,
+                height: result.height,
               });
             }
           }
@@ -111,7 +142,7 @@ class CloudStorageService {
       });
     } catch (error) {
       console.error('Cloudinary buffer upload error:', error);
-      throw new Error('Failed to upload buffer to cloud storage');
+      throw new Error(`Failed to upload buffer to cloud storage: ${error.message}`);
     }
   }
 

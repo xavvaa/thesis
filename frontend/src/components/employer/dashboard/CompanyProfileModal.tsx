@@ -163,7 +163,7 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
     setUploadError(null);
 
     try {
-      const response = await fetch('http://localhost:3001/api/users/profile-picture', {
+      const response = await fetch('http://localhost:3001/api/users/profile-picture-cloud', {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${await (await import('../../../config/firebase')).auth.currentUser?.getIdToken()}`
