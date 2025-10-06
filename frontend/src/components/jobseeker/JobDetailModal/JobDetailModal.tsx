@@ -324,22 +324,20 @@ const JobDetailModal: React.FC<JobDetailModalProps> = ({ job, isOpen, onClose, o
 
         {/* Sticky Footer with action buttons */}
         <div className={styles.footer}>
-          <button className={styles.saveButton}>
-            <FiBookmark className={styles.buttonIcon} />
-            Save Job
-          </button>
-          <button 
-            className={`${styles.applyButton} ${job.applied ? styles.applied : ''}`}
-            onClick={() => {
-              if (!job.applied) {
-                onApply(job.id);
-              }
-            }}
-            disabled={job.applied}
-          >
-            {!job.applied && <FiTrendingUp className={styles.buttonIcon} />}
-            {job.applied ? 'Applied ✓' : 'Apply'}
-          </button>
+          <div className={styles.footerContent}>
+            <button 
+              className={`${styles.applyButton} ${job.applied ? styles.applied : ''}`}
+              onClick={() => {
+                if (!job.applied) {
+                  onApply(job.id);
+                }
+              }}
+              disabled={job.applied}
+            >
+              {!job.applied && <FiTrendingUp className={styles.buttonIcon} />}
+              {job.applied ? 'Applied ✓' : 'Apply'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

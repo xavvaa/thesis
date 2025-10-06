@@ -674,14 +674,18 @@
 .footer {
   position: sticky;
   bottom: 0;
-  padding: 1rem 2rem;
+  padding: 1.5rem 2rem;
   border-top: 1px solid #e2e8f0;
   background: white;
-  display: flex;
-  gap: 0.75rem;
-  justify-content: flex-end;
   box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
   z-index: 10;
+}
+
+.footerContent {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
 }
 
 .saveButton {
