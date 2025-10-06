@@ -89,22 +89,38 @@ export const ApplicantCard: React.FC<ApplicantCardProps> = ({
           <FiDownload className={styles.icon} />
           View Resume
         </button>
-        <div className={styles.decisionButtons}>
-          <button
-            className={styles.acceptBtn}
-            onClick={() => onAccept?.(applicant.id)}
-          >
-            <FiCheck className={styles.icon} />
-            Accept
-          </button>
-          <button
-            className={styles.rejectBtn}
-            onClick={() => onReject?.(applicant.id)}
-          >
-            <FiX className={styles.icon} />
-            Reject
-          </button>
-        </div>
+        {applicant.status === 'pending' ? (
+          <div className={styles.decisionButtons}>
+            <button
+              className={styles.acceptBtn}
+              onClick={() => onAccept?.(applicant.id)}
+            >
+              <FiCheck className={styles.icon} />
+              Accept
+            </button>
+            <button
+              className={styles.rejectBtn}
+              onClick={() => onReject?.(applicant.id)}
+            >
+              <FiX className={styles.icon} />
+              Reject
+            </button>
+          </div>
+        ) : (
+          <div className={styles.statusDisplay}>
+            <div className={`${styles.statusBadge} ${styles[applicant.status]}`}>
+              {applicant.status === 'interview' && <FiCheck className={styles.icon} />}
+              {applicant.status === 'rejected' && <FiX className={styles.icon} />}
+              {applicant.status === 'hired' && <FiCheck className={styles.icon} />}
+              <span>
+                {applicant.status === 'interview' ? 'Interview' :
+                 applicant.status === 'rejected' ? 'Rejected' :
+                 applicant.status === 'hired' ? 'Hired' :
+                 applicant.status.charAt(0).toUpperCase() + applicant.status.slice(1)}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

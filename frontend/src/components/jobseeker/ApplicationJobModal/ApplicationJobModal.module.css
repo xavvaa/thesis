@@ -213,6 +213,20 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+.statusInterview {
+  background: #3b82f6;
+  color: white;
+  border-color: #2563eb;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.statusHired {
+  background: #10b981;
+  color: white;
+  border-color: #059669;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 .appliedInfo {
   font-size: 0.875rem;
   color: rgba(255, 255, 255, 0.8);
@@ -390,6 +404,16 @@
   border: 1px solid #ef4444;
 }
 
+.statusDisplay.statusInterview {
+  background: #dbeafe;
+  border: 1px solid #3b82f6;
+}
+
+.statusDisplay.statusHired {
+  background: #d1fae5;
+  border: 1px solid #10b981;
+}
+
 .statusInfo {
   flex: 1;
 }
@@ -413,10 +437,58 @@
   color: #991b1b;
 }
 
+.statusDisplay.statusInterview .statusLabel {
+  color: #1d4ed8;
+}
+
+.statusDisplay.statusHired .statusLabel {
+  color: #065f46;
+}
+
 .statusDate {
   display: block;
   font-size: 0.875rem;
   opacity: 0.8;
+}
+
+.statusDisplay.statusPending .statusDate {
+  color: #92400e;
+}
+
+.statusDisplay.statusApproved .statusDate {
+  color: #065f46;
+}
+
+.statusDisplay.statusRejected .statusDate {
+  color: #991b1b;
+}
+
+.statusDisplay.statusInterview .statusDate {
+  color: #1d4ed8;
+}
+
+.statusDisplay.statusHired .statusDate {
+  color: #065f46;
+}
+
+.statusDisplay.statusPending .statusIcon {
+  color: #92400e;
+}
+
+.statusDisplay.statusApproved .statusIcon {
+  color: #065f46;
+}
+
+.statusDisplay.statusRejected .statusIcon {
+  color: #991b1b;
+}
+
+.statusDisplay.statusInterview .statusIcon {
+  color: #1d4ed8;
+}
+
+.statusDisplay.statusHired .statusIcon {
+  color: #065f46;
 }
 
 .statusMessage {

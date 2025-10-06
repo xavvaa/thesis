@@ -519,17 +519,24 @@ router.post('/upload-profile-photo', verifyToken, requireRole('jobseeker'), clou
     console.log(`📸 [${requestId}] Uploading profile photo to cloud storage`);
 
     try {
-      // Upload to cloud storage
-      const cloudResult = await cloudStorageService.uploadBuffer(
+      // Upload to cloud storage using image-specific method
+      const cloudResult = await cloudStorageService.uploadImageBuffer(
         uploadedFile.buffer, 
         uploadedFile.originalname, 
-        `profile-photos/${req.user.uid}`
+        `profile-photos`
       );
       
       // Update jobseeker profile with cloud URL
       jobseeker.profilePicture = cloudResult.url;
       jobseeker.profilePicturePublicId = cloudResult.publicId;
       await jobseeker.save();
+      
+      // Also update User model for employer access
+      const user = await User.findOne({ uid: req.user.uid });
+      if (user) {
+        user.profilePicture = cloudResult.url;
+        await user.save();
+      }
       
       console.log(`✅ [${requestId}] Profile photo uploaded successfully: ${cloudResult.publicId}`);
 

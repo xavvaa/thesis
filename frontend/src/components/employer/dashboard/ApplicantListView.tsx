@@ -88,6 +88,7 @@ export const ApplicantListView: React.FC<ApplicantListViewProps> = ({
             (Job-specific match)
           </span>
         </div>
+        <div className={styles.headerCell}>Status</div>
         <div className={styles.headerCell}>View</div>
       </div>
 
@@ -199,6 +200,18 @@ export const ApplicantListView: React.FC<ApplicantListViewProps> = ({
                     <div className={styles.matchFill} style={{ width: `${applicant.tfidfScore}%` }} />
                   </div>
                   <span className={styles.matchText}>{applicant.tfidfScore}%</span>
+                </div>
+              </div>
+
+              <div className={styles.statusCell}>
+                <div className={`${styles.statusBadge} ${styles[applicant.status || 'pending']}`}>
+                  <span className={styles.statusText}>
+                    {applicant.status === 'pending' ? 'Pending' :
+                     applicant.status === 'interview' ? 'Interview' :
+                     applicant.status === 'rejected' ? 'Rejected' :
+                     applicant.status === 'hired' ? 'Hired' :
+                     (applicant.status || 'Pending').charAt(0).toUpperCase() + (applicant.status || 'pending').slice(1)}
+                  </span>
                 </div>
               </div>
 

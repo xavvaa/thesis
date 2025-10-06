@@ -104,9 +104,12 @@ const JobCard: React.FC<JobCardProps> = ({
       case 'pending':
         return <FiClock className={styles.statusIcon} />;
       case 'approved':
+      case 'interview':
         return <FiCheck className={styles.statusIcon} />;
       case 'rejected':
         return <FiX className={styles.statusIcon} />;
+      case 'hired':
+        return <FiCheck className={styles.statusIcon} />;
       default:
         return <FiClock className={styles.statusIcon} />;
     }
@@ -118,8 +121,12 @@ const JobCard: React.FC<JobCardProps> = ({
         return 'Under Review';
       case 'approved':
         return 'Approved';
+      case 'interview':
+        return 'Interview Stage';
       case 'rejected':
         return 'Not Selected';
+      case 'hired':
+        return 'Hired';
       default:
         return 'Under Review';
     }

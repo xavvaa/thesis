@@ -320,20 +320,38 @@ export const ApplicantDetailsModal: React.FC<ApplicantDetailsModalProps> = ({
 
         {/* Action Buttons */}
         <div className={styles.modalActions}>
-          <button 
-            className={`${styles.primaryActionButton} ${styles.rejectButton}`}
-            onClick={() => onReject(applicant.id)}
-          >
-            <FiX size={20} />
-            <span>Reject Application</span>
-          </button>
-          <button 
-            className={`${styles.primaryActionButton} ${styles.approveButton}`}
-            onClick={() => onApprove(applicant.id)}
-          >
-            <FiCheck size={20} />
-            <span>Move to Interview</span>
-          </button>
+          {applicant.status === 'pending' ? (
+            <>
+              <button 
+                className={`${styles.primaryActionButton} ${styles.rejectButton}`}
+                onClick={() => onReject(applicant.id)}
+              >
+                <FiX size={20} />
+                <span>Reject Application</span>
+              </button>
+              <button 
+                className={`${styles.primaryActionButton} ${styles.approveButton}`}
+                onClick={() => onApprove(applicant.id)}
+              >
+                <FiCheck size={20} />
+                <span>Move to Interview</span>
+              </button>
+            </>
+          ) : (
+            <div className={styles.statusDisplay}>
+              <div className={`${styles.statusBadge} ${styles[applicant.status]}`}>
+                {applicant.status === 'interview' && <FiCheck size={16} />}
+                {applicant.status === 'rejected' && <FiX size={16} />}
+                {applicant.status === 'hired' && <FiCheck size={16} />}
+                <span className={styles.statusText}>
+                  {applicant.status === 'interview' ? 'Moved to Interview' :
+                   applicant.status === 'rejected' ? 'Application Rejected' :
+                   applicant.status === 'hired' ? 'Hired' :
+                   applicant.status.charAt(0).toUpperCase() + applicant.status.slice(1)}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

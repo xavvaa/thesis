@@ -7,7 +7,7 @@
 
 .listHeader {
   display: grid;
-  grid-template-columns: 60px 1.5fr 1.2fr 1.3fr 1.3fr 1fr 0.8fr;
+  grid-template-columns: 60px 1.5fr 1.2fr 1.3fr 1.3fr 1fr 1fr 0.8fr;
   background: #f9fafb;
   color: #374151;
   padding: 16px 0;
@@ -34,7 +34,7 @@
 
 .listRow {
   display: grid;
-  grid-template-columns: 60px 1.5fr 1.2fr 1.3fr 1.3fr 1fr 0.8fr;
+  grid-template-columns: 60px 1.5fr 1.2fr 1.3fr 1.3fr 1fr 1fr 0.8fr;
   padding: 16px 0;
   border-bottom: 1px solid #f3f4f6;
   align-items: center;
@@ -357,4 +357,53 @@
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+/* Status Cell Styles */
+.statusCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  min-width: 80px;
+  justify-content: center;
+}
+
+.statusBadge.pending {
+  background-color: #fef3c7;
+  color: #d97706;
+  border: 1px solid #fbbf24;
+}
+
+.statusBadge.interview {
+  background-color: #dbeafe;
+  color: #2563eb;
+  border: 1px solid #3b82f6;
+}
+
+.statusBadge.rejected {
+  background-color: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #ef4444;
+}
+
+.statusBadge.hired {
+  background-color: #d1fae5;
+  color: #059669;
+  border: 1px solid #10b981;
+}
+
+.statusText {
+  font-size: 12px;
+  font-weight: 600;
 }
