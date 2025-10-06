@@ -98,6 +98,15 @@ const UserSchema = new mongoose.Schema({
     default: false
   },
   
+  // User-specific saved jobs
+  savedJobs: [{
+    type: String, // Job ID
+    savedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  
   // Role-based permissions
   permissions: {
     type: [String],

@@ -541,18 +541,24 @@ router.post('/upload-profile-photo', verifyToken, requireRole('jobseeker'), prof
     console.log(`📸 [${requestId}] Uploading profile photo to cloud storage`);
 
     try {
-      // Upload to cloud storage with proper mimeType
-      const cloudResult = await cloudStorageService.uploadBuffer(
+      // Upload to cloud storage using image-specific method
+      const cloudResult = await cloudStorageService.uploadImageBuffer(
         uploadedFile.buffer, 
         uploadedFile.originalname, 
-        `profile-photos/${req.user.uid}`,
-        uploadedFile.mimetype
+        `profile-photos/${req.user.uid}`
       );
       
       // Update jobseeker profile with cloud URL
       jobseeker.profilePicture = cloudResult.url;
       jobseeker.profilePicturePublicId = cloudResult.publicId;
       await jobseeker.save();
+      
+      // Also update User model for employer access
+      const user = await User.findOne({ uid: req.user.uid });
+      if (user) {
+        user.profilePicture = cloudResult.url;
+        await user.save();
+      }
       
       console.log(`✅ [${requestId}] Profile photo uploaded successfully: ${cloudResult.publicId}`);
 
@@ -581,6 +587,92 @@ router.post('/upload-profile-photo', verifyToken, requireRole('jobseeker'), prof
       success: false,
       message: 'Error uploading profile photo',
       error: error.message
+    });
+  }
+});
+
+// @route   GET /api/jobseekers/saved-jobs
+// @desc    Get user's saved jobs
+// @access  Private
+router.get('/saved-jobs', verifyToken, async (req, res) => {
+  try {
+    const { uid } = req.user;
+
+    const user = await User.findOne({ uid });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        savedJobs: user.savedJobs || []
+      }
+    });
+
+  } catch (error) {
+    console.error('Get saved jobs error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to get saved jobs'
+    });
+  }
+});
+
+// @route   POST /api/jobseekers/saved-jobs/:jobId
+// @desc    Save/unsave a job
+// @access  Private
+router.post('/saved-jobs/:jobId', verifyToken, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const { jobId } = req.params;
+
+    const user = await User.findOne({ uid });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    // Initialize savedJobs array if it doesn't exist
+    if (!user.savedJobs) {
+      user.savedJobs = [];
+    }
+
+    // Check if job is already saved
+    const jobIndex = user.savedJobs.findIndex(savedJob => savedJob.toString() === jobId);
+    
+    let action = '';
+    if (jobIndex > -1) {
+      // Job is already saved, remove it
+      user.savedJobs.splice(jobIndex, 1);
+      action = 'removed';
+    } else {
+      // Job is not saved, add it
+      user.savedJobs.push(jobId);
+      action = 'added';
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: `Job ${action} successfully`,
+      data: {
+        action,
+        savedJobs: user.savedJobs
+      }
+    });
+
+  } catch (error) {
+    console.error('Save/unsave job error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to save/unsave job'
     });
   }
 });

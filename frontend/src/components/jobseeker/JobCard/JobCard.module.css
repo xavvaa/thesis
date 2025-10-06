@@ -282,6 +282,16 @@
   color: #991b1b;
 }
 
+.statusInterview {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.statusHired {
+  background: #d1fae5;
+  color: #065f46;
+}
+
 /* Apply button */
 .applyButton {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);

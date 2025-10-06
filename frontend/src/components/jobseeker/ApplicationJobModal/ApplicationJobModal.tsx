@@ -17,7 +17,7 @@ interface Application {
   workplaceType?: string;
   salary: string;
   description?: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'interview' | 'hired';
   appliedDate: string;
   updatedAt: string;
 }
@@ -90,8 +90,12 @@ const ApplicationJobModal: React.FC<ApplicationJobModalProps> = ({
         return <FiClock className={styles.statusIcon} />;
       case 'approved':
         return <FiCheck className={styles.statusIcon} />;
+      case 'interview':
+        return <FiUsers className={styles.statusIcon} />;
       case 'rejected':
         return <FiXCircle className={styles.statusIcon} />;
+      case 'hired':
+        return <FiCheck className={styles.statusIcon} />;
       default:
         return <FiClock className={styles.statusIcon} />;
     }
@@ -103,8 +107,12 @@ const ApplicationJobModal: React.FC<ApplicationJobModalProps> = ({
         return 'Under Review';
       case 'approved':
         return 'Approved';
+      case 'interview':
+        return 'Interview Stage';
       case 'rejected':
         return 'Not Selected';
+      case 'hired':
+        return 'Hired';
       default:
         return 'Under Review';
     }
@@ -116,8 +124,12 @@ const ApplicationJobModal: React.FC<ApplicationJobModalProps> = ({
         return styles.statusPending;
       case 'approved':
         return styles.statusApproved;
+      case 'interview':
+        return styles.statusInterview;
       case 'rejected':
         return styles.statusRejected;
+      case 'hired':
+        return styles.statusHired;
       default:
         return styles.statusPending;
     }
@@ -364,6 +376,26 @@ const ApplicationJobModal: React.FC<ApplicationJobModalProps> = ({
                 {application.status === 'pending' && (
                   <p className={styles.statusMessage}>
                     Your application is currently under review. We'll notify you once there's an update.
+                  </p>
+                )}
+                {application.status === 'interview' && (
+                  <p className={styles.statusMessage}>
+                    Congratulations! You've been selected for an interview. The employer will contact you soon with details.
+                  </p>
+                )}
+                {application.status === 'hired' && (
+                  <p className={styles.statusMessage}>
+                    Congratulations! You've been hired for this position. Welcome to the team!
+                  </p>
+                )}
+                {application.status === 'rejected' && (
+                  <p className={styles.statusMessage}>
+                    Unfortunately, your application was not selected for this position. Keep applying to other opportunities!
+                  </p>
+                )}
+                {application.status === 'approved' && (
+                  <p className={styles.statusMessage}>
+                    Your application has been approved. The employer will contact you with next steps.
                   </p>
                 )}
               </div>

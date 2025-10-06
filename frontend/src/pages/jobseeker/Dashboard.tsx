@@ -75,19 +75,7 @@ const Dashboard: React.FC = () => {
   const [resume, setResume] = useState<ParsedResume | null>(null)
   const [applications, setApplications] = useState<Application[]>([])
   const [appliedJobs, setAppliedJobs] = useState<Set<string | number>>(new Set())
-  const [savedJobs, setSavedJobs] = useState<Set<string | number>>(() => {
-    // Load saved jobs from localStorage on initialization
-    try {
-      const saved = localStorage.getItem('savedJobs');
-      if (saved) {
-        const savedArray = JSON.parse(saved);
-        return new Set(savedArray);
-      }
-    } catch (error) {
-      console.error('Error loading saved jobs from localStorage:', error);
-    }
-    return new Set();
-  })
+  const [savedJobs, setSavedJobs] = useState<Set<string | number>>(new Set())
   const [notifications, setNotifications] = useState<number>(0)
   const [error, setError] = useState<string | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -307,6 +295,13 @@ const Dashboard: React.FC = () => {
             }
             
             try {
+              // Load user's saved jobs
+              const savedJobsResponse = await apiService.getSavedJobs();
+              if (savedJobsResponse.success && savedJobsResponse.data) {
+                const userSavedJobs = savedJobsResponse.data.savedJobs || [];
+                setSavedJobs(new Set(userSavedJobs));
+              }
+              
               // Load user's applications to mark applied jobs
               const applicationsResponse = await apiService.getUserApplications();
               if (applicationsResponse.success && applicationsResponse.data) {
@@ -526,32 +521,36 @@ const Dashboard: React.FC = () => {
     return jobsToShow;
   }
 
-  const handleSaveJob = (jobId: string | number) => {
+  const handleSaveJob = async (jobId: string | number) => {
     console.log('handleSaveJob called with jobId:', jobId);
     
-    setSavedJobs(prev => {
-      const newSet = new Set(prev)
-      console.log('Previous savedJobs:', Array.from(prev));
+    try {
+      const response = await apiService.toggleSavedJob(jobId);
       
-      if (newSet.has(jobId)) {
-        newSet.delete(jobId)
-        console.log('Removed job', jobId, 'from saved jobs');
+      if (response.success) {
+        // Update local state based on server response
+        setSavedJobs(prev => {
+          const newSet = new Set(prev);
+          
+          if (response.data?.action === 'added') {
+            newSet.add(jobId);
+            console.log('Added job', jobId, 'to saved jobs');
+          } else if (response.data?.action === 'removed') {
+            newSet.delete(jobId);
+            console.log('Removed job', jobId, 'from saved jobs');
+          }
+          
+          console.log('Updated savedJobs:', Array.from(newSet));
+          return newSet;
+        });
       } else {
-        newSet.add(jobId)
-        console.log('Added job', jobId, 'to saved jobs');
+        console.error('Failed to save/unsave job:', response.error);
+        setError('Failed to save job. Please try again.');
       }
-      
-      console.log('New savedJobs:', Array.from(newSet));
-      
-      // Persist to localStorage
-      try {
-        localStorage.setItem('savedJobs', JSON.stringify(Array.from(newSet)));
-      } catch (error) {
-        console.error('Error saving jobs to localStorage:', error);
-      }
-      
-      return newSet
-    })
+    } catch (error) {
+      console.error('Error saving/unsaving job:', error);
+      setError('Failed to save job. Please try again.');
+    }
   }
 
   const handleApplyJob = async (jobId: string | number) => {

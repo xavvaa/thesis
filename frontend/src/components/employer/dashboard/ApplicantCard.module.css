@@ -172,3 +172,45 @@
 .rejectBtn:hover {
   background-color: #dc2626;
 }
+
+/* Status Display Styles */
+.statusDisplay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.statusBadge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border: 1px solid;
+}
+
+.statusBadge.pending {
+  background-color: #fef3c7;
+  color: #d97706;
+  border-color: #fbbf24;
+}
+
+.statusBadge.interview {
+  background-color: #dbeafe;
+  color: #2563eb;
+  border-color: #3b82f6;
+}
+
+.statusBadge.rejected {
+  background-color: #fee2e2;
+  color: #dc2626;
+  border-color: #ef4444;
+}
+
+.statusBadge.hired {
+  background-color: #d1fae5;
+  color: #059669;
+  border-color: #10b981;
+}

@@ -424,6 +424,27 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  // Saved jobs methods
+  async getSavedJobs(): Promise<ApiResponse> {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}/jobseekers/saved-jobs`, {
+      method: 'GET',
+      headers
+    });
+    
+    return this.handleResponse(response);
+  }
+
+  async toggleSavedJob(jobId: string | number): Promise<ApiResponse> {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}/jobseekers/saved-jobs/${jobId}`, {
+      method: 'POST',
+      headers
+    });
+    
+    return this.handleResponse(response);
+  }
+
   // Utility methods
   async testConnection(): Promise<boolean> {
     try {

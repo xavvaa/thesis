@@ -773,13 +773,16 @@ router.get('/view/:applicationId', verifyToken, async (req, res) => {
     // Transform resume data to match jobseeker format
     const jobseekerFormat = transformToJobseekerFormat(resumeData, application);
     
-    // Return the resume data so frontend can generate PDF using CreateResumeTab logic
-    res.json({
-      success: true,
-      resumeData: jobseekerFormat,
-      applicantName: resumeData.personalInfo?.fullName || resumeData.personalInfo?.name || 'Applicant',
-      generatePDF: true // Flag to indicate frontend should generate PDF
-    });
+    // Generate PDF on the backend and return as blob
+    const pdfBlob = generateJobseekerPDF(jobseekerFormat, null, true);
+    
+    // Set headers for PDF response
+    const applicantName = resumeData.personalInfo?.fullName || resumeData.personalInfo?.name || 'Applicant';
+    const filename = `${applicantName.replace(/\s+/g, '_')}_Resume.pdf`;
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.send(Buffer.from(await pdfBlob.arrayBuffer()));
 
   } catch (error) {
     console.error('Error viewing resume:', error);
@@ -870,13 +873,16 @@ router.get('/download/:applicationId', verifyToken, async (req, res) => {
     // Transform resume data to match jobseeker format
     const jobseekerFormat = transformToJobseekerFormat(resumeData, application);
     
-    // Return the resume data so frontend can generate PDF for download
-    res.json({
-      success: true,
-      resumeData: jobseekerFormat,
-      applicantName: resumeData.personalInfo?.fullName || resumeData.personalInfo?.name || 'Applicant',
-      downloadPDF: true // Flag to indicate frontend should download PDF
-    });
+    // Generate PDF on the backend and return as blob for download
+    const pdfBlob = generateJobseekerPDF(jobseekerFormat, null, true);
+    
+    // Set headers for PDF download
+    const applicantName = resumeData.personalInfo?.fullName || resumeData.personalInfo?.name || 'Applicant';
+    const filename = `${applicantName.replace(/\s+/g, '_')}_Resume.pdf`;
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(Buffer.from(await pdfBlob.arrayBuffer()));
 
   } catch (error) {
     console.error('Error downloading resume:', error);
