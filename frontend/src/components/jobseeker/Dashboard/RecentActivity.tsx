@@ -22,12 +22,13 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ applications, jobs, onN
       <h2 className={styles.sectionTitle}>Recent Activity</h2>
       {applications.length > 0 ? (
         <div className={styles.activityList}>
-          {applications.slice(0, 3).map(app => {
-            const job = jobs.find(j => j.id === app.jobId);
-            if (!job) return null;
-            
-            return (
-              <div key={app.id} className={styles.activityItem}>
+          {applications.slice(0, 3)
+            .filter(app => jobs.find(j => j.id === app.jobId)) // Filter out apps without matching jobs
+            .map(app => {
+              const job = jobs.find(j => j.id === app.jobId);
+              
+              return (
+                <div key={app.id} className={styles.activityItem}>
                 <div className={styles.activityIcon}>
                   <FiFileText />
                 </div>

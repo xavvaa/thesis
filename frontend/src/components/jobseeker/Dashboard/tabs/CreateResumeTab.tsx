@@ -1448,8 +1448,8 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
         // Show uploading state
         setPhotoUploading(true);
         
-        // Upload to cloud storage
-        const result = await jobseekerCloudService.uploadProfilePhoto(file);
+        // Upload to cloud storage (resume photo, not profile picture)
+        const result = await jobseekerCloudService.uploadResumePhoto(file);
         
         if (result.success && result.data) {
           // Update with cloud URL

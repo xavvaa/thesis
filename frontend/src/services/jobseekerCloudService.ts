@@ -1,6 +1,58 @@
 class JobseekerCloudService {
   private baseUrl = 'http://localhost:3001/api';
 
+  // Upload resume photo to cloud storage (separate from profile picture)
+  async uploadResumePhoto(file: File): Promise<{ success: boolean; data?: { cloudUrl: string }; message?: string }> {
+    try {
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('resumePhoto', file);
+
+      // Get Firebase auth token
+      const { auth } = await import('../config/firebase');
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      const token = await user.getIdToken();
+
+      console.log('🔧 Uploading resume photo to cloud storage');
+
+      const response = await fetch(`${this.baseUrl}/jobseekers/upload-resume-photo`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      console.log('🔧 Response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('🔧 Response error text:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('🔧 Response result:', result);
+
+      if (result.success) {
+        return result;
+      } else {
+        throw new Error(result.message || 'Upload failed');
+      }
+
+    } catch (error) {
+      console.error('Resume photo upload error:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to upload photo'
+      };
+    }
+  }
+
   // Upload profile photo to cloud storage only
   async uploadProfilePhoto(file: File): Promise<{ success: boolean; data?: { cloudUrl: string }; message?: string }> {
     try {
