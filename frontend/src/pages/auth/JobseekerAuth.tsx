@@ -336,6 +336,30 @@ const JobseekerAuth: React.FC = () => {
     return Object.keys(newErrors).length === 0
   }
 
+  // Check if login form is valid for button state
+  const isLoginFormValid = () => {
+    return formData.email.trim() !== '' && 
+           formData.password.trim() !== '' && 
+           !realTimeErrors.email && 
+           !realTimeErrors.password
+  }
+
+  // Check if registration form is valid for button state
+  const isRegistrationFormValid = () => {
+    return formData.email.trim() !== '' && 
+           formData.password.trim() !== '' && 
+           formData.confirmPassword.trim() !== '' && 
+           formData.firstName.trim() !== '' && 
+           formData.lastName.trim() !== '' && 
+           termsAccepted && 
+           privacyAccepted && 
+           !realTimeErrors.email && 
+           !realTimeErrors.password && 
+           !realTimeErrors.confirmPassword && 
+           !realTimeErrors.firstName && 
+           !realTimeErrors.lastName
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validateLoginForm()) return
@@ -558,6 +582,11 @@ const JobseekerAuth: React.FC = () => {
                       {errors.email || realTimeErrors.email}
                     </div>
                   )}
+                  {!formData.email.trim() && fieldTouched.email && !(errors.email || realTimeErrors.email) && (
+                    <div className={styles.inputError}>
+                      Email is required
+                    </div>
+                  )}
                 </div>
 
                 <div className={styles.inputGroup}>
@@ -595,6 +624,11 @@ const JobseekerAuth: React.FC = () => {
                       {errors.password || realTimeErrors.password}
                     </div>
                   )}
+                  {!formData.password.trim() && fieldTouched.password && !(errors.password || realTimeErrors.password) && (
+                    <div className={styles.inputError}>
+                      Password is required
+                    </div>
+                  )}
                   {isLogin && (
                     <div className={styles.forgotPasswordContainer}>
                       <Link to="/auth/forgot-password" className={styles.forgotPasswordLink}>
@@ -604,7 +638,11 @@ const JobseekerAuth: React.FC = () => {
                   )}
                 </div>
 
-                <button type="submit" className={styles.primaryButton} disabled={isUploading}>
+                <button 
+                  type="submit" 
+                  className={styles.primaryButton} 
+                  disabled={isUploading || !isLoginFormValid()}
+                >
                   {isUploading ? "Signing In..." : "Sign In"}
                 </button>
 
@@ -819,6 +857,11 @@ const JobseekerAuth: React.FC = () => {
                       </button>
                     </label>
                   </div>
+                  {errors.terms && (
+                    <div className={styles.inputError}>
+                      {errors.terms}
+                    </div>
+                  )}
                   <div className={styles.checkboxGroup}>
                     <input
                       type="checkbox"
@@ -838,12 +881,17 @@ const JobseekerAuth: React.FC = () => {
                       </button>
                     </label>
                   </div>
+                  {errors.privacy && (
+                    <div className={styles.inputError}>
+                      {errors.privacy}
+                    </div>
+                  )}
                 </div>
 
                 <button 
                   type="submit" 
                   className={styles.primaryButton} 
-                  disabled={isUploading}
+                  disabled={isUploading || !isRegistrationFormValid()}
                 >
                   {isUploading && <div className={styles.loadingSpinner}></div>}
                   {isUploading ? "Creating Account..." : "Create Account"}

@@ -378,6 +378,28 @@ const EmployerAuth: React.FC = () => {
     return Object.keys(newErrors).length === 0
   }
 
+  // Check if login form is valid for button state
+  const isLoginFormValid = () => {
+    return formData.email.trim() !== '' && 
+           formData.password.trim() !== '' && 
+           !realTimeErrors.email && 
+           !realTimeErrors.password
+  }
+
+  // Check if registration form is valid for button state
+  const isRegistrationFormValid = () => {
+    return formData.email.trim() !== '' && 
+           formData.password.trim() !== '' && 
+           formData.confirmPassword.trim() !== '' && 
+           formData.companyName.trim() !== '' && 
+           termsAccepted && 
+           privacyAccepted && 
+           !realTimeErrors.email && 
+           !realTimeErrors.password && 
+           !realTimeErrors.confirmPassword && 
+           !realTimeErrors.companyName
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validateLoginForm()) return
@@ -810,7 +832,11 @@ const EmployerAuth: React.FC = () => {
                   )}
                 </div>
 
-                <button type="submit" className={styles.primaryButton} disabled={isUploading}>
+                <button 
+                  type="submit" 
+                  className={styles.primaryButton} 
+                  disabled={isUploading || !isLoginFormValid()}
+                >
                   {isUploading ? "Signing In..." : "Sign In"}
                 </button>
 
@@ -998,7 +1024,7 @@ const EmployerAuth: React.FC = () => {
                 <button 
                   type="submit" 
                   className={styles.primaryButton} 
-                  disabled={isUploading || !termsAccepted || !privacyAccepted}
+                  disabled={isUploading || !isRegistrationFormValid()}
                 >
                   {isUploading && <div className={styles.loadingSpinner}></div>}
                   {isUploading ? "Creating Account..." : "Create Account"}

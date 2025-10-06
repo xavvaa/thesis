@@ -33,6 +33,14 @@ const AdminAuth: React.FC<AdminAuthProps> = () => {
     setError('');
   };
 
+  // Check if form is valid for button state
+  const isFormValid = () => {
+    return formData.email.trim() !== '' && 
+           formData.password.trim() !== '' &&
+           formData.email.includes('@') && 
+           formData.email.includes('.')
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -177,7 +185,7 @@ const AdminAuth: React.FC<AdminAuthProps> = () => {
               <button
                 type="submit"
                 className="admin-primary-button"
-                disabled={loading}
+                disabled={loading || !isFormValid()}
               >
                 {loading ? "Signing In..." : "Sign In"}
               </button>
