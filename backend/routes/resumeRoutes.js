@@ -773,16 +773,23 @@ router.get('/view/:applicationId', verifyToken, async (req, res) => {
     // Transform resume data to match jobseeker format
     const jobseekerFormat = transformToJobseekerFormat(resumeData, application);
     
-    // Generate PDF on the backend and return as blob
-    const pdfBlob = generateJobseekerPDF(jobseekerFormat, null, true);
-    
-    // Set headers for PDF response
+    // Return resume data as JSON for frontend PDF generation
     const applicantName = resumeData.personalInfo?.fullName || resumeData.personalInfo?.name || 'Applicant';
-    const filename = `${applicantName.replace(/\s+/g, '_')}_Resume.pdf`;
     
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-    res.send(Buffer.from(await pdfBlob.arrayBuffer()));
+    console.log('✅ Returning resume data for PDF generation:', {
+      applicantName,
+      hasPersonalInfo: !!jobseekerFormat.personalInfo,
+      hasExperience: !!jobseekerFormat.experience?.length,
+      hasEducation: !!jobseekerFormat.education?.length,
+      hasSkills: !!jobseekerFormat.skills?.length
+    });
+    
+    res.json({
+      success: true,
+      generatePDF: true,
+      resumeData: jobseekerFormat,
+      applicantName: applicantName
+    });
 
   } catch (error) {
     console.error('Error viewing resume:', error);
@@ -873,16 +880,23 @@ router.get('/download/:applicationId', verifyToken, async (req, res) => {
     // Transform resume data to match jobseeker format
     const jobseekerFormat = transformToJobseekerFormat(resumeData, application);
     
-    // Generate PDF on the backend and return as blob for download
-    const pdfBlob = generateJobseekerPDF(jobseekerFormat, null, true);
-    
-    // Set headers for PDF download
+    // Return resume data as JSON for frontend PDF generation and download
     const applicantName = resumeData.personalInfo?.fullName || resumeData.personalInfo?.name || 'Applicant';
-    const filename = `${applicantName.replace(/\s+/g, '_')}_Resume.pdf`;
     
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.send(Buffer.from(await pdfBlob.arrayBuffer()));
+    console.log('✅ Returning resume data for PDF download:', {
+      applicantName,
+      hasPersonalInfo: !!jobseekerFormat.personalInfo,
+      hasExperience: !!jobseekerFormat.experience?.length,
+      hasEducation: !!jobseekerFormat.education?.length,
+      hasSkills: !!jobseekerFormat.skills?.length
+    });
+    
+    res.json({
+      success: true,
+      downloadPDF: true,
+      resumeData: jobseekerFormat,
+      applicantName: applicantName
+    });
 
   } catch (error) {
     console.error('Error downloading resume:', error);
