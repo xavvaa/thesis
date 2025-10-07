@@ -28,7 +28,7 @@ interface ReportData {
   name: string;
   description: string;
   icon: React.ComponentType;
-  category: 'overview' | 'employers' | 'jobs' | 'jobseekers' | 'compliance' | 'admin' | 'system';
+  category: 'overview' | 'employers' | 'jobs' | 'jobseekers' | 'admin' | 'system';
 }
 
 // Helper functions for report formatting
@@ -207,14 +207,6 @@ const ReportsTab: React.FC = () => {
       category: 'jobseekers'
     },
     
-    // Compliance Reports
-    {
-      id: 'compliance-overview',
-      name: 'Compliance Overview Report',
-      description: 'System compliance status, regulatory adherence, and audit trails',
-      icon: FiFileText,
-      category: 'compliance'
-    },
     
     // Admin Management Reports (Super Admin Only)
     {
@@ -648,7 +640,6 @@ const ReportsTab: React.FC = () => {
     { id: 'employers', name: 'Employer Reports', icon: FiBriefcase },
     { id: 'jobs', name: 'Job Reports', icon: FiFile },
     { id: 'jobseekers', name: 'Jobseeker Reports', icon: FiUsers },
-    { id: 'compliance', name: 'Compliance Reports', icon: FiFileText },
     { id: 'admin', name: 'Admin Reports', icon: FiBarChart2 },
     { id: 'system', name: 'System Reports', icon: FiBarChart2 }
   ];

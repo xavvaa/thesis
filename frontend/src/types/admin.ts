@@ -137,4 +137,4 @@ export interface AdminFormData {
   adminLevel?: string;
 }
 
-export type AdminTab = 'overview' | 'employer-verification' | 'job-postings' | 'employers' | 'jobseekers' | 'compliance' | 'skills-analytics' | 'generate-reports' | 'admin-management' | 'settings' | 'analytics' | 'jobs' | 'users' | 'admins' | 'reports';
+export type AdminTab = 'overview' | 'employer-verification' | 'job-postings' | 'employers' | 'jobseekers' | 'skills-analytics' | 'generate-reports' | 'admin-management' | 'settings' | 'analytics' | 'jobs' | 'users' | 'admins' | 'reports';

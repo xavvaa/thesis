@@ -1013,41 +1013,6 @@
   gap: 8px;
 }
 
-/* Compliance Items */
-.compliance-items {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.compliance-item {
-  background: white;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  padding: 20px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.compliance-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.compliance-item.compliant {
-  border-left: 4px solid #38a169;
-}
-
-.compliance-item.non_compliant {
-  border-left: 4px solid #e53e3e;
-}
-
-.compliance-item.pending_review {
-  border-left: 4px solid #ed8936;
-}
-
-.compliance-item.requires_action {
-  border-left: 4px solid #c53030;
-}
 
 .item-header {
   display: flex;

@@ -13,7 +13,6 @@ import {
   AnalyticsTab,
   ReportsTab,
   JobseekersTab,
-  ComplianceTab,
   JobDemandTab
 } from '../../components/admin';
 import adminService from '../../services/adminService';
@@ -161,10 +160,6 @@ const SuperAdminDashboard: React.FC = () => {
         title: 'Jobseekers',
         subtitle: 'Job seeker profiles and management'
       },
-      'compliance': {
-        title: 'Compliance',
-        subtitle: 'System compliance and regulatory oversight'
-      },
       'skills-analytics': {
         title: 'Job Demand Analytics',
         subtitle: 'Job market demand and competition analysis'
@@ -190,7 +185,6 @@ const SuperAdminDashboard: React.FC = () => {
         'employers': 'employer-verification',
         'jobs': 'job-postings',
         'jobseekers': 'jobseekers-summary',
-        'compliance': 'compliance-overview',
         'admin-management': 'admin-activity',
         'skills-analytics': 'job-demand-analytics'
       };
@@ -312,9 +306,6 @@ const SuperAdminDashboard: React.FC = () => {
           <JobseekersTab />
         )}
 
-        {activeTab === 'compliance' && (
-          <ComplianceTab />
-        )}
 
         {activeTab === 'skills-analytics' && (
           <JobDemandTab />

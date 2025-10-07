@@ -34,7 +34,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     { id: 'employer-verification' as AdminTab, icon: FiCheck, label: 'Employer Verification' },
     { id: 'job-postings' as AdminTab, icon: FiFileText, label: 'Job Postings' },
     { id: 'jobseekers' as AdminTab, icon: FiUsers, label: 'Jobseekers' },
-    { id: 'compliance' as AdminTab, icon: FiAlertCircle, label: 'Compliance' },
     { id: 'skills-analytics' as AdminTab, icon: FiStar, label: 'Job Demand Analytics' },
     { id: 'generate-reports' as AdminTab, icon: FiDownload, label: 'Generate Reports' },
   ];
@@ -55,7 +54,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
             alt="PESO Logo" 
             className="sidebar-peso-logo"
           />
-          <h2>PESO Admin</h2>
+          <h2>PESO</h2>
         </div>
         {adminUser.role === 'admin' && (
           <div className="admin-role-badge">
