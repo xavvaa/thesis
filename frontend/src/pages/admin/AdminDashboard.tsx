@@ -234,9 +234,11 @@ const AdminDashboard: React.FC = () => {
           title={getTabInfo(activeTab).title}
           subtitle={getTabInfo(activeTab).subtitle}
           actions={
-            <button className="report-btn" onClick={generateSystemReport}>
-              Generate Report
-            </button>
+            activeTab !== 'generate-reports' ? (
+              <button className="report-btn" onClick={generateSystemReport}>
+                Generate Report
+              </button>
+            ) : null
           }
         />
 

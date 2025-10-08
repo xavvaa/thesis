@@ -134,7 +134,7 @@ const formatReportForPDF = (reportData: any, reportName?: string): string => {
 const ReportsTab: React.FC = () => {
   const [filters, setFilters] = useState<ReportFilter>({
     reportTypes: [],
-    dateRange: 'last30days',
+    dateRange: '', // Start with empty to show placeholder
     startDate: '',
     endDate: '',
     format: 'pdf',
@@ -242,6 +242,8 @@ const ReportsTab: React.FC = () => {
   ];
 
   const dateRangeOptions = [
+    // Placeholder option
+    { value: '', label: 'Select Date Range...' },
     // Quick ranges
     { value: 'today', label: 'Today' },
     { value: 'yesterday', label: 'Yesterday' },
@@ -278,7 +280,9 @@ const ReportsTab: React.FC = () => {
   ];
 
   useEffect(() => {
-    // Set default date range based on selection
+    // Only set default date range based on dropdown selection if not custom
+    if (filters.dateRange === 'custom') return;
+    
     const today = new Date();
     const formatDate = (date: Date) => date.toISOString().split('T')[0];
 
@@ -980,115 +984,121 @@ const ReportsTab: React.FC = () => {
             <p className="view-info">Showing 1-{reportTypes.length} of {reportTypes.length} reports • {filters.reportTypes.length} selected</p>
           </div>
           
-          <div className="reports-controls">
-              {/* Date Range Controls */}
-              <div className="control-group">
-                <select 
-                  value={filters.dateRange} 
-                  onChange={(e) => setFilters(prev => ({ ...prev, dateRange: e.target.value }))}
-                  className="control-select"
-                >
-                  {dateRangeOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {filters.dateRange === 'custom' && (
-                <>
-                  <div className="control-group">
-                    <input
-                      type="date"
-                      value={filters.startDate}
-                      onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
-                      className="control-input"
-                      placeholder="Start Date"
-                    />
-                  </div>
-                  <div className="control-group">
-                    <input
-                      type="date"
-                      value={filters.endDate}
-                      onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
-                      className="control-input"
-                      placeholder="End Date"
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* Format Controls */}
-              <div className="control-group">
-                <select 
-                  value={filters.format} 
-                  onChange={(e) => setFilters(prev => ({ ...prev, format: e.target.value as 'pdf' | 'csv' | 'json' | 'xlsx' }))}
-                  className="control-select"
-                >
-                  {formatOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Details Toggle */}
-              <div className="control-group">
-                <label className="control-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={filters.includeDetails}
-                    onChange={(e) => setFilters(prev => ({ ...prev, includeDetails: e.target.checked }))}
-                  />
-                  <span>Include Details</span>
-                </label>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="control-group">
-                <button 
-                  onClick={handleSelectAll}
-                  className="control-btn control-btn-outline"
-                  disabled={filters.reportTypes.length === reportTypes.length}
-                >
-                  Select All
-                </button>
-              </div>
-
-              <div className="control-group">
-                <button 
-                  onClick={handleClearAll}
-                  className="control-btn control-btn-outline"
-                  disabled={filters.reportTypes.length === 0}
-                >
-                  Clear All
-                </button>
-              </div>
-
-              <div className="control-group">
-                <button 
-                  onClick={handlePreviewReport}
-                  disabled={loading || !isFormValid()}
-                  className="control-btn control-btn-secondary"
-                >
-                  {loading ? <FiClock className="spinning" /> : <FiFileText />}
-                  Preview
-                </button>
-              </div>
-              
-              <div className="control-group">
-                <button 
-                  onClick={handleGenerateReport}
-                  disabled={loading || !isFormValid()}
-                  className="control-btn control-btn-primary"
-                >
-                  {loading ? <FiClock className="spinning" /> : <FiDownload />}
-                  Generate
-                </button>
-              </div>
+          <div className="reports-controls-compact">
+            {/* Date Range */}
+            <div className="control-group">
+              <select 
+                value={filters.dateRange} 
+                onChange={(e) => setFilters(prev => ({ ...prev, dateRange: e.target.value }))}
+                className="control-select"
+                title="Date Range"
+              >
+                {dateRangeOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </div>
+
+            {/* Date Pickers */}
+            <div className="control-group date-input-compact">
+              <span className="date-label">FROM:</span>
+              <input
+                type="date"
+                value={filters.startDate}
+                onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value, dateRange: 'custom' }))}
+                className="control-input date-input"
+                title="Start Date"
+              />
+            </div>
+            
+            <div className="control-group date-input-compact">
+              <span className="date-label">TO:</span>
+              <input
+                type="date"
+                value={filters.endDate}
+                onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value, dateRange: 'custom' }))}
+                className="control-input date-input"
+                title="End Date"
+              />
+            </div>
+
+            {/* Format */}
+            <div className="control-group">
+              <select 
+                value={filters.format} 
+                onChange={(e) => setFilters(prev => ({ ...prev, format: e.target.value as 'pdf' | 'csv' | 'json' | 'xlsx' }))}
+                className="control-select"
+                title="Export Format"
+              >
+                {formatOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Include Details */}
+            <div className="control-group">
+              <label className="control-checkbox compact">
+                <input
+                  type="checkbox"
+                  checked={filters.includeDetails}
+                  onChange={(e) => setFilters(prev => ({ ...prev, includeDetails: e.target.checked }))}
+                />
+                <span>Include Details</span>
+              </label>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="control-group">
+              <button 
+                onClick={handleSelectAll}
+                className="control-btn control-btn-outline compact"
+                disabled={filters.reportTypes.length === reportTypes.length}
+                title="Select All Reports"
+              >
+                Select All
+              </button>
+            </div>
+
+            <div className="control-group">
+              <button 
+                onClick={handleClearAll}
+                className="control-btn control-btn-outline compact"
+                disabled={filters.reportTypes.length === 0}
+                title="Clear All Selections"
+              >
+                Clear All
+              </button>
+            </div>
+
+            <div className="control-group">
+              <button 
+                onClick={handlePreviewReport}
+                disabled={loading || !isFormValid()}
+                className="control-btn control-btn-secondary compact"
+                title="Preview Selected Reports"
+              >
+                {loading ? <FiClock className="spinning" /> : <FiFileText />}
+                Preview
+              </button>
+            </div>
+            
+            <div className="control-group">
+              <button 
+                onClick={handleGenerateReport}
+                disabled={loading || !isFormValid()}
+                className="control-btn control-btn-primary compact"
+                title="Generate Selected Reports"
+              >
+                {loading ? <FiClock className="spinning" /> : <FiDownload />}
+                Generate
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Table Section */}
