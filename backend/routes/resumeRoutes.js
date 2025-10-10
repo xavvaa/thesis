@@ -907,4 +907,96 @@ router.get('/download/:applicationId', verifyToken, async (req, res) => {
   }
 });
 
+// Resume parsing endpoint
+router.post('/parse', verifyToken, async (req, res) => {
+  try {
+    const multer = require('multer');
+    const resumeParsingService = require('../services/resumeParsingService');
+    const enhancedResumeParser = require('../services/enhancedResumeParser');
+    
+    // Configure multer for memory storage
+    const upload = multer({
+      storage: multer.memoryStorage(),
+      limits: {
+        fileSize: 10 * 1024 * 1024 // 10MB limit
+      },
+      fileFilter: (req, file, cb) => {
+        if (file.mimetype === 'application/pdf') {
+          cb(null, true);
+        } else {
+          cb(new Error('Only PDF files are allowed'), false);
+        }
+      }
+    }).single('resume');
+
+    // Handle file upload
+    upload(req, res, async (err) => {
+      if (err) {
+        console.error('Upload error:', err);
+        return res.status(400).json({
+          success: false,
+          error: err.message || 'File upload failed'
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          error: 'No PDF file uploaded'
+        });
+      }
+
+      try {
+        console.log('Processing uploaded resume:', req.file.originalname);
+        
+        // Try enhanced parsing first, fallback to original if needed
+        let parseResult;
+        try {
+          console.log('🚀 Attempting enhanced parsing...');
+          parseResult = await enhancedResumeParser.parseResume(req.file.buffer);
+          console.log('✅ Enhanced parsing successful');
+        } catch (enhancedError) {
+          console.log('⚠️ Enhanced parsing failed, using fallback:', enhancedError.message);
+          parseResult = await resumeParsingService.parseResume(req.file.buffer);
+        }
+        
+        if (parseResult.success) {
+          console.log('📤 Sending parsed data to frontend:', {
+            dataKeys: Object.keys(parseResult.data),
+            personalInfo: parseResult.data.personalInfo,
+            educationCount: parseResult.data.education?.length || 0,
+            educationSample: parseResult.data.education?.[0] || null
+          });
+          
+          res.json({
+            success: true,
+            message: 'Resume parsed successfully',
+            data: parseResult.data,
+            rawText: parseResult.rawText?.substring(0, 1000) // Limit raw text for response size
+          });
+        } else {
+          res.status(500).json({
+            success: false,
+            error: parseResult.error || 'Resume parsing failed'
+          });
+        }
+        
+      } catch (parseError) {
+        console.error('Resume parsing error:', parseError);
+        res.status(500).json({
+          success: false,
+          error: 'Failed to parse resume content'
+        });
+      }
+    });
+
+  } catch (error) {
+    console.error('Resume parsing endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
 module.exports = router;

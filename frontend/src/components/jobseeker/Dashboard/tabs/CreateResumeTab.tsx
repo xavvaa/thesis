@@ -5,6 +5,7 @@ import html2canvas from 'html2canvas';
 import { auth } from '../../../../config/firebase';
 import psgc from "@dctsph/psgc";
 import jobseekerCloudService from '../../../../services/jobseekerCloudService';
+import { apiService } from '../../../../services/apiService';
 import styles from './CreateResumeTab.module.css';
 import dashboardStyles from '../../../../pages/jobseeker/Dashboard.module.css';
 
@@ -160,6 +161,7 @@ interface EducationLevel {
   location: string;
   startDate: string;
   endDate: string;
+  description: string;
 }
 
 interface ResumeData {
@@ -196,7 +198,8 @@ const migrateEducationData = (education: any): EducationLevel[] => {
       school: education.tertiary.school || '',
       location: '',
       startDate: '',
-      endDate: ''
+      endDate: '',
+      description: ''
     });
   }
   
@@ -206,7 +209,8 @@ const migrateEducationData = (education: any): EducationLevel[] => {
       school: education.secondary.school || '',
       location: '',
       startDate: '',
-      endDate: ''
+      endDate: '',
+      description: ''
     });
   }
   
@@ -216,7 +220,8 @@ const migrateEducationData = (education: any): EducationLevel[] => {
       school: education.primary.school || '',
       location: '',
       startDate: '',
-      endDate: ''
+      endDate: '',
+      description: ''
     });
   }
   
@@ -227,7 +232,8 @@ const migrateEducationData = (education: any): EducationLevel[] => {
       school: '',
       location: '',
       startDate: '',
-      endDate: ''
+      endDate: '',
+      description: ''
     });
   }
   
@@ -269,7 +275,8 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
       school: '',
       location: '',
       startDate: '',
-      endDate: ''
+      endDate: '',
+      description: ''
     }],
     skills: [''],
     certifications: ['']
@@ -286,6 +293,9 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoUploadSuccess, setPhotoUploadSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const resumeFileInputRef = useRef<HTMLInputElement>(null);
+  const [resumeUploading, setResumeUploading] = useState(false);
+  const [resumeParseSuccess, setResumeParseSuccess] = useState(false);
   
   // PSGC dropdown options
   const [regions, setRegions] = useState<any[]>([]);
@@ -896,7 +906,8 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
       school: '',
       location: '',
       startDate: '',
-      endDate: ''
+      endDate: '',
+      description: ''
     }];
     updateResumeData('education', newEducation);
   };
@@ -1414,7 +1425,7 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
       personalInfo: { firstName: '', lastName: '', email: '', phone: '', region: '', province: '', city: '', barangay: '', address: '', zipCode: '', age: '', birthday: '', photo: '' },
       summary: '',
       experience: [{ company: '', position: '', duration: '', description: '', location: '', startDate: '', endDate: '' }],
-      education: [{ degree: '', school: '', location: '', startDate: '', endDate: '' }],
+      education: [{ degree: '', school: '', location: '', startDate: '', endDate: '', description: '' }],
       skills: [''],
       certifications: ['']
     };
@@ -1481,6 +1492,201 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
     fileInputRef.current?.click();
   };
 
+  // Resume upload and parsing functions
+  const handleResumeUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (file.type !== 'application/pdf') {
+        alert('Please select a valid PDF file.');
+        return;
+      }
+      
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('Please select a PDF file smaller than 10MB.');
+        return;
+      }
+      
+      console.log(`📄 PDF file info: ${file.name}, Size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+      
+      try {
+        setResumeUploading(true);
+        
+        // Upload and parse resume using apiService
+        const result = await apiService.parseResume(file);
+        console.log('Resume parsed successfully:', result);
+        
+        if (result.success && result.data) {
+          // Auto-fill form with parsed data
+          autoFillFormData(result.data);
+          setResumeParseSuccess(true);
+          
+          // Show success message briefly
+          setTimeout(() => setResumeParseSuccess(false), 5000);
+        } else {
+          throw new Error(result.error || 'Failed to parse resume data');
+        }
+        
+      } catch (error) {
+        console.error('Resume upload error:', error);
+        alert(`Failed to parse resume: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      } finally {
+        setResumeUploading(false);
+        // Clear file input
+        if (resumeFileInputRef.current) {
+          resumeFileInputRef.current.value = '';
+        }
+      }
+    }
+  };
+
+  const autoFillFormData = (parsedData: any) => {
+    console.log('🔍 Auto-filling form with parsed data:', parsedData);
+    console.log('🔍 Data structure analysis:', {
+      hasPersonalInfo: !!parsedData.personalInfo,
+      personalInfoKeys: parsedData.personalInfo ? Object.keys(parsedData.personalInfo) : [],
+      hasEducation: !!parsedData.education,
+      educationCount: parsedData.education ? parsedData.education.length : 0,
+      educationSample: parsedData.education ? parsedData.education[0] : null
+    });
+    
+    // Update personal info
+    if (parsedData.personalInfo) {
+      const personalInfo = parsedData.personalInfo;
+      if (personalInfo.firstName) updatePersonalInfo('firstName', personalInfo.firstName);
+      if (personalInfo.lastName) updatePersonalInfo('lastName', personalInfo.lastName);
+      if (personalInfo.email) updatePersonalInfo('email', personalInfo.email);
+      if (personalInfo.phone) updatePersonalInfo('phone', personalInfo.phone);
+      
+      // Handle address - put the full parsed address in the address field
+      // The user can manually select PSGC dropdowns, but we'll put the parsed address in the street address field
+      if (personalInfo.address) {
+        updatePersonalInfo('address', personalInfo.address);
+        console.log('Parsed address:', personalInfo.address);
+        console.log('Note: Please manually select Region, Province, City, and Barangay from the dropdowns above');
+      }
+    }
+    
+    // Update summary
+    if (parsedData.summary) {
+      updateSummary(parsedData.summary);
+    }
+    
+    // Update experience
+    if (parsedData.experience && parsedData.experience.length > 0) {
+      const validExperiences = parsedData.experience.filter((exp: any) => 
+        exp.company || exp.position || exp.description
+      );
+      
+      if (validExperiences.length > 0) {
+        setResumeData(prev => ({
+          ...prev,
+          experience: validExperiences.map((exp: any) => ({
+            company: exp.company || '',
+            position: exp.position || '',
+            duration: exp.duration || '',
+            description: exp.description || '',
+            location: exp.location || '',
+            startDate: exp.startDate || '',
+            endDate: exp.endDate || ''
+          }))
+        }));
+      }
+    }
+    
+    // Update education
+    if (parsedData.education && parsedData.education.length > 0) {
+      console.log('Raw parsed education data:', parsedData.education);
+      
+      // Log each education entry in detail
+      parsedData.education.forEach((edu: any, index: number) => {
+        console.log(`Education Entry ${index + 1}:`, {
+          degree: edu.degree,
+          school: edu.school,
+          location: edu.location,
+          startDate: edu.startDate,
+          endDate: edu.endDate,
+          description: edu.description,
+          raw: edu.raw || 'N/A'
+        });
+        console.log(`Entry ${index + 1} validation:`, {
+          hasDegree: !!edu.degree,
+          hasSchool: !!edu.school,
+          degreeLength: edu.degree?.length || 0,
+          schoolLength: edu.school?.length || 0
+        });
+      });
+      
+      const validEducations = parsedData.education.filter((edu: any) => 
+        (edu.degree && edu.degree.trim().length > 0) || (edu.school && edu.school.trim().length > 0)
+      );
+      console.log('Valid education entries count:', validEducations.length);
+      console.log('Valid education entries:', validEducations);
+      
+      if (validEducations.length > 0) {
+        const mappedEducations = validEducations.map((edu: any) => ({
+          degree: edu.degree || '',
+          school: edu.school || '',
+          location: edu.location || '',
+          startDate: edu.startDate || '',
+          endDate: edu.endDate || '',
+          description: edu.description || ''
+        }));
+        
+        console.log('Mapped education for form:', mappedEducations);
+        
+        setResumeData(prev => ({
+          ...prev,
+          education: mappedEducations
+        }));
+        console.log('Updated education in form - SUCCESS');
+      } else {
+        console.log('No valid education entries found');
+      }
+    } else {
+      console.log('No education data in parsed result');
+    }
+    // Update skills
+    if (parsedData.skills && parsedData.skills.length > 0) {
+      const validSkills = parsedData.skills.filter((skill: string) => skill.trim());
+      if (validSkills.length > 0) {
+        setResumeData(prev => ({
+          ...prev,
+          skills: validSkills
+        }));
+      }
+    }
+    
+    // Update certifications
+    if (parsedData.certifications && parsedData.certifications.length > 0) {
+      const validCertifications = parsedData.certifications.filter((cert: string) => cert.trim());
+      if (validCertifications.length > 0) {
+        setResumeData(prev => ({
+          ...prev,
+          certifications: validCertifications
+        }));
+      }
+    }
+    
+    setHasUnsavedChanges(true);
+  };
+
+  const triggerResumeUpload = () => {
+    resumeFileInputRef.current?.click();
+  };
+
+  const handleClearAllFields = () => {
+    if (window.confirm('Are you sure you want to clear all fields? This action cannot be undone.')) {
+      clearResumeData();
+      // Also clear any success states
+      setResumeParseSuccess(false);
+      setPhotoUploadSuccess(false);
+      setIsPDFReady(false);
+      setIsResumeGenerated(false);
+      console.log('All fields cleared by user');
+    }
+  };
 
   return (
     <div className={dashboardStyles.tabContent}>
@@ -1539,6 +1745,57 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
         </div>
       )}
       
+      {/* Resume Upload Section */}
+      <div className={styles.uploadSection}>
+        <div className={styles.uploadHeader}>
+          <h3 className={styles.uploadTitle}>Quick Start: Upload Your Resume</h3>
+          <p className={styles.uploadDescription}>
+            Upload your existing resume (PDF) to automatically fill out the form fields below
+          </p>
+        </div>
+        
+        <input
+          type="file"
+          ref={resumeFileInputRef}
+          onChange={handleResumeUpload}
+          accept="application/pdf"
+          style={{ display: 'none' }}
+        />
+        
+        <button
+          onClick={triggerResumeUpload}
+          className={styles.uploadButton}
+          disabled={resumeUploading}
+        >
+          {resumeUploading ? (
+            <>
+              <div className={styles.spinner} />
+              <span>Parsing Resume...</span>
+            </>
+          ) : (
+            <>
+              <FiUpload className={styles.uploadIcon} />
+              <span>Upload Resume (PDF)</span>
+            </>
+          )}
+        </button>
+        
+        {/* Resume Parse Success Message */}
+        {resumeParseSuccess && (
+          <div className={styles.parseSuccessMessage}>
+            <FiCheck className={styles.successIcon} />
+            <div>
+              <div><strong>Resume parsed successfully!</strong></div>
+              <div style={{ fontSize: '0.8rem', marginTop: '0.25rem', opacity: 0.9 }}>
+                ✓ Check the browser console (F12) for detailed parsing information<br/>
+                ✓ For address: Please manually select Region, Province, City, Barangay from dropdowns<br/>
+                ✓ Review and adjust the auto-filled information as needed
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Personal Information */}
       <div className={styles.sectionHeader}>
         <FiUser className={styles.sectionIcon} />
@@ -2073,6 +2330,15 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
               </div>
             </div>
           </div>
+          <div className={styles.formGroup}>
+            <label>Description</label>
+            <textarea
+              value={edu.description}
+              onChange={(e) => updateEducation(index, 'description', e.target.value)}
+              placeholder="GPA, honors, relevant coursework, achievements..."
+              className={styles.formTextarea}
+            />
+          </div>
         </div>
       ))}
       <button 
@@ -2134,6 +2400,15 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
         >
           <FiDownload className={styles.buttonIcon} />
           Download Resume PDF
+        </button>
+        
+        <button 
+          onClick={handleClearAllFields}
+          className={styles.clearButton}
+          title="Clear all form fields"
+        >
+          <FiTrash2 className={styles.buttonIcon} />
+          Clear All Fields
         </button>
       </div>
       </div>
