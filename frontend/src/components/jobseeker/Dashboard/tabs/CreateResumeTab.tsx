@@ -1515,7 +1515,13 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
         
         // Upload and parse resume using apiService
         const result = await apiService.parseResume(file);
-        console.log('Resume parsed successfully:', result);
+        console.log('📤 Resume parsing API response:', result);
+        console.log('📤 Response data structure:', {
+          success: result.success,
+          hasData: !!result.data,
+          dataKeys: result.data ? Object.keys(result.data) : [],
+          personalInfoKeys: result.data?.personalInfo ? Object.keys(result.data.personalInfo) : []
+        });
         
         if (result.success && result.data) {
           // Auto-fill form with parsed data
@@ -1546,6 +1552,7 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
     console.log('🔍 Data structure analysis:', {
       hasPersonalInfo: !!parsedData.personalInfo,
       personalInfoKeys: parsedData.personalInfo ? Object.keys(parsedData.personalInfo) : [],
+      personalInfoValues: parsedData.personalInfo || {},
       hasEducation: !!parsedData.education,
       educationCount: parsedData.education ? parsedData.education.length : 0,
       educationSample: parsedData.education ? parsedData.education[0] : null
@@ -1554,18 +1561,68 @@ const CreateResumeTab: React.FC<CreateResumeTabProps> = ({
     // Update personal info
     if (parsedData.personalInfo) {
       const personalInfo = parsedData.personalInfo;
-      if (personalInfo.firstName) updatePersonalInfo('firstName', personalInfo.firstName);
-      if (personalInfo.lastName) updatePersonalInfo('lastName', personalInfo.lastName);
-      if (personalInfo.email) updatePersonalInfo('email', personalInfo.email);
-      if (personalInfo.phone) updatePersonalInfo('phone', personalInfo.phone);
+      
+      console.log('🔍 Personal info details:', {
+        firstName: personalInfo.firstName,
+        lastName: personalInfo.lastName,
+        email: personalInfo.email,
+        phone: personalInfo.phone,
+        address: personalInfo.address
+      });
+      
+      // Handle name parsing - try multiple approaches
+      if (personalInfo.firstName && personalInfo.lastName) {
+        console.log('✅ Using parsed firstName and lastName:', {
+          firstName: personalInfo.firstName,
+          lastName: personalInfo.lastName
+        });
+        updatePersonalInfo('firstName', personalInfo.firstName);
+        updatePersonalInfo('lastName', personalInfo.lastName);
+      } else if (personalInfo.fullName) {
+        console.log('🔄 Parsing fullName:', personalInfo.fullName);
+        const nameParts = personalInfo.fullName.trim().split(/\s+/);
+        if (nameParts.length >= 2) {
+          updatePersonalInfo('firstName', nameParts[0]);
+          updatePersonalInfo('lastName', nameParts.slice(1).join(' '));
+          console.log('✅ Extracted from fullName:', {
+            firstName: nameParts[0],
+            lastName: nameParts.slice(1).join(' ')
+          });
+        }
+      } else if (personalInfo.name) {
+        console.log('🔄 Parsing name field:', personalInfo.name);
+        const nameParts = personalInfo.name.trim().split(/\s+/);
+        if (nameParts.length >= 2) {
+          updatePersonalInfo('firstName', nameParts[0]);
+          updatePersonalInfo('lastName', nameParts.slice(1).join(' '));
+          console.log('✅ Extracted from name:', {
+            firstName: nameParts[0],
+            lastName: nameParts.slice(1).join(' ')
+          });
+        }
+      } else {
+        console.log('❌ No name information found in parsed data');
+      }
+      
+      if (personalInfo.email) {
+        console.log('✅ Using parsed email:', personalInfo.email);
+        updatePersonalInfo('email', personalInfo.email);
+      }
+      
+      if (personalInfo.phone) {
+        console.log('✅ Using parsed phone:', personalInfo.phone);
+        updatePersonalInfo('phone', personalInfo.phone);
+      }
       
       // Handle address - put the full parsed address in the address field
       // The user can manually select PSGC dropdowns, but we'll put the parsed address in the street address field
       if (personalInfo.address) {
         updatePersonalInfo('address', personalInfo.address);
-        console.log('Parsed address:', personalInfo.address);
-        console.log('Note: Please manually select Region, Province, City, and Barangay from the dropdowns above');
+        console.log('✅ Parsed address:', personalInfo.address);
+        console.log('📝 Note: Please manually select Region, Province, City, and Barangay from the dropdowns above');
       }
+    } else {
+      console.log('❌ No personalInfo found in parsed data');
     }
     
     // Update summary

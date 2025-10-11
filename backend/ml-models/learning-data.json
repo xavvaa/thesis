@@ -1,0 +1,106 @@
+{
+  "sectionPatterns": [],
+  "namePatterns": [],
+  "datePatterns": [
+    [
+      "(January|February|March|April|May|June|July|August|September|October|November|December)\\s+\\d{4}",
+      "dates"
+    ],
+    [
+      "\\d{4}\\s*[-–—]\\s*(\\d{4}|Present|Current)",
+      "dates"
+    ],
+    [
+      "(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+\\d{4}",
+      "dates"
+    ]
+  ],
+  "skillPatterns": [
+    [
+      "javascript",
+      "skills"
+    ],
+    [
+      "python",
+      "skills"
+    ],
+    [
+      "java",
+      "skills"
+    ],
+    [
+      "react",
+      "skills"
+    ],
+    [
+      "node",
+      "skills"
+    ],
+    [
+      "express",
+      "skills"
+    ],
+    [
+      "mongodb",
+      "skills"
+    ]
+  ],
+  "successfulExtractions": [
+    {
+      "timestamp": "2025-10-11T06:04:29.926Z",
+      "textLength": 4535,
+      "sectionsFound": [
+        "education"
+      ],
+      "entitiesFound": [
+        "emails",
+        "phones",
+        "dates",
+        "skills"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "timestamp": "2025-10-11T06:12:03.102Z",
+      "textLength": 4535,
+      "sectionsFound": [
+        "education"
+      ],
+      "entitiesFound": [
+        "emails",
+        "phones",
+        "dates",
+        "skills"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "timestamp": "2025-10-11T06:14:59.255Z",
+      "textLength": 4535,
+      "sectionsFound": [
+        "education"
+      ],
+      "entitiesFound": [
+        "emails",
+        "phones",
+        "dates",
+        "skills"
+      ],
+      "confidence": 0.8
+    },
+    {
+      "timestamp": "2025-10-11T06:16:17.679Z",
+      "textLength": 4535,
+      "sectionsFound": [
+        "education"
+      ],
+      "entitiesFound": [
+        "emails",
+        "phones",
+        "dates",
+        "skills"
+      ],
+      "confidence": 0.8
+    }
+  ]
+}
